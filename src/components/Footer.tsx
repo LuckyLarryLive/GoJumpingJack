@@ -1,46 +1,53 @@
+// src/components/Footer.tsx
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Lobster } from 'next/font/google'; // Import Lobster font here
-
-// Instantiate Lobster font (needed for the logo text)
-const lobster = Lobster({
-    subsets: ['latin'],
-    weight: ['400'],
-    variable: '--font-lobster', // Use variable if layout provides it globally
-    display: 'swap',
-});
-
+// REMOVED: No need to import or instantiate Lobster font here
 
 const Footer: React.FC = () => {
-    const footerLogoSize = 48;
-    const footerLogoHeightClass = 'h-10';
+    const footerLogoSize = 48; // Consistent sizing variable
+    const footerLogoHeightClass = 'h-10'; // Logo height within footer
 
     return (
+        // Use standard Tailwind classes for layout, background, text color, padding
         <footer className="bg-gray-800 text-gray-400 py-8">
+            {/* Container to manage padding and max-width */}
             <div className="container mx-auto px-4">
-                <div className="flex flex-col md:flex-row justify-between items-center">
-                    <div className="mb-4 md:mb-0 text-center md:text-left">
-                        <Link href="/" className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                {/* Flex container for responsiveness */}
+                <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-left">
+
+                    {/* Logo, Site Name, Copyright section */}
+                    <div className="mb-4 md:mb-0">
+                        <Link href="/" className="flex items-center justify-center md:justify-start space-x-2 mb-2 group" aria-label="GoJumpingJack Home">
                             <Image
                                 src="/gojumpingjack-logo-no-text.png"
                                 alt="GoJumpingJack Logo Footer"
                                 width={footerLogoSize}
                                 height={footerLogoSize}
-                                className={`${footerLogoHeightClass} w-auto`}
+                                className={`${footerLogoHeightClass} w-auto transition-opacity duration-300 group-hover:opacity-80`} // Added hover effect
                              />
-                            {/* Apply Lobster font class */}
-                            <span className={`text-xl font-semibold text-gray-200 font-display`}> {/* Use generic 'font-display' if using Tailwind variable */}
-                            {/* <span className={`text-xl font-semibold text-gray-200 ${lobster.className}`}> // Alternative if not using CSS var */}
+                            {/* Site Name - Apply font-display class directly */}
+                            <span className="text-xl font-semibold text-gray-200 font-display"> {/* CORRECTED className */}
                                 GoJumpingJack
                             </span>
                         </Link>
-                        <p className="text-sm">© {new Date().getFullYear()} GoJumpingJack. All rights reserved.</p>
+                        {/* Copyright text */}
+                        <p className="text-sm">
+                            © {new Date().getFullYear()} GoJumpingJack. All rights reserved.
+                        </p>
                     </div>
-                    <nav className="flex space-x-6">
-                        <Link href="/about" className="text-sm hover:text-white transition-colors duration-200">About</Link>
-                        <Link href="/contact" className="text-sm hover:text-white transition-colors duration-200">Contact</Link>
-                        <Link href="/terms" className="text-sm hover:text-white transition-colors duration-200">Terms</Link>
+
+                    {/* Footer Navigation Links */}
+                    <nav className="flex flex-wrap justify-center md:justify-end space-x-4 sm:space-x-6">
+                        <Link href="/about" className="text-sm hover:text-white transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-offset-gray-800 focus:ring-white rounded">
+                            About
+                        </Link>
+                        <Link href="/contact" className="text-sm hover:text-white transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-offset-gray-800 focus:ring-white rounded">
+                            Contact
+                        </Link>
+                        <Link href="/terms" className="text-sm hover:text-white transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-offset-gray-800 focus:ring-white rounded">
+                            Terms
+                        </Link>
                         {/* Add other footer links as needed */}
                     </nav>
                 </div>
@@ -49,4 +56,4 @@ const Footer: React.FC = () => {
     );
 };
 
-export default Footer; // Export the component
+export default Footer;
