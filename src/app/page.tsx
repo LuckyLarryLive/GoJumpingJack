@@ -6,7 +6,25 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// --- Helper Hook for Debouncing (Unchanged) ---
+// --- Font Imports ---
+import { Lobster, Playfair_Display } from 'next/font/google';
+
+// --- Instantiate Fonts ---
+const lobster = Lobster({
+    subsets: ['latin'],
+    weight: ['400'], // Lobster typically only has 400 weight
+    variable: '--font-lobster', // Optional: CSS Variable approach
+    display: 'swap',
+});
+
+const playfair = Playfair_Display({
+    subsets: ['latin'],
+    weight: ['400', '500', '600', '700'], // Include needed weights
+    variable: '--font-playfair', // Optional: CSS Variable approach
+    display: 'swap',
+});
+
+// --- Helper Hook for Debouncing ---
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
   useEffect(() => {
@@ -16,14 +34,14 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-// --- Type definitions (Unchanged) ---
+// --- Type definitions ---
 interface Airport { name: string; municipality: string; iata_code: string; }
 interface Flight { origin_airport: string; destination_airport: string; departure_at: string; return_at?: string; airline: string; price: number; link: string; }
 interface FlightApiResponse { data: Flight[]; exactMatch: boolean; }
 interface SearchParamsType { fromIata: string; toIata: string; departureDate: string; returnDate?: string; travelers: string; tripType: 'round-trip' | 'one-way'; fromDisplayValue?: string | null; toDisplayValue?: string | null; } // Added display values
 
 
-// --- Airport Search Input Component (MODIFIED for display format & dropdown layout) ---
+// --- Airport Search Input Component ---
 interface AirportSearchInputProps {
   id: string;
   label: string;
@@ -214,14 +232,55 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 };
 
 
-// --- Header Component (Unchanged) ---
-const Header: React.FC = () => { const logoSize = 96; const headerHeightClass = 'h-24'; const logoHeightClass = 'h-20'; return ( <header className={`bg-white shadow-sm sticky top-0 z-50 ${headerHeightClass}`}> <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-full"> <div className={`flex justify-between items-center h-full`}> <div className="flex-shrink-0 flex items-center"> <Link href="/" className="flex items-center space-x-3"> <Image src="/gojumpingjack-logo-no-text.png" alt="GoJumpingJack Logo" width={logoSize} height={logoSize} className={`${logoHeightClass} w-auto`} priority /> <span className="font-bold text-2xl text-gray-800 hidden sm:inline">GoJumpingJack</span> </Link> </div> <div className="flex items-center space-x-4"> <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Login</Link> <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300">Sign Up</Link> </div> </div> </nav> </header> ); };
+// --- Header Component ---
+const Header: React.FC = () => {
+  const logoSize = 96; const headerHeightClass = 'h-24'; const logoHeightClass = 'h-20';
+  return (
+      <header className={`bg-white shadow-sm sticky top-0 z-50 ${headerHeightClass}`}>
+          <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-full">
+              <div className={`flex justify-between items-center h-full`}>
+                  <div className="flex-shrink-0 flex items-center">
+                      <Link href="/" className="flex items-center space-x-3">
+                          <Image src="/gojumpingjack-logo-no-text.png" alt="GoJumpingJack Logo" width={logoSize} height={logoSize} className={`${logoHeightClass} w-auto`} priority />
+                          {/* Apply Lobster font class */}
+                          <span className={`font-bold text-3xl text-gray-800 hidden sm:inline ${lobster.className}`}>
+                              GoJumpingJack
+                          </span>
+                      </Link>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                      <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">Login</Link>
+                      <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300">Sign Up</Link>
+                  </div>
+              </div>
+          </nav>
+      </header>
+  );
+};
 
-// --- HeroSection Component (Unchanged) ---
-const HeroSection: React.FC = () => { return ( <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white min-h-[60vh] flex items-center justify-center text-center px-4 py-16 pt-28"> <div className="max-w-4xl mx-auto"> <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-4 animate-fade-in-up">Discover Real Travel Deals</h1> <p className="text-lg sm:text-xl md:text-2xl text-blue-100 mb-8 animate-fade-in-up animation-delay-300">Powered by real people. Backed by AI.</p> <Link href="#search" scroll={true} className="bg-white text-blue-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 hover:shadow-xl transition duration-300 ease-in-out transform hover:-translate-y-1 inline-block animate-fade-in-up animation-delay-600">Start Exploring</Link> </div> <style jsx global>{` @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; } .animation-delay-300 { animation-delay: 0.3s; } .animation-delay-600 { animation-delay: 0.6s; } `}</style> </section> ); };
+// --- HeroSection Component ---
+const HeroSection: React.FC = () => {
+  return (
+      // Reduced min-height from 60vh to 40vh, adjusted pt slightly
+      <section className={`bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white min-h-[45vh] flex items-center justify-center text-center px-4 py-12 pt-20`}>
+          <div className="max-w-4xl mx-auto">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-4 animate-fade-in-up">
+                  Discover Real Travel Deals
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl text-blue-100 mb-8 animate-fade-in-up animation-delay-300">
+                  Powered by real people. Backed by AI.
+              </p>
+              <Link href="#search" scroll={true} className="bg-white text-blue-600 font-bold py-3 px-8 rounded-full shadow-lg hover:bg-gray-100 hover:shadow-xl transition duration-300 ease-in-out transform hover:-translate-y-1 inline-block animate-fade-in-up animation-delay-600">
+                  Start Exploring
+              </Link>
+          </div>
+          {/* Animation styles (Unchanged) */}
+          <style jsx global>{` @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } } .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; opacity: 0; } .animation-delay-300 { animation-delay: 0.3s; } .animation-delay-600 { animation-delay: 0.6s; } `}</style>
+      </section>
+  );
+};
 
-
-// --- SearchSection Component (MODIFIED to handle display values) ---
+// --- SearchSection Component ---
 interface SearchSectionProps {
   onSearchSubmit: (params: SearchParamsType) => void;
   // Now accepts full SearchParamsType for reset/prefill, including display values
@@ -364,76 +423,203 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 };
 
 
-// --- Flight Results Component (exactMatch logic VERIFIED) ---
-interface FlightResultsProps { searchParams: SearchParamsType | null; }
+// --- Flight Results Component ---
+interface FlightResultsProps {
+  searchParams: SearchParamsType | null;
+}
+
 const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
-    const [flights, setFlights] = useState<Flight[]>([]);
-    const [exactMatch, setExactMatch] = useState<boolean>(true);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string | null>(null);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [exactMatch, setExactMatch] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (!searchParams) { setFlights([]); setExactMatch(true); setError(null); setIsLoading(false); return; }
-        const fetchFlights = async () => {
-            setIsLoading(true); setError(null); setFlights([]);
-            const query = new URLSearchParams({ origin: searchParams.fromIata, destination: searchParams.toIata, departureDate: searchParams.departureDate, adults: searchParams.travelers, });
-            if (searchParams.tripType === 'round-trip' && searchParams.returnDate) { query.set('returnDate', searchParams.returnDate); }
-            try {
-                const response = await fetch(`/api/flights?${query.toString()}`);
-                if (!response.ok) { let errorMsg = `HTTP error! status: ${response.status}`; try { const errData = await response.json(); errorMsg = errData.message || errData.error || errorMsg; } catch (e) {} throw new Error(errorMsg); }
-                const result: FlightApiResponse = await response.json();
-                const sortedFlights = result.data.sort((a, b) => a.price - b.price);
-                setFlights(sortedFlights);
-                setExactMatch(result.exactMatch); // State correctly updated here
-            } catch (err: any) { console.error("Failed to fetch flights:", err); setError(err.message || "Error fetching flight data."); setFlights([]); }
-             finally { setIsLoading(false); }
-        };
-        fetchFlights();
-    }, [searchParams]);
+  useEffect(() => {
+      // Clear results if search params are cleared or null initially
+      if (!searchParams) {
+          setFlights([]);
+          setExactMatch(true);
+          setError(null);
+          setIsLoading(false);
+          return;
+      }
 
-    const formatDate = (dateString: string | undefined): string => { if (!dateString) return 'N/A'; try { const date = new Date(dateString); return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); } catch (e) { return dateString; } }
+      const fetchFlights = async () => {
+          setIsLoading(true);
+          setError(null);
+          setFlights([]); // Clear previous results
 
-    // Loading state (Unchanged)
-    if (isLoading) { return ( <div className="container mx-auto px-4 py-8 text-center"> <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status"><span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span></div> <p className="mt-2 text-gray-600">Searching for flights...</p> </div> ); }
-    // Error state (Unchanged)
-    if (error) { return ( <div className="container mx-auto px-4 py-8 text-center text-red-600 bg-red-50 border border-red-200 rounded-md p-4"> <p><strong>Error:</strong> {error}</p> <p className="text-sm text-red-500 mt-1">Please try adjusting your search criteria or try again later.</p> </div> ); }
-    // No search yet (Unchanged)
-    if (!searchParams) { return null; }
+          // Construct query parameters
+          const query = new URLSearchParams({
+              origin: searchParams.fromIata,
+              destination: searchParams.toIata,
+              departureDate: searchParams.departureDate,
+              adults: searchParams.travelers,
+              // Add other params your API needs, like currency, nonStop, etc.
+          });
+          if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
+              query.set('returnDate', searchParams.returnDate);
+          }
 
-    return (
-        <section className="py-8 md:py-12 bg-white">
-            <div className="container mx-auto px-4">
-                {/* *** VERIFIED: This condition correctly checks !exactMatch AND results exist *** */}
-                {!exactMatch && flights.length > 0 && (
-                    <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-center text-yellow-800">
-                        <p>⚠️ No exact matches found for your selected dates. Here are the closest available options.</p>
-                    </div>
-                )}
-                {/* No results found message (Unchanged) */}
-                {flights.length === 0 && !isLoading && ( <div className="text-center text-gray-600 py-10"> <p className="text-xl mb-2">No flights found for your search criteria.</p> <p>Try adjusting your dates or airports.</p> </div> )}
-                {/* Flight cards display (Unchanged) */}
-                {flights.length > 0 && (
-                    <div className="space-y-4">
-                        {flights.slice(0, 3).map((flight, index) => (
-                            <div key={index} className="flex flex-col md:flex-row items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow duration-200 gap-4">
-                                <div className="flex-grow flex flex-col sm:flex-row justify-between gap-4 w-full md:w-auto">
-                                    <div className="flex items-center gap-2"> <span className="font-bold text-lg">{flight.origin_airport}</span> <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L10 8.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" transform="rotate(90 10 10)" /></svg> <span className="font-bold text-lg">{flight.destination_airport}</span> </div>
-                                    <div className="text-sm text-gray-600 text-center sm:text-left"> <span>Depart: {formatDate(flight.departure_at)}</span> {flight.return_at && <span className="ml-3">Return: {formatDate(flight.return_at)}</span>} </div>
-                                    <div className="text-sm text-gray-700 font-medium text-center sm:text-right">{flight.airline}</div>
-                                </div>
-                                <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-0 flex-shrink-0">
-                                     <div className="text-center sm:text-right"> <p className="text-xl font-bold text-blue-700">${flight.price.toFixed(2)}</p> <p className="text-xs text-gray-500">Total per person</p> </div>
-                                     <a href={flight.link} target="_blank" rel="noopener noreferrer" className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300 text-sm whitespace-nowrap"> View Deal </a>
-                                </div>
-                            </div>
-                        ))}
-                        {/* See More placeholder (Unchanged) */}
-                        {flights.length > 3 && ( <div className="text-center mt-6"> <Link href="/search-results" className="text-blue-600 hover:text-blue-800 font-medium hover:underline"> See all {flights.length} results → </Link> </div> )}
-                    </div>
-                )}
-            </div>
-        </section>
-    );
+          try {
+              const response = await fetch(`/api/flights?${query.toString()}`);
+              if (!response.ok) {
+                  // Try to parse error message from API response body
+                  let errorMsg = `HTTP error! status: ${response.status}`;
+                  try {
+                      const errData = await response.json();
+                      errorMsg = errData.message || errData.error || errorMsg;
+                  } catch (e) {
+                      // Ignore if response body isn't JSON or error occurs
+                  }
+                  throw new Error(errorMsg);
+              }
+              const result: FlightApiResponse = await response.json();
+
+              // Sort by price ascending
+              const sortedFlights = result.data.sort((a, b) => a.price - b.price);
+
+              setFlights(sortedFlights);
+              setExactMatch(result.exactMatch);
+
+          } catch (err: any) {
+              console.error("Failed to fetch flights:", err);
+              setError(err.message || "An error occurred while fetching flight data.");
+              setFlights([]); // Ensure flights are cleared on error
+          } finally {
+              setIsLoading(false);
+          }
+      };
+
+      fetchFlights();
+
+  }, [searchParams]); // Re-run effect when searchParams change
+
+  // Simple Date Formatter
+  const formatDate = (dateString: string | undefined): string => {
+      if (!dateString) return 'N/A';
+      try {
+          // Using UTC to avoid timezone shifts during formatting
+          const date = new Date(dateString + 'T00:00:00Z');
+          return date.toLocaleDateString('en-US', { // Specify locale for consistency
+              month: 'short',
+              day: 'numeric',
+              timeZone: 'UTC' // Specify UTC timezone
+          });
+      } catch (e) {
+          console.error("Error formatting date:", dateString, e);
+          return dateString; // Return original string if parsing fails
+      }
+  }
+
+  // --- Render Logic ---
+
+  if (isLoading) {
+      return (
+          <div className="container mx-auto px-4 py-8 text-center">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+                  <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+              </div>
+              <p className="mt-2 text-gray-600">Searching for flights...</p>
+          </div>
+      );
+  }
+
+  if (error) {
+      return (
+          <div className="container mx-auto px-4 py-8 text-center text-red-600 bg-red-50 border border-red-200 rounded-md p-4">
+              <p><strong>Error:</strong> {error}</p>
+              <p className="text-sm text-red-500 mt-1">Please try adjusting your search criteria or try again later.</p>
+          </div>
+      );
+  }
+
+  // Don't render the section if no search has been performed yet
+  if (!searchParams) {
+      return null;
+  }
+
+  // Render the results (or no results message)
+  return (
+      <section className="py-8 md:py-12 bg-white">
+          <div className="container mx-auto px-4">
+              {/* "No exact match" warning */}
+              {!exactMatch && flights.length > 0 && (
+                  <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-center text-yellow-800">
+                      <p>⚠️ No exact matches found for your selected dates. Here are the closest available options.</p>
+                  </div>
+              )}
+
+              {/* No results found message */}
+              {flights.length === 0 && !isLoading && (
+                  <div className="text-center text-gray-600 py-10">
+                      <p className="text-xl mb-2">No flights found for your search criteria.</p>
+                      <p>Try adjusting your dates or airports.</p>
+                  </div>
+              )}
+
+              {/* Display Flight Cards */}
+              {flights.length > 0 && (
+                  <div className="space-y-4">
+                      {/* Display top 3 cheapest flights */}
+                      {flights.slice(0, 3).map((flight, index) => (
+                          <div
+                              key={flight.link || index} // Use link or index as key
+                              className="flex flex-col md:flex-row items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow duration-200 gap-4"
+                          >
+                              {/* Flight Details Column */}
+                              <div className="flex-grow flex flex-col sm:flex-row justify-between gap-4 w-full md:w-auto">
+                                  {/* Origin/Destination */}
+                                  <div className="flex items-center gap-2">
+                                      <span className="font-bold text-lg">{flight.origin_airport}</span>
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L10 8.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" transform="rotate(90 10 10)" />
+                                      </svg>
+                                      <span className="font-bold text-lg">{flight.destination_airport}</span>
+                                  </div>
+                                  {/* Dates */}
+                                  <div className="text-sm text-gray-600 text-center sm:text-left">
+                                      <span>Depart: {formatDate(flight.departure_at)}</span>
+                                      {flight.return_at && <span className="ml-3">Return: {formatDate(flight.return_at)}</span>}
+                                  </div>
+                                  {/* Airline */}
+                                  <div className="text-sm text-gray-700 font-medium text-center sm:text-right">{flight.airline}</div>
+                              </div>
+
+                              {/* Price & Link Column */}
+                              <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-0 flex-shrink-0">
+                                  <div className="text-center sm:text-right">
+                                      <p className="text-xl font-bold text-blue-700">${flight.price.toFixed(2)}</p>
+                                      <p className="text-xs text-gray-500">Total per person</p>
+                                  </div>
+                                  <a
+                                      href={flight.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300 text-sm whitespace-nowrap"
+                                  >
+                                      View Deal
+                                  </a>
+                              </div>
+                          </div>
+                      ))}
+
+                      {/* See More Results Link */}
+                      {flights.length > 3 && (
+                          <div className="text-center mt-6">
+                              <Link
+                                  href="/results" // Points to src/app/results/page.tsx
+                                  className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                              >
+                                  See all {flights.length} results →
+                              </Link>
+                          </div>
+                      )}
+                  </div>
+              )}
+          </div>
+      </section>
+  );
 };
 
 
@@ -444,55 +630,61 @@ const TrendingDestinationsSection: React.FC = () => { const destinations = [ { i
 const HowItWorksSection: React.FC = () => { const steps = [ { id: 1, title: 'Search & Filter', description: 'Find deals filtering by price, dates, user ratings & more.', icon: '1' }, { id: 2, title: 'Discover Insights', description: 'See real reviews, AI tips & gamified destination challenges.', icon: '2' }, { id: 3, title: 'Book & Earn!', description: 'Securely book flights/hotels via partners & earn points!', icon: '3' }, ]; return ( <section id="how-it-works" className="py-12 md:py-16 bg-gray-50"> <div className="container mx-auto px-4"> <h2 className="text-3xl font-bold text-gray-800 text-center mb-10">How GoJumpingJack Works</h2> <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center max-w-4xl mx-auto"> {steps.map((step) => ( <div key={step.id} className="p-6 bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-300"> <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center ring-4 ring-blue-50"><span className="text-blue-600 text-xl font-bold">{step.icon}</span></div> <h3 className="text-lg font-semibold text-gray-800 mb-2">{step.title}</h3> <p className="text-gray-600 text-sm">{step.description}</p> </div> ))} </div> </div> </section> ); };
 
 // --- Footer Component (Unchanged) ---
-const Footer: React.FC = () => { const footerLogoSize = 48; const footerLogoHeightClass = 'h-10'; return ( <footer className="bg-gray-800 text-gray-400 py-8"> <div className="container mx-auto px-4"> <div className="flex flex-col md:flex-row justify-between items-center"> <div className="mb-4 md:mb-0 text-center md:text-left"> <Link href="/" className="flex items-center justify-center md:justify-start space-x-2 mb-2"> <Image src="/gojumpingjack-logo-no-text.png" alt="GoJumpingJack Logo Footer" width={footerLogoSize} height={footerLogoSize} className={`${footerLogoHeightClass} w-auto`} /> <span className="text-lg font-semibold text-gray-200">GoJumpingJack</span> </Link> <p className="text-sm">© {new Date().getFullYear()} GoJumpingJack. All rights reserved.</p> </div> <nav className="flex space-x-6"> <Link href="/about" className="text-sm hover:text-white transition-colors duration-200">About</Link> <Link href="/contact" className="text-sm hover:text-white transition-colors duration-200">Contact</Link> <Link href="/terms" className="text-sm hover:text-white transition-colors duration-200">Terms</Link> </nav> </div> </div> </footer> ); };
+const Footer: React.FC = () => {
+  const footerLogoSize = 48; const footerLogoHeightClass = 'h-10';
+  return (
+      <footer className="bg-gray-800 text-gray-400 py-8">
+          <div className="container mx-auto px-4">
+              <div className="flex flex-col md:flex-row justify-between items-center">
+                  <div className="mb-4 md:mb-0 text-center md:text-left">
+                      <Link href="/" className="flex items-center justify-center md:justify-start space-x-2 mb-2">
+                          <Image src="/gojumpingjack-logo-no-text.png" alt="GoJumpingJack Logo Footer" width={footerLogoSize} height={footerLogoSize} className={`${footerLogoHeightClass} w-auto`} />
+                          {/* Apply Lobster font class */}
+                          <span className={`text-xl font-semibold text-gray-200 ${lobster.className}`}>
+                              GoJumpingJack
+                          </span>
+                      </Link>
+                      <p className="text-sm">© {new Date().getFullYear()} GoJumpingJack. All rights reserved.</p>
+                  </div>
+                  <nav className="flex space-x-6">
+                      <Link href="/about" className="text-sm hover:text-white transition-colors duration-200">About</Link>
+                      <Link href="/contact" className="text-sm hover:text-white transition-colors duration-200">Contact</Link>
+                      <Link href="/terms" className="text-sm hover:text-white transition-colors duration-200">Terms</Link>
+                  </nav>
+              </div>
+          </div>
+      </footer>
+  );
+};
 
 
 // --- Main Page Component (MODIFIED for Scroll to Top) ---
 export default function HomePage() {
-    const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
+  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
 
-    const handleSearchSubmit = (params: SearchParamsType) => {
-        console.log("HomePage received search params:", params);
-        setSearchParams(params); // Update state to trigger results fetch
+  const handleSearchSubmit = (params: SearchParamsType) => {
+      console.log("HomePage received search params:", params);
+      setSearchParams(params);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-        // *** ADDED: Scroll to top after search is initiated ***
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    // Handler for when 'Edit Filters' is clicked, resetting the search
-    // Note: We pass null to SearchSection's initialSearchParams to trigger reset
-    const handleEditFiltersClick = () => {
-        setSearchParams(null); // Clear the search params to reset results and SearchSection
-    }
-
-    return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
-            <Header />
-            <main className="flex-grow">
-                <HeroSection />
-                {/* Pass the *current* searchParams to potentially pre-fill/reset */}
-                {/* We need a way for the 'Edit Filters' button to signal back up,
-                    OR we modify SearchSection to handle its own reset better when minimized button is clicked.
-                    Let's adjust SearchSection's handleEditFilters instead.
-                 */}
-                 <SearchSection
-                     onSearchSubmit={handleSearchSubmit}
-                     // Pass null to initially render the form open, or current params if available
-                     initialSearchParams={searchParams}
-                     // We'll handle the reset *within* SearchSection's "Edit Filter" button click
-                 />
-                <FlightResults searchParams={searchParams} />
-                <TrendingDestinationsSection />
-                <HowItWorksSection />
-            </main>
-            <Footer />
-        </div>
-    );
+  return (
+      // Apply Playfair font class to the outermost div
+      // ** BEST PRACTICE:** Apply this in src/app/layout.tsx to the <body> tag
+      <div className={`flex flex-col min-h-screen bg-gray-50 ${playfair.className}`}>
+          <Header />
+          <main className="flex-grow">
+              <HeroSection />
+              <SearchSection
+                   onSearchSubmit={handleSearchSubmit}
+                   initialSearchParams={searchParams}
+               />
+              <FlightResults searchParams={searchParams} />
+              <TrendingDestinationsSection />
+              <HowItWorksSection />
+          </main>
+          <Footer />
+      </div>
+  );
 }
 
-// Minor adjustment to SearchSection's handleEditFilters to clear parent state
-// This requires passing the setSearchParams function down, which is less ideal ("prop drilling").
-// Alternative: Keep it as is, HomePage's handleSearchSubmit is the only way to set params.
-// Clicking Edit Filters just reveals the form with its *last known state*. User must resubmit.
-// Let's stick to the simpler approach first: handleEditFilters *only* sets isMinimized to false.
-// The existing state remains until a new search is submitted.
