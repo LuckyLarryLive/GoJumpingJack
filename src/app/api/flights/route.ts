@@ -1,46 +1,97 @@
 import { NextResponse } from 'next/server';
 
+interface TravelpayoutsFlightData {
+  origin: string;
+  destination: string;
+  origin_airport: string;
+  destination_airport: string;
+  price: number;
+  airline: string;
+  flight_number: string;
+  departure_at: string;
+  return_at?: string;
+  transfers: number;
+  duration: number;
+  link: string;
+}
+
+interface TravelpayoutsResponse {
+  success: boolean;
+  data: TravelpayoutsFlightData[] | null;
+  currency: string;
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  const origin = searchParams.get('origin');
-  const destination = searchParams.get('destination');
-  const departure_at = searchParams.get('departure_at');
-  const return_at = searchParams.get('return_at');
+  const originCity = searchParams.get('originCity');      // e.g., MCO
+  const destinationCity = searchParams.get('destinationCity'); // e.g., MAD
+  const departureDate = searchParams.get('departureDate');
+  const returnDate = searchParams.get('returnDate');
 
-  if (!origin || !destination) {
+  if (!originCity || !destinationCity) {
     return NextResponse.json(
-      { error: 'Missing origin or destination' },
+      { message: 'Missing required query parameters: originCity and destinationCity' },
       { status: 400 }
     );
   }
 
-  const baseURL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
   const token = process.env.TRAVELPAYOUTS_TOKEN;
-
-  // First attempt: exact match with dates
-  let url = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
-  if (departure_at) url += `&departure_at=${departure_at}`;
-  if (return_at) url += `&return_at=${return_at}`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-
-  // If no data, retry without departure_at for broader results
-  if (data.data.length === 0 && departure_at) {
-    const fallbackUrl = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
-    const fallbackRes = await fetch(fallbackUrl);
-    const fallbackData = await fallbackRes.json();
-
-    return NextResponse.json({
-      exactMatch: false,
-      ...fallbackData
-    });
+  if (!token) {
+    console.error("TRAVELPAYOUTS_TOKEN environment variable is not set.");
+    return NextResponse.json(
+      { message: 'Server configuration error: API token missing.' },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({
-    exactMatch: true,
-    ...data
-  });
-}
+  const baseURL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
 
+  try {
+    let url = `${baseURL}?origin=${originCity}&destination=${destinationCity}&currency=usd&token=${token}`;
+    if (departureDate) url += `&departure_at=${departureDate}`;
+    if (returnDate) url += `&return_at=${returnDate}`;
+
+    console.log(`Fetching initial URL: ${url}`);
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`Travelpayouts API error (Initial Fetch): Status ${res.status}, Body: ${errorBody}`);
+      return NextResponse.json({ message: `Failed to fetch flight data. Status: ${res.status}` }, { status: 502 });
+    }
+
+    const initialData: TravelpayoutsResponse = await res.json();
+    const noInitialResults = !initialData?.data || initialData.data.length === 0;
+
+    if (noInitialResults && departureDate) {
+      console.log(`No initial results found. Retrying without date...`);
+      const fallbackUrl = `${baseURL}?origin=${originCity}&destination=${destinationCity}&currency=usd&token=${token}`;
+      const fallbackRes = await fetch(fallbackUrl);
+
+      if (!fallbackRes.ok) {
+        const fallbackErrorBody = await fallbackRes.text();
+        console.error(`Travelpayouts API error (Fallback Fetch): Status ${fallbackRes.status}, Body: ${fallbackErrorBody}`);
+        return NextResponse.json({ message: `Failed to fetch fallback flight data. Status: ${fallbackRes.status}` }, { status: 502 });
+      }
+
+      const fallbackData: TravelpayoutsResponse = await fallbackRes.json();
+      return NextResponse.json({
+        data: fallbackData?.data || [],
+        exactMatch: false
+      }, { status: 200 });
+    }
+
+    return NextResponse.json({
+      data: initialData?.data || [],
+      exactMatch: true
+    }, { status: 200 });
+
+  } catch (error: any) {
+    console.error("Error in /api/flights route:", error);
+    return NextResponse.json(
+      { message: 'An unexpected error occurred while fetching flight data.', error: error.message },
+      { status: 500 }
+    );
+  }
+}
