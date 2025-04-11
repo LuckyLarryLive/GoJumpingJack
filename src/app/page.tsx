@@ -41,17 +41,16 @@ interface FlightApiResponse { data: Flight[]; exactMatch: boolean; }
 interface SearchParamsType { originCity: string; destinationCity: string; departureDate: string; returnDate?: string; travelers: string; tripType: 'round-trip' | 'one-way'; fromDisplayValue?: string | null; toDisplayValue?: string | null; } // Added display values
 
 
-// --- Airport Search Input Component (Updated for New API Structure) ---
+// --- Airport Search Input Component (Updated for New API & Focus Behavior) ---
 interface AirportSearchInputProps {
   id: string;
   label: string;
   placeholder: string;
-  // Callback signature remains conceptually the same, but data source changes
   onAirportSelect: (
-      airportCode: string | null, // The selected AIRPORT code (e.g., JFK)
-      cityCode: string | null,    // The associated CITY code (e.g., NYC)
-      displayValue: string | null // The formatted string for the input field
-    ) => void;
+    airportCode: string | null,
+    cityCode: string | null,
+    displayValue: string | null
+  ) => void;
   initialDisplayValue?: string | null;
 }
 
@@ -63,112 +62,278 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   initialDisplayValue,
 }) => {
   const [query, setQuery] = useState(initialDisplayValue || '');
-  const [suggestions, setSuggestions] = useState<Airport[]>([]); // Expecting new Airport structure
+  const [suggestions, setSuggestions] = useState<Airport[]>([]);
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const debouncedQuery = useDebounce(query, 300);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const isMounted = useRef(false);
+  // Flag to track if the user is currently interacting (typing/selecting)
+  const isInteracting = useRef(false);
 
-  // *** UPDATED: Helper to format display string ***
+  // Helper to format display string
   const getFormattedDisplay = (airport: Airport | null): string => {
-      if (!airport) return '';
-      // Format: [airport_code] — [airport_name] ([city_name])
-      return `${airport.airport_code} — ${airport.airport_name} (${airport.city_name || 'N/A'})`;
+    if (!airport) return '';
+    return `${airport.airport_code} — ${airport.airport_name} (${airport.city_name || 'N/A'})`;
   };
 
-  // Effect to sync with initialDisplayValue (mostly unchanged logic)
+  // Effect to sync with initialDisplayValue from parent (e.g., on edit/reset)
   useEffect(() => {
-    if (isMounted.current) { if (initialDisplayValue !== query) { console.log(`Syncing input ${id} with initialDisplayValue:`, initialDisplayValue); setQuery(initialDisplayValue || ''); if (!initialDisplayValue) { setSelectedAirport(null); } setIsDropdownOpen(false); }
-    } else { setQuery(initialDisplayValue || ''); isMounted.current = true; }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDisplayValue]);
+    // Only sync if not actively interacting and value differs or is reset
+    if (!isInteracting.current) {
+       if (initialDisplayValue !== query) {
+            console.log(`Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
+            const newQuery = initialDisplayValue || '';
+            setQuery(newQuery);
+            // If syncing to an empty value, clear local selection
+            if (!initialDisplayValue) {
+                setSelectedAirport(null);
+            } else {
+                // Attempt to find matching airport if display value is provided (e.g., re-editing)
+                // Note: This requires an initial suggestion list or separate lookup if not available
+                // For simplicity, we currently rely on the user re-selecting if editing.
+                // We reset local selection if the display value doesn't match a known format.
+                // A more robust solution might involve looking up the airport from the display value.
+                 if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
+                    setSelectedAirport(null); // Reset local if display value doesn't match current local selection
+                 }
+            }
+            setIsDropdownOpen(false);
+       }
+    }
+    // Reset interaction flag after sync attempt
+    isInteracting.current = false;
 
-  // Fetch suggestions Effect (Updated filtering)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialDisplayValue]); // Rerun only when the initial prop changes
+
+
+  // Fetch suggestions Effect
   useEffect(() => {
     const currentFormattedSelection = getFormattedDisplay(selectedAirport);
-    if (selectedAirport && query === currentFormattedSelection) { setSuggestions([]); setIsDropdownOpen(false); return; }
-    if (selectedAirport && query !== currentFormattedSelection) { console.log(`Clearing local selection for ${id} because query changed.`); setSelectedAirport(null); }
-    if (debouncedQuery.length < 2 || (selectedAirport && query === currentFormattedSelection)) { setSuggestions([]); setIsDropdownOpen(false); return; }
+
+    // Don't fetch if the query is exactly what's selected
+    if (selectedAirport && query === currentFormattedSelection) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
+
+    // If query changes *away* from a selected value, clear the selection
+    if (selectedAirport && query !== currentFormattedSelection) {
+      console.log(`Clearing local selection for ${id} because query changed from formatted value.`);
+      setSelectedAirport(null);
+      // Don't call onAirportSelect here yet, wait for user to finish typing or clear
+    }
+
+    // Standard debounce and minimum length check
+    if (debouncedQuery.length < 2) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
+    }
 
     const fetchSuggestions = async () => {
       setIsLoading(true);
       try {
         const response = await fetch(`/api/search-airports?q=${encodeURIComponent(debouncedQuery)}`);
         if (!response.ok) throw new Error('Network response error');
-        const data: Airport[] = await response.json(); // Expecting new Airport structure
-        // *** UPDATED: Filter based on new required fields ***
+        const data: Airport[] = await response.json();
         const validSuggestions = data.filter(airport => airport.airport_code && airport.city_code && airport.airport_name && airport.city_name);
-        setSuggestions(validSuggestions);
-        setIsDropdownOpen(validSuggestions.length > 0 && query !== currentFormattedSelection);
-        setActiveIndex(-1);
-      } catch (error) { console.error("Failed to fetch airport suggestions:", error); setSuggestions([]); setIsDropdownOpen(false); }
-       finally { setIsLoading(false); }
-    };
-    if (query !== currentFormattedSelection) { fetchSuggestions(); }
-  }, [debouncedQuery, query, selectedAirport]);
 
-
-  // Outside click handler (Unchanged)
-  useEffect(() => { /* ... */ }, []);
-
-  // handleInputChange (Updated to clear parent state correctly)
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = event.target.value;
-      setQuery(newValue);
-      if (newValue === '') {
-          console.log(`Input ${id} cleared manually, clearing parent state.`);
-          setSelectedAirport(null);
-          onAirportSelect(null, null, null); // Clear all codes and display value in parent
-          setSuggestions([]);
-          setIsDropdownOpen(false);
+        // Only update suggestions if the query hasn't changed again rapidly
+        // And only show dropdown if there are suggestions and query isn't empty/selected
+         if (query === debouncedQuery) { // Ensure this fetch corresponds to the *current* query
+            setSuggestions(validSuggestions);
+            // Only open dropdown if results exist and we don't have an exact match selected
+            setIsDropdownOpen(validSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
+            setActiveIndex(-1);
+         }
+      } catch (error) {
+        console.error("Failed to fetch airport suggestions:", error);
+        setSuggestions([]);
+        setIsDropdownOpen(false);
+      } finally {
+        // Only set loading false if this fetch corresponds to the *current* query
+        if (query === debouncedQuery) {
+             setIsLoading(false);
+        }
       }
+    };
+
+    // Only fetch if the query isn't blank and isn't the currently selected formatted value
+    if (query !== '' && query !== currentFormattedSelection) {
+      fetchSuggestions();
+    } else {
+        setSuggestions([]); // Clear suggestions if query is blank or matches selection
+        setIsDropdownOpen(false);
+    }
+  }, [debouncedQuery, query, selectedAirport]); // Dependencies
+
+
+  // Outside click handler
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+
+  // Handle Input Change
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    isInteracting.current = true; // User is typing
+    const newValue = event.target.value;
+    setQuery(newValue);
+
+    // If user clears the input manually, ensure parent state is cleared
+    if (newValue === '') {
+      console.log(`Input ${id} cleared manually, clearing parent state.`);
+      setSelectedAirport(null); // Clear local selection
+      onAirportSelect(null, null, null); // Clear parent state
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+    } else if (selectedAirport) {
+      // If user starts typing *over* a selected value, clear the selection state
+      setSelectedAirport(null);
+      // Don't clear parent state yet, wait for potential new selection or manual clear
+      console.log(`Input ${id} changed from selected value, clearing local selection.`);
+    }
   };
 
-  // handleSuggestionClick (Updated to pass correct codes)
+  // Handle Suggestion Click
   const handleSuggestionClick = (airport: Airport) => {
-    const displayValue = getFormattedDisplay(airport); // Use updated helper
+    isInteracting.current = true; // User is selecting
+    const displayValue = getFormattedDisplay(airport);
     setQuery(displayValue);
     setSelectedAirport(airport);
-    // Pass AIRPORT code, CITY code, and display value up
-    onAirportSelect(airport.airport_code, airport.city_code, displayValue);
+    onAirportSelect(airport.airport_code, airport.city_code, displayValue); // Update parent
     setSuggestions([]);
     setIsDropdownOpen(false);
     setActiveIndex(-1);
+    // Set interacting false slightly later to allow state updates
+    setTimeout(() => { isInteracting.current = false; }, 100);
   };
 
-  // handleKeyDown (Unchanged logic)
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => { /* ... */ };
+   // *** NEW: Handle Focus ***
+   const handleFocus = () => {
+        isInteracting.current = true; // User focused
+        const currentFormattedSelection = getFormattedDisplay(selectedAirport);
 
-  // listRef and scroll effect (Unchanged)
-  const listRef = useRef<HTMLUListElement>(null);
-  useEffect(() => { /* ... */ }, [activeIndex]);
+        // *** If a valid airport is selected AND the input field exactly matches its display value ***
+        if (selectedAirport && query === currentFormattedSelection) {
+            console.log(`Clearing input ${id} on focus because a valid selection existed.`);
+            setQuery('');               // Clear the visual input
+            setSelectedAirport(null);   // Clear the internal selected state
+            onAirportSelect(null, null, null); // **Crucially, clear the parent state**
+            setSuggestions([]);         // Ensure suggestions are cleared
+            setIsDropdownOpen(false);   // Ensure dropdown is closed
+            setActiveIndex(-1);         // Reset keyboard nav index
+            // The useEffect for debouncedQuery will trigger a fetch if query remains '' (length < 2) it won't fetch.
+        }
+        // Standard behavior: reopen dropdown if there are suggestions relevant to current (potentially partial) query
+        else if (suggestions.length > 0 && query !== currentFormattedSelection && query.length > 0) {
+             setIsDropdownOpen(true);
+        }
+        // Set interacting false slightly later
+        setTimeout(() => { isInteracting.current = false; }, 100);
+    };
+
+
+  // Handle Keyboard Navigation
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    isInteracting.current = true; // User is using keyboard
+    if (!isDropdownOpen || suggestions.length === 0) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        setActiveIndex((prevIndex) => (prevIndex + 1) % suggestions.length);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        setActiveIndex((prevIndex) => (prevIndex - 1 + suggestions.length) % suggestions.length);
+        break;
+      case 'Enter':
+         event.preventDefault();
+         if (activeIndex >= 0 && activeIndex < suggestions.length) {
+           handleSuggestionClick(suggestions[activeIndex]);
+         } else if (suggestions.length === 1) {
+           // If only one suggestion, Enter selects it even without arrow keys
+           handleSuggestionClick(suggestions[0]);
+         }
+         // Maybe close dropdown if Enter pressed but no suggestion selected? Optional.
+         // else { setIsDropdownOpen(false); }
+         break;
+      case 'Escape':
+        setIsDropdownOpen(false);
+        setActiveIndex(-1);
+        break;
+    }
+    // Set interacting false slightly later
+    setTimeout(() => { isInteracting.current = false; }, 100);
+  };
+
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (activeIndex < 0 || !listRef.current) return;
+    const activeItem = listRef.current.children[activeIndex] as HTMLLIElement;
+    if (activeItem) {
+        // Simple scroll into view, could be refined for smoother scrolling if needed
+        activeItem.scrollIntoView({ block: 'nearest' });
+    }
+  }, [activeIndex]);
+
 
   // --- Render ---
   return (
     <div ref={containerRef} className="relative w-full">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <input type="text" id={id} name={id} placeholder={placeholder} value={query} onChange={handleInputChange} onKeyDown={handleKeyDown} onFocus={() => { if (suggestions.length > 0 && query !== getFormattedDisplay(selectedAirport)) setIsDropdownOpen(true); }} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" autoComplete="off" />
+      <input
+          type="text"
+          id={id}
+          name={id}
+          placeholder={placeholder}
+          value={query}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={handleFocus} // Use the new focus handler
+          // Refined onBlur to prevent closing dropdown when clicking scrollbar/item
+          onBlur={() => setTimeout(() => {
+              if (containerRef.current && !containerRef.current.contains(document.activeElement)) {
+                  setIsDropdownOpen(false);
+              }
+           }, 150)} // Delay allows click event on suggestion to fire first
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
+          autoComplete="off"
+       />
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
+      {/* Ensure dropdown only shows when explicitly opened */}
       {isDropdownOpen && suggestions.length > 0 && (
-        <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg" >
+        <ul
+            ref={listRef}
+            className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg" // Adjusted width potentially
+        >
           {suggestions.map((airport, index) => (
-            // *** UPDATED: Display format in dropdown ***
             <li
-              key={airport.airport_code} // Use airport_code as key
-              onClick={() => handleSuggestionClick(airport)}
+              key={airport.airport_code}
+              // Use onMouseDown instead of onClick to potentially register before onBlur closes dropdown
+              onMouseDown={() => handleSuggestionClick(airport)}
+              onMouseEnter={() => setActiveIndex(index)} // Highlight on hover
               className={`px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${index === activeIndex ? 'bg-blue-100' : ''}`}
             >
-              {/* Format: [airport_code] — [airport_name] ([city_name]) */}
               <div>
-                  <span className="font-semibold text-gray-800">{airport.airport_code}</span>
-                  <span className="text-gray-700"> — {airport.airport_name}</span>
-                  <span className="text-sm text-gray-500"> ({airport.city_name})</span>
+                <span className="font-semibold text-gray-800">{airport.airport_code}</span>
+                <span className="text-gray-700"> — {airport.airport_name}</span>
+                <span className="text-sm text-gray-500"> ({airport.city_name})</span>
               </div>
-               {/* Optional: Show city code for debugging */}
-               {/* <div className="text-xs text-red-500 mt-1">City Code: {airport.city_code}</div> */}
             </li>
           ))}
         </ul>
@@ -354,158 +519,215 @@ interface FlightResultsProps {
   searchParams: SearchParamsType | null; // Expects SearchParamsType with city codes
 }
 
+// --- Inside FlightResults Component ---
+
 const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
-  // ... (useState, formatDate, etc. remain the same) ...
   const [flights, setFlights] = useState<Flight[]>([]);
-  const [exactMatch, setExactMatch] = useState<boolean>(true);
+  // const [exactMatch, setExactMatch] = useState<boolean>(true); // REMOVE THIS STATE
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-      if (!searchParams) { setFlights([]); setExactMatch(true); setError(null); setIsLoading(false); return; }
+    if (!searchParams) {
+      setFlights([]);
+      // setExactMatch(true); // Remove
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
 
-      const fetchFlights = async () => {
-          setIsLoading(true); setError(null); setFlights([]);
+    const fetchFlights = async () => {
+      setIsLoading(true);
+      setError(null);
+      setFlights([]);
+      // setExactMatch(true); // Remove default setting here too
 
-          // *** UPDATED: Construct query using CITY codes ***
-          const query = new URLSearchParams({
-              // Use originCity and destinationCity from searchParams
-              originCity: searchParams.originCity,
-              destinationCity: searchParams.destinationCity,
-              departureDate: searchParams.departureDate,
-              adults: searchParams.travelers,
-          });
-          if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
-              query.set('returnDate', searchParams.returnDate);
-          }
-
-          try {
-              // Fetch using the correct city parameters
-              const response = await fetch(`/api/flights?${query.toString()}`);
-              // ... (rest of fetch logic, error handling, parsing remains the same) ...
-
-          } catch (err: any) { /* ... error handling ... */ }
-           finally { setIsLoading(false); }
-      };
-
-      fetchFlights();
-
-  }, [searchParams]);
-
-  // *** UPDATED formatDate function ***
-  const formatDate = (dateString: string | undefined): string => {
-      if (!dateString) {
-          console.warn("formatDate received undefined or empty date string.");
-          return 'N/A';
+      const query = new URLSearchParams({
+        originCity: searchParams.originCity,
+        destinationCity: searchParams.destinationCity,
+        departureDate: searchParams.departureDate,
+        adults: searchParams.travelers,
+      });
+      if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
+        query.set('returnDate', searchParams.returnDate);
       }
+
+      console.log(`Fetching flights with query: /api/flights?${query.toString()}`);
+
       try {
-          // Attempt to parse the date string directly
-          const date = new Date(dateString);
+        const response = await fetch(`/api/flights?${query.toString()}`);
 
-          // Check if the resulting date object is valid
-          if (isNaN(date.getTime())) {
-               // Log the problematic string for debugging
-               console.error(`Invalid date value encountered: "${dateString}"`);
-               return 'Invalid Date'; // Return a clear error indicator
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API Error Response Text:", errorText);
+          throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+        }
 
-          // Format the valid date (using UTC as before, adjust if needed)
-          // Consider removing timeZone if you want local time based on user's browser
-          return date.toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              timeZone: 'UTC' // Or omit for local time
-          });
-      } catch (e) {
-          // Catch any unexpected errors during parsing/formatting
-          console.error(`Error formatting date string "${dateString}":`, e);
-          return 'Invalid Date';
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+           const responseText = await response.text();
+           console.error("Received non-JSON response:", responseText);
+           throw new Error(`Expected JSON response, but got ${contentType}`);
+        }
+
+        // *** MODIFICATION HERE ***
+        // Expect the structure { data: Flight[], ... other keys }
+        const apiResponse = await response.json();
+        console.log('Raw Flight API Response:', apiResponse);
+
+        // Check if 'data' property exists and is an array
+        if (apiResponse && Array.isArray(apiResponse.data)) {
+            // Filter out any potentially malformed flight objects if necessary
+            const validFlights = apiResponse.data.filter((f: any) =>
+                f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
+                // Add other essential field checks if needed
+            );
+            setFlights(validFlights);
+             console.log(`Successfully set ${validFlights.length} flights.`);
+        } else {
+             console.error("API response is missing 'data' array.", apiResponse);
+             // Set flights to empty array if data structure is wrong
+             setFlights([]);
+             // Optionally set an error message
+             // setError("Received invalid data structure from server.");
+        }
+         // Removed setExactMatch - API doesn't provide it
+
+        setError(null); // Clear any previous error
+
+      } catch (err: any) {
+        console.error("Failed to fetch or process flights:", err);
+        setError(err.message || 'Failed to fetch flight data.');
+        setFlights([]); // Ensure flights are empty on error
+        // Removed setExactMatch
+      } finally {
+        setIsLoading(false);
+         console.log("Finished flight fetch attempt.");
       }
-  }
-  // --- Render Logic (largely unchanged) ---
+    };
 
-  if (isLoading) { /* ... loading indicator ... */ }
-  if (error) { /* ... error message ... */ }
-  if (!searchParams) { return null; }
+    fetchFlights();
 
-  return (
-      <section className="py-8 md:py-12 bg-white">
-          <div className="container mx-auto px-4">
-              {/* "No exact match" warning */}
-              {!exactMatch && flights.length > 0 && (
-                  <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-center text-yellow-800">
-                      <p>⚠️ No exact matches found for your selected dates. Here are the closest available options.</p>
-                  </div>
-              )}
+  }, [searchParams]); // Dependency array remains the same
 
-              {/* No results found message */}
-              {flights.length === 0 && !isLoading && (
+  // --- Date Formatting (check console for errors here too) ---
+  const formatDate = (dateString: string | undefined): string => {
+      // ... (keep your existing robust formatDate function) ...
+      // Add a log inside the catch block if you haven't already
+       if (!dateString) return 'N/A';
+       try {
+           const date = new Date(dateString); // The API format 'YYYY-MM-DDTHH:mm:ss-HH:mm' IS standard ISO 8601 and should parse correctly.
+           if (isNaN(date.getTime())) {
+               console.error(`Invalid date value encountered in formatDate: "${dateString}"`);
+               return 'Invalid Date';
+           }
+           // Consider removing timeZone: 'UTC' if you want dates displayed in the user's local time relative to the offset provided (-04:00)
+           return date.toLocaleDateString('en-US', {
+               month: 'short',
+               day: 'numeric',
+               // timeZone: 'UTC' // Removing this might give more expected results depending on need
+           });
+       } catch (e) {
+           console.error(`Error formatting date string "${dateString}":`, e);
+           return 'Invalid Date';
+       }
+   }
+
+  // --- Render Logic ---
+
+  // Remove or adjust the "exactMatch" warning logic
+  if (isLoading) { /* ... loading ... */ }
+  if (error) { /* ... error ... */ }
+  if (!searchParams) { return null; } // No search performed yet
+
+  // If not loading, no error, and flights array is empty AFTER a search
+  if (!isLoading && !error && flights.length === 0 && searchParams) {
+      return (
+          <section className="py-8 md:py-12 bg-white">
+              <div className="container mx-auto px-4">
                   <div className="text-center text-gray-600 py-10">
                       <p className="text-xl mb-2">No flights found for your search criteria.</p>
                       <p>Try adjusting your dates or airports.</p>
                   </div>
-               )}
+              </div>
+          </section>
+      );
+  }
 
-              {/* Display Flight Cards */}
-              {flights.length > 0 && (
-                  <div className="space-y-4">
-                      {flights.slice(0, 3).map((flight, index) => (
-                          <div
-                              key={flight.link || index} // Use link or index as key
-                              className="flex flex-col md:flex-row items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow duration-200 gap-4"
-                          >
-                              {/* Flight Details Column */}
-                              <div className="flex-grow flex flex-col sm:flex-row justify-between gap-4 w-full md:w-auto">
-                                  {/* Origin/Destination */}
-                                  <div className="flex items-center gap-2">
-                                      <span className="font-bold text-lg">{flight.origin_airport}</span>
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                          <path fillRule="evenodd" d="M12.293 5.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L10 8.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" transform="rotate(90 10 10)" />
-                                      </svg>
-                                      <span className="font-bold text-lg">{flight.destination_airport}</span>
-                                  </div>
-                                  {/* Dates - Uses the updated formatDate */}
-                                  <div className="text-sm text-gray-600 text-center sm:text-left">
-                                      <span>Depart: {formatDate(flight.departure_at)}</span>
-                                      {flight.return_at && <span className="ml-3">Return: {formatDate(flight.return_at)}</span>}
-                                  </div>
-                                  {/* Airline */}
-                                  <div className="text-sm text-gray-700 font-medium text-center sm:text-right">{flight.airline}</div>
-                              </div>
+  // Render flight cards if flights array has items
+  return (
+    <section className="py-8 md:py-12 bg-white">
+      <div className="container mx-auto px-4">
+        {/* Removed the !exactMatch warning block as API doesn't provide it */}
+        {/* You could add a different type of info message if needed */}
 
-                              {/* Price & Link Column */}
-                              <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-0 flex-shrink-0">
-                                  <div className="text-center sm:text-right">
-                                      <p className="text-xl font-bold text-blue-700">${flight.price.toFixed(2)}</p>
-                                      <p className="text-xs text-gray-500">Total per person</p>
-                                  </div>
-                                  <a
-                                      href={flight.link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300 text-sm whitespace-nowrap"
-                                  >
-                                      View Deal
-                                  </a>
-                              </div>
-                          </div>
-                      ))}
-
-                      {/* See More Results Link */}
-                      {flights.length > 3 && (
-                          <div className="text-center mt-6">
-                              <Link
-                                  href="/results" // Points to src/app/results/page.tsx
-                                  className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
-                              >
-                                  See all {flights.length} results →
-                              </Link>
-                          </div>
-                      )}
+        {flights.length > 0 && (
+          <div className="space-y-4">
+            {/* Display Flight Cards */}
+            {flights.slice(0, 3).map((flight, index) => (
+              // Key should be unique, link might not be unique enough if params change slightly?
+              // Consider combining link + index or a unique ID from API if available
+              <div
+                key={`${flight.link || 'flight'}-${index}`}
+                className="flex flex-col md:flex-row items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white hover:shadow-md transition-shadow duration-200 gap-4"
+              >
+                {/* Flight Details Column */}
+                <div className="flex-grow flex flex-col sm:flex-row justify-between gap-4 w-full md:w-auto">
+                  {/* Origin/Destination */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-lg">{flight.origin_airport}</span>
+                    {/* Simple arrow icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-gray-500">
+                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                    <span className="font-bold text-lg">{flight.destination_airport}</span>
                   </div>
-              )}
+                  {/* Dates */}
+                  <div className="text-sm text-gray-600 text-center sm:text-left">
+                    <span>Depart: {formatDate(flight.departure_at)}</span>
+                    {/* This condition correctly handles missing return_at */}
+                    {flight.return_at && <span className="ml-3">Return: {formatDate(flight.return_at)}</span>}
+                  </div>
+                  {/* Airline */}
+                  <div className="text-sm text-gray-700 font-medium text-center sm:text-right">{flight.airline}</div>
+                </div>
+
+                {/* Price & Link Column */}
+                <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-0 flex-shrink-0">
+                   <div className="text-center sm:text-right">
+                       <p className="text-xl font-bold text-blue-700">${flight.price.toFixed(2)}</p>
+                       <p className="text-xs text-gray-500">Total per person</p>
+                   </div>
+                   {/* Ensure flight.link is a valid URL or path */}
+                   <a
+                       href={flight.link} // Assuming this is a relative path for your site or needs prefixing
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-5 rounded-md transition duration-300 text-sm whitespace-nowrap"
+                   >
+                       View Deal
+                   </a>
+                </div>
+              </div>
+            ))}
+
+            {/* See More Results Link */}
+            {flights.length > 3 && (
+               <div className="text-center mt-6">
+                   {/* Make sure this routing works as expected */}
+                   <Link
+                       href="/results" // Should contain logic to display all flights based on searchParams
+                       className="text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                       // You might need to pass searchParams to the results page via state or query params
+                   >
+                       See all {flights.length} results →
+                   </Link>
+               </div>
+            )}
           </div>
-      </section>
+        )}
+      </div>
+    </section>
   );
 };
 
