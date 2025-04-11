@@ -24,14 +24,14 @@ interface TravelpayoutsResponse {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  const originCity = searchParams.get('originCity');      // e.g., MCO
-  const destinationCity = searchParams.get('destinationCity'); // e.g., MAD
+  const origin = searchParams.get('originAirport'); // Use airport IATA, e.g. MCO
+  const destination = searchParams.get('destinationAirport'); // e.g. JFK
   const departureDate = searchParams.get('departureDate');
   const returnDate = searchParams.get('returnDate');
 
-  if (!originCity || !destinationCity) {
+  if (!origin || !destination) {
     return NextResponse.json(
-      { message: 'Missing required query parameters: originCity and destinationCity' },
+      { message: 'Missing required query parameters: originAirport and destinationAirport' },
       { status: 400 }
     );
   }
@@ -48,7 +48,7 @@ export async function GET(req: Request) {
   const baseURL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
 
   try {
-    let url = `${baseURL}?origin=${originCity}&destination=${destinationCity}&currency=usd&token=${token}`;
+    let url = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
     if (departureDate) url += `&departure_at=${departureDate}`;
     if (returnDate) url += `&return_at=${returnDate}`;
 
@@ -65,8 +65,8 @@ export async function GET(req: Request) {
     const noInitialResults = !initialData?.data || initialData.data.length === 0;
 
     if (noInitialResults && departureDate) {
-      console.log(`No initial results found. Retrying without date...`);
-      const fallbackUrl = `${baseURL}?origin=${originCity}&destination=${destinationCity}&currency=usd&token=${token}`;
+      console.log(`No initial results found for ${departureDate}. Retrying without dates...`);
+      const fallbackUrl = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
       const fallbackRes = await fetch(fallbackUrl);
 
       if (!fallbackRes.ok) {
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
   } catch (error: any) {
     console.error("Error in /api/flights route:", error);
     return NextResponse.json(
-      { message: 'An unexpected error occurred while fetching flight data.', error: error.message },
+      { message: 'Unexpected error fetching flight data.', error: error.message },
       { status: 500 }
     );
   }

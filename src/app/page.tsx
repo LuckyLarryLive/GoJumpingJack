@@ -38,7 +38,7 @@ function useDebounce<T>(value: T, delay: number): T {
 interface Airport { airport_code: string; airport_name: string; city_code: string; city_name: string;}
 interface Flight { origin_airport: string; destination_airport: string; departure_at: string; return_at?: string; airline: string; price: number; link: string; }
 interface FlightApiResponse { data: Flight[]; exactMatch: boolean; }
-interface SearchParamsType { originCity: string; destinationCity: string; departureDate: string; returnDate?: string; travelers: string; tripType: 'round-trip' | 'one-way'; fromDisplayValue?: string | null; toDisplayValue?: string | null; } // Added display values
+interface SearchParamsType { originAirport: string; destinationAirport: string; departureDate: string; returnDate?: string; travelers: string; tripType: 'round-trip' | 'one-way'; fromDisplayValue?: string | null; toDisplayValue?: string | null; } // Added display values
 
 
 // --- Airport Search Input Component (Updated for New API & Focus Behavior) ---
@@ -391,16 +391,19 @@ const HeroSection: React.FC = () => {
   );
 };
 
-// --- SearchSection Component (Restored Elements AGAIN) ---
+// --- SearchSection Component ---
 interface SearchSectionProps {
   onSearchSubmit: (params: SearchParamsType) => void;
   initialSearchParams?: SearchParamsType | null;
 }
 
 const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSearchParams }) => {
-  // State variables
-  const [originCityCode, setOriginCityCode] = useState<string | null>(initialSearchParams?.originCity || null);
-  const [destinationCityCode, setDestinationCityCode] = useState<string | null>(initialSearchParams?.destinationCity || null);
+  // --- State variables ---
+  // CHANGED: Store airport codes instead of city codes
+  const [originAirportCode, setOriginAirportCode] = useState<string | null>(initialSearchParams?.originAirport || null);
+  const [destinationAirportCode, setDestinationAirportCode] = useState<string | null>(initialSearchParams?.destinationAirport || null);
+
+  // Keep display values and other states the same
   const [fromDisplayValue, setFromDisplayValue] = useState<string | null>(initialSearchParams?.fromDisplayValue || null);
   const [toDisplayValue, setToDisplayValue] = useState<string | null>(initialSearchParams?.toDisplayValue || null);
   const [departureDate, setDepartureDate] = useState<string>(initialSearchParams?.departureDate || '');
@@ -409,34 +412,77 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [tripType, setTripType] = useState<'round-trip' | 'one-way'>(initialSearchParams?.tripType || 'round-trip');
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Effect for reset/prefill
+  // --- Effect for reset/prefill ---
    useEffect(() => {
     if (initialSearchParams === null) {
-        setOriginCityCode(null); setDestinationCityCode(null); setFromDisplayValue(null); setToDisplayValue(null);
+        // Reset using airport codes
+        setOriginAirportCode(null);
+        setDestinationAirportCode(null);
+        setFromDisplayValue(null);
+        setToDisplayValue(null);
         setDepartureDate(''); setReturnDate(''); setTravelers('1'); setTripType('round-trip');
         setIsMinimized(false);
     } else if (initialSearchParams) {
-        setOriginCityCode(initialSearchParams.originCity); setDestinationCityCode(initialSearchParams.destinationCity); setFromDisplayValue(initialSearchParams.fromDisplayValue || null); setToDisplayValue(initialSearchParams.toDisplayValue || null);
-        setDepartureDate(initialSearchParams.departureDate); setReturnDate(initialSearchParams.returnDate || ''); setTravelers(initialSearchParams.travelers); setTripType(initialSearchParams.tripType);
+        // Prefill using airport codes
+        setOriginAirportCode(initialSearchParams.originAirport);
+        setDestinationAirportCode(initialSearchParams.destinationAirport);
+        setFromDisplayValue(initialSearchParams.fromDisplayValue || null);
+        setToDisplayValue(initialSearchParams.toDisplayValue || null);
+        setDepartureDate(initialSearchParams.departureDate);
+        setReturnDate(initialSearchParams.returnDate || '');
+        setTravelers(initialSearchParams.travelers);
+        setTripType(initialSearchParams.tripType);
     }
   }, [initialSearchParams]);
 
-  // Callbacks
-  const handleFromAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => { setOriginCityCode(cityCode); setFromDisplayValue(displayValue); }, []);
-  const handleToAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => { setDestinationCityCode(cityCode); setToDisplayValue(displayValue); }, []);
-  const handleTripTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => { const newTripType = event.target.value as 'round-trip' | 'one-way'; setTripType(newTripType); if (newTripType === 'one-way') { setReturnDate(''); } };
+  // --- Callbacks ---
+  // CHANGED: Use the first argument (airportCode) from onAirportSelect
+  const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
+    setOriginAirportCode(airportCode); // Store the airport code
+    setFromDisplayValue(displayValue); // Keep storing the display value
+  }, []);
 
-  // Submit Handler
+  const handleToAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
+    setDestinationAirportCode(airportCode); // Store the airport code
+    setToDisplayValue(displayValue);     // Keep storing the display value
+  }, []);
+
+  const handleTripTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newTripType = event.target.value as 'round-trip' | 'one-way';
+      setTripType(newTripType);
+      if (newTripType === 'one-way') { setReturnDate(''); }
+  };
+
+  // --- Submit Handler ---
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!originCityCode || !destinationCityCode) { alert("Please select departure and destination locations."); return; }
-    if (!departureDate || (tripType === 'round-trip' && !returnDate)) { alert("Please select travel dates."); return; }
-    if (tripType === 'round-trip' && returnDate < departureDate) { alert("Return date cannot be before departure date."); return; }
+
+    // CHANGED: Validate using airport codes
+    if (!originAirportCode || !destinationAirportCode) {
+      alert("Please select departure and destination locations.");
+      return;
+    }
+    if (!departureDate || (tripType === 'round-trip' && !returnDate)) {
+      alert("Please select travel dates.");
+      return;
+    }
+    if (tripType === 'round-trip' && returnDate && returnDate < departureDate) {
+      alert("Return date cannot be before departure date.");
+      return;
+    }
+
+    // --- Construct searchParams using AIRPORT codes ---
     const searchParams: SearchParamsType = {
-        originCity: originCityCode, destinationCity: destinationCityCode, departureDate,
+        originAirport: originAirportCode, // Use the stored airport code
+        destinationAirport: destinationAirportCode, // Use the stored airport code
+        departureDate,
         returnDate: tripType === 'round-trip' ? returnDate : undefined,
-        travelers, tripType, fromDisplayValue, toDisplayValue
+        travelers,
+        tripType,
+        fromDisplayValue, // Pass display values along for state management/potential UI repopulation
+        toDisplayValue
     };
+    console.log("Submitting search with Airport Codes:", searchParams); // Add log for verification
     onSearchSubmit(searchParams);
     setIsMinimized(true);
   };
@@ -516,99 +562,92 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
 // --- Flight Results Component ---
 interface FlightResultsProps {
-  searchParams: SearchParamsType | null; // Expects SearchParamsType with city codes
+  searchParams: SearchParamsType | null; // Expects SearchParamsType with AIRPORT codes now
 }
 
-// --- Inside FlightResults Component ---
-
 const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
+  // ... state variables (flights, isLoading, error) remain the same ...
   const [flights, setFlights] = useState<Flight[]>([]);
-  // const [exactMatch, setExactMatch] = useState<boolean>(true); // REMOVE THIS STATE
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!searchParams) {
-      setFlights([]);
-      // setExactMatch(true); // Remove
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchFlights = async () => {
-      setIsLoading(true);
-      setError(null);
-      setFlights([]);
-      // setExactMatch(true); // Remove default setting here too
-
-      const query = new URLSearchParams({
-        originCity: searchParams.originCity,
-        destinationCity: searchParams.destinationCity,
-        departureDate: searchParams.departureDate,
-        adults: searchParams.travelers,
-      });
-      if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
-        query.set('returnDate', searchParams.returnDate);
+      if (!searchParams) {
+          setFlights([]);
+          setError(null);
+          setIsLoading(false);
+          return;
       }
 
-      console.log(`Fetching flights with query: /api/flights?${query.toString()}`);
+      const fetchFlights = async () => {
+          setIsLoading(true);
+          setError(null);
+          setFlights([]);
 
-      try {
-        const response = await fetch(`/api/flights?${query.toString()}`);
+          // *** UPDATED: Construct query using AIRPORT codes ***
+          const query = new URLSearchParams({
+              // Use originAirport and destinationAirport from searchParams
+              originAirport: searchParams.originAirport,         // Use the airport code
+              destinationAirport: searchParams.destinationAirport, // Use the airport code
+              departureDate: searchParams.departureDate,
+              // Assuming 'adults' is still the correct parameter name for travelers in your API
+              // If not, update this key as well.
+              adults: searchParams.travelers,
+          });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("API Error Response Text:", errorText);
-          throw new Error(`API Error: ${response.status} - ${response.statusText}`);
-        }
+          // Add returnDate if it's a round trip
+          if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
+              query.set('returnDate', searchParams.returnDate);
+          }
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-           const responseText = await response.text();
-           console.error("Received non-JSON response:", responseText);
-           throw new Error(`Expected JSON response, but got ${contentType}`);
-        }
+          console.log(`Fetching flights with query: /api/flights?${query.toString()}`); // Log the exact query
 
-        // *** MODIFICATION HERE ***
-        // Expect the structure { data: Flight[], ... other keys }
-        const apiResponse = await response.json();
-        console.log('Raw Flight API Response:', apiResponse);
+          try {
+              // Fetch using the correct airport parameters
+              const response = await fetch(`/api/flights?${query.toString()}`);
 
-        // Check if 'data' property exists and is an array
-        if (apiResponse && Array.isArray(apiResponse.data)) {
-            // Filter out any potentially malformed flight objects if necessary
-            const validFlights = apiResponse.data.filter((f: any) =>
-                f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
-                // Add other essential field checks if needed
-            );
-            setFlights(validFlights);
-             console.log(`Successfully set ${validFlights.length} flights.`);
-        } else {
-             console.error("API response is missing 'data' array.", apiResponse);
-             // Set flights to empty array if data structure is wrong
-             setFlights([]);
-             // Optionally set an error message
-             // setError("Received invalid data structure from server.");
-        }
-         // Removed setExactMatch - API doesn't provide it
+               // --- Keep the robust error handling and JSON parsing from previous step ---
+               if (!response.ok) {
+                   const errorText = await response.text();
+                   console.error("API Error Response Text:", errorText);
+                   throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+               }
+               const contentType = response.headers.get("content-type");
+               if (!contentType || !contentType.includes("application/json")) {
+                  const responseText = await response.text();
+                  console.error("Received non-JSON response:", responseText);
+                  throw new Error(`Expected JSON response, but got ${contentType}`);
+               }
+               const apiResponse = await response.json();
+               console.log('Raw Flight API Response:', apiResponse);
 
-        setError(null); // Clear any previous error
+               if (apiResponse && Array.isArray(apiResponse.data)) {
+                   const validFlights = apiResponse.data.filter((f: any) =>
+                       f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
+                       // Add other essential field checks if needed
+                   );
+                   setFlights(validFlights);
+                   console.log(`Successfully set ${validFlights.length} flights.`);
+               } else {
+                   console.error("API response is missing 'data' array.", apiResponse);
+                   setFlights([]);
+               }
+               setError(null);
 
-      } catch (err: any) {
-        console.error("Failed to fetch or process flights:", err);
-        setError(err.message || 'Failed to fetch flight data.');
-        setFlights([]); // Ensure flights are empty on error
-        // Removed setExactMatch
-      } finally {
-        setIsLoading(false);
-         console.log("Finished flight fetch attempt.");
-      }
-    };
+          } catch (err: any) {
+              console.error("Failed to fetch or process flights:", err);
+              setError(err.message || 'Failed to fetch flight data.');
+              setFlights([]);
+          } finally {
+              setIsLoading(false);
+              console.log("Finished flight fetch attempt.");
+          }
+      };
 
-    fetchFlights();
+      fetchFlights();
 
-  }, [searchParams]); // Dependency array remains the same
+  // The dependency is still searchParams, as it now contains the airport codes
+  }, [searchParams]);
 
   // --- Date Formatting (check console for errors here too) ---
   const formatDate = (dateString: string | undefined): string => {
