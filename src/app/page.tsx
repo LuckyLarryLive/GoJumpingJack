@@ -226,14 +226,14 @@ const HeroSection: React.FC = () => {
   );
 };
 
-// --- SearchSection Component (Callback parameter names updated slightly for clarity) ---
+// --- SearchSection Component (Restored Elements AGAIN) ---
 interface SearchSectionProps {
   onSearchSubmit: (params: SearchParamsType) => void;
   initialSearchParams?: SearchParamsType | null;
 }
 
 const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSearchParams }) => {
-  // State variables remain correct (using city codes for search, display values for input)
+  // State variables
   const [originCityCode, setOriginCityCode] = useState<string | null>(initialSearchParams?.originCity || null);
   const [destinationCityCode, setDestinationCityCode] = useState<string | null>(initialSearchParams?.destinationCity || null);
   const [fromDisplayValue, setFromDisplayValue] = useState<string | null>(initialSearchParams?.fromDisplayValue || null);
@@ -244,36 +244,33 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [tripType, setTripType] = useState<'round-trip' | 'one-way'>(initialSearchParams?.tripType || 'round-trip');
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Effect for reset/prefill (Unchanged logic)
-   useEffect(() => { /* ... */ }, [initialSearchParams]);
+  // Effect for reset/prefill
+   useEffect(() => {
+    if (initialSearchParams === null) {
+        setOriginCityCode(null); setDestinationCityCode(null); setFromDisplayValue(null); setToDisplayValue(null);
+        setDepartureDate(''); setReturnDate(''); setTravelers('1'); setTripType('round-trip');
+        setIsMinimized(false);
+    } else if (initialSearchParams) {
+        setOriginCityCode(initialSearchParams.originCity); setDestinationCityCode(initialSearchParams.destinationCity); setFromDisplayValue(initialSearchParams.fromDisplayValue || null); setToDisplayValue(initialSearchParams.toDisplayValue || null);
+        setDepartureDate(initialSearchParams.departureDate); setReturnDate(initialSearchParams.returnDate || ''); setTravelers(initialSearchParams.travelers); setTripType(initialSearchParams.tripType);
+    }
+  }, [initialSearchParams]);
 
-  // --- Callbacks receive airportCode, cityCode, displayValue ---
-  // We primarily use cityCode and displayValue here. airportCode is ignored for state.
-  const handleFromAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => {
-    setOriginCityCode(cityCode);      // Store the city code for the API call
-    setFromDisplayValue(displayValue); // Store the formatted string for the input field
-  }, []);
+  // Callbacks
+  const handleFromAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => { setOriginCityCode(cityCode); setFromDisplayValue(displayValue); }, []);
+  const handleToAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => { setDestinationCityCode(cityCode); setToDisplayValue(displayValue); }, []);
+  const handleTripTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => { const newTripType = event.target.value as 'round-trip' | 'one-way'; setTripType(newTripType); if (newTripType === 'one-way') { setReturnDate(''); } };
 
-  const handleToAirportSelect = useCallback((_airportCode: string | null, cityCode: string | null, displayValue: string | null) => {
-    setDestinationCityCode(cityCode); // Store the city code for the API call
-    setToDisplayValue(displayValue);  // Store the formatted string for the input field
-  }, []);
-
-  const handleTripTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
-
-  // handleSubmit uses the stored city codes (Unchanged logic)
+  // Submit Handler
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!originCityCode || !destinationCityCode) { /* ... validation ... */ return; }
-    if (!departureDate || (tripType === 'round-trip' && !returnDate)) { /* ... validation ... */ return; }
-    if (tripType === 'round-trip' && returnDate < departureDate) { /* ... validation ... */ return; }
-
+    if (!originCityCode || !destinationCityCode) { alert("Please select departure and destination locations."); return; }
+    if (!departureDate || (tripType === 'round-trip' && !returnDate)) { alert("Please select travel dates."); return; }
+    if (tripType === 'round-trip' && returnDate < departureDate) { alert("Return date cannot be before departure date."); return; }
     const searchParams: SearchParamsType = {
-        originCity: originCityCode,         // Correctly using city code
-        destinationCity: destinationCityCode, // Correctly using city code
-        departureDate, returnDate: tripType === 'round-trip' ? returnDate : undefined,
-        travelers, tripType,
-        fromDisplayValue: fromDisplayValue, toDisplayValue: toDisplayValue
+        originCity: originCityCode, destinationCity: destinationCityCode, departureDate,
+        returnDate: tripType === 'round-trip' ? returnDate : undefined,
+        travelers, tripType, fromDisplayValue, toDisplayValue
     };
     onSearchSubmit(searchParams);
     setIsMinimized(true);
@@ -281,32 +278,69 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
   const handleEditFilters = () => { setIsMinimized(false); };
 
-  // Minimized view (Unchanged)
+  // Minimized view rendering
   const today = new Date().toISOString().split('T')[0];
-  if (isMinimized) { /* ... */ }
+  if (isMinimized) {
+      return ( <section id="search" className="py-4 bg-gray-50 scroll-mt-24"> <div className="container mx-auto px-4"> <button onClick={handleEditFilters} className="w-full md:w-auto md:mx-auto flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50 transition duration-200 text-blue-600 font-semibold"> <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-6.586L3.293 6.707A1 1 0 013 6V3zm3.707 4.707L10 11.414l3.293-3.707a1 1 0 00.293-.707V4H4v2a1 1 0 00.707.924l.001.001.001.001a.998.998 0 00.998-.001L6.707 7.707z" clipRule="evenodd" /></svg> Edit Filters </button> </div> </section> );
+    }
 
-  // --- Expanded view form rendering ---
-  // Passes correct props (initialDisplayValue, onAirportSelect) to AirportSearchInput
+  // --- Expanded view form rendering (VERIFIED elements are present) ---
   return (
     <section id="search" className="py-12 md:py-16 bg-gray-50 scroll-mt-24">
       <div className="container mx-auto px-4">
         <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-6xl mx-auto">
           <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center md:text-left">Find Your Next Adventure</h2>
-          {/* Radio buttons */}
-          <div className="flex space-x-4 mb-6"> /* ... */ </div>
+
+          {/* === Radio Buttons === */}
+          <div className="flex space-x-4 mb-6">
+             <label className="flex items-center cursor-pointer">
+                 <input type="radio" name="trip-type" value="round-trip" checked={tripType === 'round-trip'} onChange={handleTripTypeChange} className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500"/>
+                 <span className="ml-2 text-gray-700">Round Trip</span>
+             </label>
+             <label className="flex items-center cursor-pointer">
+                 <input type="radio" name="trip-type" value="one-way" checked={tripType === 'one-way'} onChange={handleTripTypeChange} className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500"/>
+                 <span className="ml-2 text-gray-700">One Way</span>
+             </label>
+          </div>
+
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-start">
+            {/* === Airport Inputs === */}
             <div className="lg:col-span-1">
               <AirportSearchInput id="from" label="From" placeholder="City or airport" onAirportSelect={handleFromAirportSelect} initialDisplayValue={fromDisplayValue} />
             </div>
             <div className="lg:col-span-1">
               <AirportSearchInput id="to" label="To" placeholder="City or airport" onAirportSelect={handleToAirportSelect} initialDisplayValue={toDisplayValue} />
             </div>
-            {/* Date Inputs */}
-            <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-2 gap-2"> /* ... */ </div>
-            {/* Travelers Input */}
-            <div className="lg:col-span-1"> /* ... */ </div>
-            {/* Search Button */}
-            <div className="sm:col-span-2 lg:col-span-1 self-end"> /* ... */ </div>
+
+            {/* === Date Inputs === */}
+            <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-2 gap-2">
+              <div className="w-full">
+                <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
+                <input type="date" id="departure-date" name="departure-date" required value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" min={today} />
+              </div>
+              <div className="w-full">
+                <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
+                <input type="date" id="return-date" name="return-date" required={tripType === 'round-trip'} disabled={tripType === 'one-way'} value={returnDate} onChange={(e) => setReturnDate(e.target.value)} className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out ${tripType === 'one-way' ? 'bg-gray-100 cursor-not-allowed' : ''}`} min={departureDate || today} />
+              </div>
+            </div>
+
+            {/* === Travelers Input === */}
+            <div className="lg:col-span-1">
+               <label htmlFor="travelers" className="block text-sm font-medium text-gray-700 mb-1">Travelers</label>
+               <select id="travelers" name="travelers" required value={travelers} onChange={(e) => setTravelers(e.target.value)} className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white h-[42px] transition duration-150 ease-in-out">
+                   <option value="1">1 Adult</option>
+                   <option value="2">2 Adults</option>
+                   <option value="3">3 Adults</option>
+                   <option value="4">4 Adults</option>
+               </select>
+            </div>
+
+            {/* === Search Button === */}
+            <div className="sm:col-span-2 lg:col-span-1 self-end">
+               <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center h-[42px]">
+                   Search Flights
+               </button>
+            </div>
           </form>
         </div>
       </div>
