@@ -1,49 +1,46 @@
+// src/components/Header.tsx
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Lobster } from 'next/font/google'; // Import Lobster font here
-
-// Instantiate Lobster font (needed for the logo text)
-const lobster = Lobster({
-    subsets: ['latin'],
-    weight: ['400'],
-    variable: '--font-lobster', // Use variable if layout provides it globally
-    display: 'swap',
-});
+// REMOVED: No need to import or instantiate Lobster font here
 
 const Header: React.FC = () => {
-    const logoSize = 96;
-    const headerHeightClass = 'h-24'; // Maintain consistent height
+    const logoSize = 96; // Maintain consistent sizing variable if desired
+    const headerHeightClass = 'h-24'; // Consistent header height
     const logoHeightClass = 'h-20';   // Logo height within header
 
     return (
+        // Use standard Tailwind classes for layout, background, shadow, position
         <header className={`bg-white shadow-sm sticky top-0 z-50 ${headerHeightClass}`}>
+            {/* Container to manage padding and max-width */}
             <nav className="container mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div className={`flex justify-between items-center h-full`}>
+                {/* Flex container for logo and navigation links */}
+                <div className="flex justify-between items-center h-full">
+
+                    {/* Logo and Site Name section */}
                     <div className="flex-shrink-0 flex items-center">
-                        {/* Use Link for internal navigation */}
-                        <Link href="/" className="flex items-center space-x-3">
+                        <Link href="/" className="flex items-center space-x-3 group" aria-label="GoJumpingJack Home">
                             <Image
-                                src="/gojumpingjack-logo-no-text.png"
+                                src="/GJJ_Jack_black.png"
                                 alt="GoJumpingJack Logo"
                                 width={logoSize}
                                 height={logoSize}
-                                className={`${logoHeightClass} w-auto`}
-                                priority // Prioritize loading the logo
+                                className={`${logoHeightClass} w-auto transition-transform duration-300 group-hover:scale-105`} // Added hover effect
+                                priority // Prioritize loading logo image
                             />
-                            {/* Apply Lobster font class using the variable defined in layout */}
-                            {/* Or use lobster.className if variable isn't set up in layout */}
-                            <span className={`font-bold text-3xl text-gray-800 hidden sm:inline font-display`}> {/* Use generic 'font-display' if using Tailwind variable */}
-                            {/* <span className={`font-bold text-3xl text-gray-800 hidden sm:inline ${lobster.className}`}> // Alternative if not using CSS var */}
+                            {/* Site Name - Apply font-display class directly */}
+                            <span className="font-bold text-3xl text-gray-800 hidden sm:inline font-display"> {/* CORRECTED className */}
                                 GoJumpingJack
                             </span>
                         </Link>
                     </div>
+
+                    {/* Login/Sign Up section */}
                     <div className="flex items-center space-x-4">
-                        <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
+                        <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded">
                             Login
                         </Link>
-                        <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300">
+                        <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Sign Up
                         </Link>
                     </div>
@@ -53,4 +50,4 @@ const Header: React.FC = () => {
     );
 };
 
-export default Header; // Export the component
+export default Header;
