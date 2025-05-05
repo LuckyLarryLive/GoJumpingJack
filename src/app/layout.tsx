@@ -23,6 +23,9 @@ const lobster = Lobster({
     display: 'swap',
 });
 
+// Add console log to verify font loading
+console.log('Lobster font variable:', lobster.variable);
+
 // --- Metadata (Your setup is correct) ---
 export const metadata: Metadata = {
   title: "GoJumpingJack - Real Travel Deals",
@@ -39,13 +42,13 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`
-            ${playfair.variable}   {/* Make Playfair available */}
-            ${lobster.variable}   {/* Make Lobster available */}
-            ${GeistSans.variable} {/* Make Geist Sans available */}
-            ${GeistMono.variable}  {/* Make Geist Mono available */}
-            antialiased           {/* Keep antialiasing */}
-            font-sans             {/* Base font class (Tailwind will use its config) */}
-            flex flex-col min-h-screen bg-gray-50 {/* ADDED: Flex layout for sticky footer */}
+            ${playfair.variable}
+            ${lobster.variable}
+            ${GeistSans.variable}
+            ${GeistMono.variable}
+            antialiased
+            font-sans
+            flex flex-col min-h-screen bg-gray-50
         `}
       >
         <Header /> {/* ADDED: Header included on all pages */}

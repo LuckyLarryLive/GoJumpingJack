@@ -29,7 +29,10 @@ const Header: React.FC = () => {
                                 priority // Prioritize loading logo image
                             />
                             {/* Site Name - Apply font-display class directly */}
-                            <span className="font-bold text-3xl text-gray-800 hidden sm:inline font-display"> {/* CORRECTED className */}
+                            <span 
+                                className="font-bold text-3xl text-gray-800 hidden sm:inline"
+                                style={{ fontFamily: 'var(--font-lobster)' }}
+                            >
                                 GoJumpingJack
                             </span>
                         </Link>
