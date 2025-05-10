@@ -40,13 +40,30 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   // Construct the full external URL using TravelPayouts base URL
   const externalFlightUrl = `${baseUrl}${flight.link}`;
 
-  // Format date and time
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return {
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      time: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const getCabinClassLabel = (cabinClass: string) => {
+    const labels: { [key: string]: string } = {
+      'economy': 'Economy',
+      'premium_economy': 'Premium Economy',
+      'business': 'Business',
+      'first': 'First Class'
     };
+    return labels[cabinClass] || cabinClass;
   };
 
   // Calculate flight duration
@@ -69,90 +86,73 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return Math.min(Math.max(hours * 50, 100), 300);
   };
 
-  const departure = formatDateTime(flight.departure_at);
-  const arrival = flight.return_at ? formatDateTime(flight.return_at) : null;
+  const departureTime = formatTime(flight.departure_at);
+  const returnTime = flight.return_at ? formatTime(flight.return_at) : '';
+  const departureDate = formatDate(flight.departure_at);
   const duration = calculateDuration(flight.departure_at, flight.return_at || flight.departure_at);
   const flightPathWidth = getFlightPathWidth(flight.departure_at, flight.return_at || flight.departure_at);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
-      <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         {/* Flight Details */}
         <div className="flex-1">
           <div className="flex items-center gap-4 mb-4">
-            {/* Airline Logo */}
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-lg font-bold text-gray-600">{flight.airline.slice(0, 2)}</span>
-            </div>
-            
-            {/* Flight Path */}
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-left">
-                  <p className="font-bold text-lg">{flight.origin_airport}</p>
-                  <p className="text-sm text-gray-600">{departure.time}</p>
-                  <p className="text-xs text-gray-500">{departure.date}</p>
-                </div>
-                <div className="flex-1 px-4">
-                  <div className="relative" style={{ width: `${flightPathWidth}px` }}>
-                    <div className="h-0.5 bg-gray-300 w-full"></div>
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                      <div className="bg-white px-2">
-                        <span className="text-xs text-gray-500">{duration}</span>
-                      </div>
-                    </div>
-                    {flight.stops > 0 && (
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-lg">{flight.destination_airport}</p>
-                  <p className="text-sm text-gray-600">{arrival?.time}</p>
-                  <p className="text-xs text-gray-500">{arrival?.date}</p>
-                </div>
+              <div className="text-lg font-semibold text-gray-900">
+                {flight.origin_airport} → {flight.destination_airport}
+              </div>
+              <div className="text-sm text-gray-600">
+                {departureDate}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-blue-600">
+                {flight.currency} {flight.price.toLocaleString()}
+              </div>
+              <div className="text-sm text-gray-600">
+                {flight.cabin_class && getCabinClassLabel(flight.cabin_class)}
               </div>
             </div>
           </div>
 
-          {/* Flight Info */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}</span>
+          {/* Flight Path */}
+          <div className="relative h-2 bg-gray-200 rounded-full mb-4">
+            <div className="absolute inset-0 flex items-center justify-between px-2">
+              <div className="text-xs text-gray-600">{departureTime}</div>
+              {flight.stops > 0 && (
+                <div className="text-xs text-gray-600">
+                  {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}
+                </div>
+              )}
+              <div className="text-xs text-gray-600">{returnTime}</div>
             </div>
-            <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{duration}</span>
+            <div 
+              className="absolute h-full bg-blue-500 rounded-full"
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          {/* Additional Details */}
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+            <div>
+              <span className="font-medium">Airline:</span> {flight.airline}
             </div>
-            <div className="flex items-center">
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-              <span>{flight.cabin_class}</span>
-            </div>
+            {flight.duration && (
+              <div>
+                <span className="font-medium">Duration:</span> {flight.duration}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Price and Book Button */}
-        <div className="flex flex-col items-end gap-2">
-          <div className="text-right">
-            <p className="text-2xl font-bold text-blue-600">
-              {flight.currency} {flight.price.toFixed(2)}
-            </p>
-            <p className="text-sm text-gray-500">per person</p>
-          </div>
+        {/* Book Button */}
+        <div className="w-full md:w-auto">
           <a
-            href={externalFlightUrl}
+            href={flight.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300"
+            className="block w-full md:w-auto px-6 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
           >
             Book Now
           </a>

@@ -3,39 +3,25 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import FlightCard from '@/components/FlightCard'; // Adjust path if needed
-
-// --- Type Definitions (ensure consistency) ---
-interface Flight {
-  origin_airport: string;
-  destination_airport: string;
-  departure_at: string;
-  return_at?: string;
-  airline: string;
-  price: number;
-  link: string;
-}
-
-// Assumed API response structure
-interface FlightApiResponse {
-  data: Flight[];
-  // Add other potential fields your API might return if needed
-}
+import FlightCard from '@/components/FlightCard';
+import type { Flight } from '@/types';
 
 // --- Component ---
 export default function ResultsContent() {
-  const searchParamsHook = useSearchParams(); // Renamed to avoid conflict
+  const searchParamsHook = useSearchParams();
 
   const [flights, setFlights] = useState<Flight[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Extract search params (use names consistent with API and HomePage link)
+  // Extract search params
   const originAirport = searchParamsHook.get('originAirport');
   const destinationAirport = searchParamsHook.get('destinationAirport');
   const departureDate = searchParamsHook.get('departureDate');
-  const returnDate = searchParamsHook.get('returnDate'); // Might be null
+  const returnDate = searchParamsHook.get('returnDate');
   const adults = searchParamsHook.get('adults');
+  const cabinClass = searchParamsHook.get('cabinClass');
+  const currency = searchParamsHook.get('currency');
 
   useEffect(() => {
     // Ensure essential parameters are present
@@ -43,7 +29,7 @@ export default function ResultsContent() {
       setError("Missing essential search criteria in URL.");
       setIsLoading(false);
       setFlights([]);
-      return; // Stop fetching if params are missing
+      return;
     }
 
     const fetchFlights = async () => {
@@ -62,6 +48,12 @@ export default function ResultsContent() {
       if (returnDate) {
         query.set('returnDate', returnDate);
       }
+      if (cabinClass) {
+        query.set('cabinClass', cabinClass);
+      }
+      if (currency) {
+        query.set('currency', currency);
+      }
 
       console.log(`ResultsPage fetching flights: /api/flights?${query.toString()}`);
 
@@ -76,32 +68,27 @@ export default function ResultsContent() {
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-           const responseText = await response.text();
-           console.error("Received non-JSON response:", responseText);
-           throw new Error(`Expected JSON response, but got ${contentType}`);
+          const responseText = await response.text();
+          console.error("Received non-JSON response:", responseText);
+          throw new Error(`Expected JSON response, but got ${contentType}`);
         }
 
-        // Assuming the API returns { data: Flight[] } structure
-        const apiResponse: FlightApiResponse = await response.json();
+        const apiResponse = await response.json();
         console.log('Raw Flight API Response (Results Page):', apiResponse);
 
         if (apiResponse && Array.isArray(apiResponse.data)) {
-            const validFlights = apiResponse.data.filter((f: any) =>
-                f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
-                // Add other essential field checks if needed
-            );
-            setFlights(validFlights);
-            console.log(`Successfully set ${validFlights.length} flights on results page.`);
+          setFlights(apiResponse.data);
+          console.log(`Successfully set ${apiResponse.data.length} flights on results page.`);
         } else {
-            console.error("API response is missing 'data' array or invalid structure.", apiResponse);
-            setFlights([]); // Ensure flights is empty array on error
+          console.error("API response is missing 'data' array or invalid structure.", apiResponse);
+          setFlights([]);
         }
-        setError(null); // Clear previous errors
+        setError(null);
 
       } catch (err: any) {
         console.error("Failed to fetch or process flights on results page:", err);
         setError(err.message || 'Failed to fetch flight data.');
-        setFlights([]); // Ensure flights is empty array on error
+        setFlights([]);
       } finally {
         setIsLoading(false);
         console.log("Finished flight fetch attempt on results page.");
@@ -110,14 +97,19 @@ export default function ResultsContent() {
 
     fetchFlights();
 
-  // Re-run effect if any search parameter changes
-  }, [originAirport, destinationAirport, departureDate, returnDate, adults]);
+  }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, currency]);
 
   // --- Render Logic ---
-
   const renderContent = () => {
     if (isLoading) {
-      return <div className="text-center py-10">Loading flight results...</div>;
+      return (
+        <div className="text-center py-10">
+          <div className="inline-flex items-center justify-center gap-2 text-gray-600">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-t-blue-600 border-gray-300"></div>
+            <span>Loading flight results...</span>
+          </div>
+        </div>
+      );
     }
 
     if (error) {
@@ -136,7 +128,6 @@ export default function ResultsContent() {
     return (
       <div className="space-y-4">
         {flights.map((flight, index) => (
-          // Use a combination of link/index or a truly unique ID if available from API
           <FlightCard key={`${flight.link || 'flight-result'}-${index}`} flight={flight} />
         ))}
       </div>
@@ -144,15 +135,13 @@ export default function ResultsContent() {
   };
 
   return (
-    // Add padding and container for layout
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
         Flight Results
-        {/* Optionally display search criteria */}
         {originAirport && destinationAirport && (
-            <span className="block text-lg font-normal text-gray-600 mt-1">
-                For: {originAirport} to {destinationAirport}
-            </span>
+          <span className="block text-lg font-normal text-gray-600 mt-1">
+            For: {originAirport} to {destinationAirport}
+          </span>
         )}
       </h1>
       {renderContent()}

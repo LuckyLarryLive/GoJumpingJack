@@ -28,16 +28,12 @@ export interface SearchParamsType {
     destinationAirport: string; 
     departureDate: string; 
     returnDate?: string; 
-    travelers: string; 
-    tripType: 'round-trip' | 'one-way'; 
-    fromDisplayValue?: string | null; 
-    toDisplayValue?: string | null;
+    adults: number;
+    children?: number;
+    infants?: number;
     cabinClass?: string;
     currency?: string;
     maxConnections?: number;
-    passengers?: {
-        adults: number;
-        children: number;
-        infants: number;
-    };
+    fromDisplayValue?: string;
+    toDisplayValue?: string;
 }

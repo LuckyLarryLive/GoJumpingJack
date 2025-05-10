@@ -23,13 +23,13 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
       }
       const fetchFlights = async () => {
           setIsLoading(true); setError(null); setFlights([]);
-          const query = new URLSearchParams({ /* ... construct query ... */
+          const query = new URLSearchParams({
               originAirport: searchParams.originAirport,
               destinationAirport: searchParams.destinationAirport,
               departureDate: searchParams.departureDate,
-              adults: searchParams.travelers,
+              adults: searchParams.adults.toString(),
           });
-          if (searchParams.tripType === 'round-trip' && searchParams.returnDate) {
+          if (searchParams.returnDate) {
               query.set('returnDate', searchParams.returnDate);
           }
           console.log(`FlightResults fetching: /api/flights?${query.toString()}`);
@@ -44,14 +44,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
               }
               const apiResponse: FlightApiResponse = await response.json();
               if (apiResponse && Array.isArray(apiResponse.data)) {
-                  const validFlights = apiResponse.data.filter((f: any) => /* ... validation ... */
+                  const validFlights = apiResponse.data.filter((f: any) =>
                       f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
                       && typeof f.price === 'number' && typeof f.link === 'string'
-                  );
+                  ).map((flight: any) => ({
+                      ...flight,
+                      stops: flight.transfers || 0,
+                      cabin_class: flight.cabin_class || 'economy',
+                      currency: flight.currency || 'USD',
+                      duration: flight.duration ? `${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m` : 'N/A'
+                  }));
                   setFlights(validFlights);
                   setError(null); // Clear error on success
-              } else { /* ... error handling ... */
-                  console.error("API response missing 'data' array or invalid structure."); setFlights([]); setError("Received invalid data structure from server.");
+              } else {
+                  console.error("API response missing 'data' array or invalid structure.");
+                  setFlights([]);
+                  setError("Received invalid data structure from server.");
               }
           } catch (err: any) { /* ... error handling ... */
               console.error("Fetch catch block error:", err); setError(err.message || 'An unexpected error occurred.'); setFlights([]);
@@ -66,10 +74,12 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
     if (!params) return '#';
     const query = new URLSearchParams({
-        originAirport: params.originAirport, destinationAirport: params.destinationAirport,
-        departureDate: params.departureDate, adults: params.travelers,
+        originAirport: params.originAirport,
+        destinationAirport: params.destinationAirport,
+        departureDate: params.departureDate,
+        adults: params.adults.toString(),
     });
-    if (params.tripType === 'round-trip' && params.returnDate) {
+    if (params.returnDate) {
         query.set('returnDate', params.returnDate);
     }
     return `/results?${query.toString()}`;

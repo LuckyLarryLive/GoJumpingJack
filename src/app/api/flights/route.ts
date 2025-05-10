@@ -1,97 +1,60 @@
 import { NextResponse } from 'next/server';
+import { Duffel } from '@duffel/api';
 
-interface TravelpayoutsFlightData {
-  origin: string;
-  destination: string;
+// --- Type Definitions ---
+interface DuffelFlightData {
   origin_airport: string;
   destination_airport: string;
-  price: number;
-  airline: string;
-  flight_number: string;
   departure_at: string;
   return_at?: string;
-  transfers: number;
-  duration: number;
+  airline: string;
+  price: number;
   link: string;
-}
-
-interface TravelpayoutsResponse {
-  success: boolean;
-  data: TravelpayoutsFlightData[] | null;
+  stops: number;
+  cabin_class: string;
   currency: string;
+  duration: string;
 }
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
+interface DuffelResponse {
+  data: DuffelFlightData[];
+}
 
-  const origin = searchParams.get('originAirport'); // Use airport IATA, e.g. MCO
-  const destination = searchParams.get('destinationAirport'); // e.g. JFK
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const origin = searchParams.get('originAirport');
+  const destination = searchParams.get('destinationAirport');
   const departureDate = searchParams.get('departureDate');
   const returnDate = searchParams.get('returnDate');
+  const adults = searchParams.get('adults');
+  const cabinClass = searchParams.get('cabinClass') || 'economy';
+  const currency = searchParams.get('currency') || 'USD';
 
-  if (!origin || !destination) {
-    return NextResponse.json(
-      { message: 'Missing required query parameters: originAirport and destinationAirport' },
-      { status: 400 }
-    );
+  if (!origin || !destination || !departureDate || !adults) {
+    return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
   }
 
-  const token = process.env.TRAVELPAYOUTS_TOKEN;
-  if (!token) {
-    console.error("TRAVELPAYOUTS_TOKEN environment variable is not set.");
-    return NextResponse.json(
-      { message: 'Server configuration error: API token missing.' },
-      { status: 500 }
-    );
-  }
+  const duffelToken = process.env.DUFFEL_TOKEN;
 
-  const baseURL = 'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
+  if (!duffelToken) {
+    console.error('DUFFEL_TOKEN is not defined');
+    return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
+  }
 
   try {
-    let url = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
-    if (departureDate) url += `&departure_at=${departureDate}`;
-    if (returnDate) url += `&return_at=${returnDate}`;
+    const duffel = new Duffel({
+      token: duffelToken
+    });
 
-    console.log(`Fetching initial URL: ${url}`);
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(`Travelpayouts API error (Initial Fetch): Status ${res.status}, Body: ${errorBody}`);
-      return NextResponse.json({ message: `Failed to fetch flight data. Status: ${res.status}` }, { status: 502 });
-    }
-
-    const initialData: TravelpayoutsResponse = await res.json();
-    const noInitialResults = !initialData?.data || initialData.data.length === 0;
-
-    if (noInitialResults && departureDate) {
-      console.log(`No initial results found for ${departureDate}. Retrying without dates...`);
-      const fallbackUrl = `${baseURL}?origin=${origin}&destination=${destination}&currency=usd&token=${token}`;
-      const fallbackRes = await fetch(fallbackUrl);
-
-      if (!fallbackRes.ok) {
-        const fallbackErrorBody = await fallbackRes.text();
-        console.error(`Travelpayouts API error (Fallback Fetch): Status ${fallbackRes.status}, Body: ${fallbackErrorBody}`);
-        return NextResponse.json({ message: `Failed to fetch fallback flight data. Status: ${fallbackRes.status}` }, { status: 502 });
-      }
-
-      const fallbackData: TravelpayoutsResponse = await fallbackRes.json();
-      return NextResponse.json({
-        data: fallbackData?.data || [],
-        exactMatch: false
-      }, { status: 200 });
-    }
-
+    // TODO: Implement Duffel API integration
+    // This is a placeholder response structure
     return NextResponse.json({
-      data: initialData?.data || [],
-      exactMatch: true
-    }, { status: 200 });
+      data: [],
+      message: 'Duffel integration pending'
+    }, { status: 501 }); // 501 Not Implemented
 
-  } catch (error: any) {
-    console.error("Error in /api/flights route:", error);
-    return NextResponse.json(
-      { message: 'Unexpected error fetching flight data.', error: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('Error in flight search:', error);
+    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
   }
 }
