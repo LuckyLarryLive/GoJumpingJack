@@ -56,7 +56,7 @@ export default function HomePage() {
           {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
           <SearchSection
                onSearchSubmit={handleSearchSubmit}
-               initialSearchParams={searchParams}
+               initialSearchParams={searchParams || undefined}
            />
 
           {/* Flight results section - receives the current search params */}
