@@ -1,4 +1,17 @@
+# GoJumpingJack
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Environment Setup
+
+The project requires the following environment variables:
+
+- `DUFFEL_TOKEN`: Your Duffel API token (sandbox for development, live for production)
+- Other environment variables as required by the project
+
+For local development, create a `.env.local` file in the root directory with these variables.
+
+For production, these variables are managed through Vercel's environment settings.
 
 ## Getting Started
 
@@ -16,9 +29,20 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Flight Booking Integration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project uses the Duffel API for flight bookings. The integration includes:
+
+- Flight search functionality
+- Offer management
+- Order creation
+- Payment processing
+
+### Testing the Integration
+
+You can test the Duffel integration by visiting:
+- Development: `http://localhost:3000/api/duffel/test`
+- Production: `https://www.gojumpingjack.com/api/duffel/test`
 
 ## Learn More
 
@@ -26,11 +50,12 @@ To learn more about Next.js, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Duffel API Documentation](https://duffel.com/docs) - learn about Duffel's flight booking API.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The project is deployed on [Vercel](https://vercel.com) at [www.gojumpingjack.com](https://www.gojumpingjack.com).
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
