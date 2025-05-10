@@ -19,17 +19,16 @@ const Footer: React.FC = () => {
                     {/* Logo, Site Name, Copyright section */}
                     <div className="mb-4 md:mb-0">
                         <Link href="/" className="flex items-center justify-center md:justify-start space-x-2 mb-2 group" aria-label="GoJumpingJack Home">
-                            <Image
-                                src="/gojumpingjack-logo-no-text.png"
-                                alt="GoJumpingJack Logo Footer"
-                                width={footerLogoSize}
-                                height={footerLogoSize}
-                                className={`${footerLogoHeightClass} w-auto transition-opacity duration-300 group-hover:opacity-80`} // Added hover effect
-                             />
-                            {/* Site Name - Apply font-display class directly */}
-                            <span className="text-xl font-semibold text-gray-200 font-display"> {/* CORRECTED className */}
-                                GoJumpingJack
-                            </span>
+                            <div className="flex items-center space-x-2">
+                                <Image
+                                    src="/GJJ_Jack.png"
+                                    alt="Go Jumping Jack Logo"
+                                    width={32}
+                                    height={32}
+                                    className="h-8 w-auto"
+                                />
+                                <span className="text-xl font-bold text-gray-900">Go Jumping Jack</span>
+                            </div>
                         </Link>
                         {/* Copyright text */}
                         <p className="text-sm">

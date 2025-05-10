@@ -188,29 +188,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // Expanded View (Form)
     return (
-        <section id="search" className="py-12 md:py-16 bg-gray-50 scroll-mt-24"> {/* scroll-mt matches sticky header height */}
+        <section id="search" className="py-6 bg-gray-50 scroll-mt-24">
             <div className="container mx-auto px-4">
-                <div className="bg-white p-6 md:p-8 rounded-lg shadow-lg max-w-6xl mx-auto">
-                    <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center md:text-left font-serif"> {/* Example: font-serif */}
-                        Find Your Next Adventure
-                    </h2>
-
-                    {/* Trip Type Radio Buttons */}
-                    <div className="flex flex-wrap gap-x-6 gap-y-2 mb-6">
-                        <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="trip-type" value="round-trip" checked={returnDate !== ''} onChange={handleTripTypeChange} className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"/>
-                            <span className="ml-2 text-gray-700">Round Trip</span>
-                        </label>
-                        <label className="flex items-center cursor-pointer">
-                            <input type="radio" name="trip-type" value="one-way" checked={returnDate === ''} onChange={handleTripTypeChange} className="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"/>
-                            <span className="ml-2 text-gray-700">One Way</span>
-                        </label>
-                    </div>
-
-                    {/* Main Form Grid */}
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="bg-white p-4 rounded-lg shadow-lg max-w-4xl mx-auto">
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* From Airport Input */}
-                        <div className="lg:col-span-1">
+                        <div>
                             <AirportSearchInput
                                 id="from"
                                 label="From"
@@ -219,7 +202,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             />
                         </div>
                         {/* To Airport Input */}
-                        <div className="lg:col-span-1">
+                        <div>
                             <AirportSearchInput
                                 id="to"
                                 label="To"
@@ -229,36 +212,32 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         </div>
 
                         {/* Date Inputs */}
-                        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-                            <div>
-                                <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
-                                <input
-                                    type="date" id="departure-date" name="departure-date" required
-                                    value={departureDate}
-                                    onChange={(e) => setDepartureDate(e.target.value)}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                    min={today} // Prevent selecting past dates
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
-                                <input
-                                    type="date" id="return-date" name="return-date"
-                                    required={returnDate !== ''} // Only required for round trip
-                                    disabled={returnDate === ''}    // Disable for one-way
-                                    value={returnDate}
-                                    onChange={(e) => setReturnDate(e.target.value)}
-                                    className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${returnDate === '' ? 'bg-gray-100 cursor-not-allowed' : ''}`} // Style when disabled
-                                    min={departureDate || today} // Min return date is departure date or today
-                                />
-                            </div>
+                        <div>
+                            <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
+                            <input
+                                type="date" id="departure-date" name="departure-date" required
+                                value={departureDate}
+                                onChange={(e) => setDepartureDate(e.target.value)}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                min={today}
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
+                            <input
+                                type="date" id="return-date" name="return-date"
+                                required={returnDate !== ''}
+                                disabled={returnDate === ''}
+                                value={returnDate}
+                                onChange={(e) => setReturnDate(e.target.value)}
+                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${returnDate === '' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                min={departureDate || today}
+                            />
                         </div>
 
                         {/* Passengers */}
-                        <div className="lg:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Passengers
-                            </label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
                             <div className="grid grid-cols-3 gap-2">
                                 <div>
                                     <label className="block text-xs text-gray-500">Adults</label>
@@ -268,9 +247,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                         className="w-full p-2 border border-gray-300 rounded-md"
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                                            <option key={num} value={num}>
-                                                {num}
-                                            </option>
+                                            <option key={num} value={num}>{num}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -282,9 +259,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                         className="w-full p-2 border border-gray-300 rounded-md"
                                     >
                                         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                                            <option key={num} value={num}>
-                                                {num}
-                                            </option>
+                                            <option key={num} value={num}>{num}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -296,9 +271,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                         className="w-full p-2 border border-gray-300 rounded-md"
                                     >
                                         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                                            <option key={num} value={num}>
-                                                {num}
-                                            </option>
+                                            <option key={num} value={num}>{num}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -306,28 +279,22 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         </div>
 
                         {/* Cabin Class */}
-                        <div className="lg:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Cabin Class
-                            </label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
                             <select
                                 value={cabinClass}
                                 onChange={(e) => setCabinClass(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded-md"
                             >
                                 {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
-                                    <option key={cabin.value} value={cabin.value}>
-                                        {cabin.label}
-                                    </option>
+                                    <option key={cabin.value} value={cabin.value}>{cabin.label}</option>
                                 ))}
                             </select>
                         </div>
 
                         {/* Currency */}
-                        <div className="lg:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Currency
-                            </label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
                             <select
                                 value={currency}
                                 onChange={(e) => setCurrency(e.target.value)}
@@ -342,10 +309,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         </div>
 
                         {/* Max Connections */}
-                        <div className="lg:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Max Connections
-                            </label>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Connections</label>
                             <select
                                 value={maxConnections}
                                 onChange={(e) => setMaxConnections(parseInt(e.target.value))}
@@ -361,7 +326,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         </div>
 
                         {/* Search Button */}
-                        <div className="lg:col-span-4">
+                        <div className="md:col-span-2 lg:col-span-4">
                             <button
                                 type="submit"
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300"
