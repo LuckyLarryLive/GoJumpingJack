@@ -12,7 +12,11 @@ export interface Flight {
     return_at?: string; 
     airline: string; 
     price: number; 
-    link: string; 
+    link: string;
+    stops: number;
+    cabin_class: string;
+    currency: string;
+    duration: string;
 }
 
 export interface FlightApiResponse {
@@ -27,5 +31,13 @@ export interface SearchParamsType {
     travelers: string; 
     tripType: 'round-trip' | 'one-way'; 
     fromDisplayValue?: string | null; 
-    toDisplayValue?: string | null; 
+    toDisplayValue?: string | null;
+    cabinClass?: string;
+    currency?: string;
+    maxConnections?: number;
+    passengers?: {
+        adults: number;
+        children: number;
+        infants: number;
+    };
 }

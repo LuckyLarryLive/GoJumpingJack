@@ -4,11 +4,30 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { SearchParamsType } from '@/types'; // Import shared type
 import AirportSearchInput from './AirportSearchInput'; // Import sibling component
 
+// Add these constants at the top of the file, after imports
+const DUFFEL_CONSTRAINTS = {
+  maxPassengers: 9,
+  maxInfantsPerAdult: 1,
+  maxBookingWindow: 365, // days
+  minBookingWindow: 0, // days
+  supportedCurrencies: ['USD', 'EUR', 'GBP', 'CAD', 'AUD'],
+  cabinClasses: [
+    { value: 'economy', label: 'Economy' },
+    { value: 'premium_economy', label: 'Premium Economy' },
+    { value: 'business', label: 'Business' },
+    { value: 'first', label: 'First' }
+  ],
+  maxConnections: 2,
+  minConnectionTime: 30, // minutes
+  maxConnectionTime: 24 * 60, // minutes
+  maxOffersPerRequest: 200
+};
+
 // --- Component Props Interface ---
 // (Part of the code you cut and pasted)
 interface SearchSectionProps {
   onSearchSubmit: (params: SearchParamsType) => void;
-  initialSearchParams?: SearchParamsType | null; // Used for pre-filling or resetting
+  initialSearchParams: SearchParamsType | null;
 }
 
 // --- Search Section Component ---
@@ -25,6 +44,16 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [tripType, setTripType] = useState<'round-trip' | 'one-way'>('round-trip'); // Default trip type
   const [isMinimized, setIsMinimized] = useState(false); // Controls expanded/minimized view
 
+  // New state variables for enhanced search
+  const [passengers, setPassengers] = useState({
+    adults: 1,
+    children: 0,
+    infants: 0
+  });
+  const [cabinClass, setCabinClass] = useState<string>('economy');
+  const [currency, setCurrency] = useState<string>('USD');
+  const [maxConnections, setMaxConnections] = useState<number>(2);
+
   // Calculate today's date for min attribute on date inputs
   const today = new Date().toISOString().split('T')[0];
 
@@ -32,7 +61,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   useEffect(() => {
     console.log("SearchSection initialSearchParams changed:", initialSearchParams); // Log changes
     if (initialSearchParams === null) {
-        // Explicitly Reset the form fully
+        // Reset form
         console.log("SearchSection: Resetting form.");
         setOriginAirportCode(null);
         setDestinationAirportCode(null);
@@ -42,7 +71,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         setReturnDate('');
         setTravelers('1');
         setTripType('round-trip');
-        setIsMinimized(false); // Ensure form is expanded on reset
+        setIsMinimized(false);
+        setPassengers({ adults: 1, children: 0, infants: 0 });
+        setCabinClass('economy');
+        setCurrency('USD');
+        setMaxConnections(2);
     } else if (initialSearchParams) {
         // Pre-fill the form
         console.log("SearchSection: Pre-filling form.");
@@ -55,8 +88,15 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         setReturnDate(initialSearchParams.returnDate || '');
         setTravelers(initialSearchParams.travelers);
         setTripType(initialSearchParams.tripType);
-        // Optionally minimize if pre-filled? Depends on desired UX
         setIsMinimized(true); // Example: Minimize when pre-filled from results page link
+        setPassengers({
+          adults: initialSearchParams.passengers?.adults || 1,
+          children: initialSearchParams.passengers?.children || 0,
+          infants: initialSearchParams.passengers?.infants || 0
+        });
+        setCabinClass(initialSearchParams.cabinClass || 'economy');
+        setCurrency(initialSearchParams.currency || 'USD');
+        setMaxConnections(initialSearchParams.maxConnections || 2);
     }
     // If initialSearchParams is undefined (initial load, no params), do nothing, keep defaults
   }, [initialSearchParams]); // Rerun only when initialSearchParams prop changes
@@ -98,13 +138,43 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
        alert("Please select a return date for round trips.");
        return;
     }
-    if (tripType === 'round-trip' && returnDate && departureDate && returnDate < departureDate) {
+
+    // Date validation
+    const today = new Date();
+    const departure = new Date(departureDate);
+    const returnDateObj = returnDate ? new Date(returnDate) : null;
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + DUFFEL_CONSTRAINTS.maxBookingWindow);
+
+    if (departure < today) {
+      alert("Departure date cannot be in the past.");
+      return;
+    }
+    if (departure > maxDate) {
+      alert(`Departure date cannot be more than ${DUFFEL_CONSTRAINTS.maxBookingWindow} days in the future.`);
+      return;
+    }
+    if (returnDateObj && returnDateObj < departure) {
       alert("Return date cannot be before the departure date.");
       return;
     }
-    if (!travelers) {
-        alert("Please select the number of travelers.");
-        return;
+    if (returnDateObj && returnDateObj > maxDate) {
+      alert(`Return date cannot be more than ${DUFFEL_CONSTRAINTS.maxBookingWindow} days in the future.`);
+      return;
+    }
+
+    // Passenger validation
+    if (passengers.adults === 0) {
+      alert("At least one adult passenger is required.");
+      return;
+    }
+    if (passengers.infants > passengers.adults * DUFFEL_CONSTRAINTS.maxInfantsPerAdult) {
+      alert(`Maximum ${DUFFEL_CONSTRAINTS.maxInfantsPerAdult} infant(s) per adult allowed.`);
+      return;
+    }
+    if (passengers.adults + passengers.children + passengers.infants > DUFFEL_CONSTRAINTS.maxPassengers) {
+      alert(`Maximum ${DUFFEL_CONSTRAINTS.maxPassengers} passengers allowed.`);
+      return;
     }
 
     // Construct searchParams object for the parent (HomePage)
@@ -112,15 +182,23 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         originAirport: originAirportCode,
         destinationAirport: destinationAirportCode,
         departureDate,
-        returnDate: tripType === 'round-trip' ? returnDate : undefined, // Only include if round-trip
+        returnDate: tripType === 'round-trip' ? returnDate : undefined,
         travelers,
         tripType,
-        fromDisplayValue, // Pass display values along too
-        toDisplayValue
+        fromDisplayValue,
+        toDisplayValue,
+        cabinClass,
+        currency,
+        maxConnections,
+        passengers: {
+          adults: passengers.adults,
+          children: passengers.children,
+          infants: passengers.infants
+        }
     };
     console.log("SearchSection submitting:", searchParams);
-    onSearchSubmit(searchParams); // Call the callback passed from HomePage
-    setIsMinimized(true); // Minimize the form after successful submission
+    onSearchSubmit(searchParams);
+    setIsMinimized(true);
   };
 
   // --- Handler to Re-expand the Form ---
@@ -128,24 +206,64 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     setIsMinimized(false);
   };
 
+  // --- Passenger Count Handlers ---
+  const handlePassengerChange = (type: 'adults' | 'children' | 'infants', value: number) => {
+    setPassengers(prev => {
+      const newPassengers = { ...prev, [type]: value };
+      // Ensure total doesn't exceed 9
+      const total = newPassengers.adults + newPassengers.children + newPassengers.infants;
+      if (total > 9) return prev;
+      // Ensure infants don't exceed adults
+      if (newPassengers.infants > newPassengers.adults) return prev;
+      return newPassengers;
+    });
+  };
+
   // --- Render Logic ---
 
   // Minimized View
   if (isMinimized) {
       return (
-          <section id="search" className="py-4 bg-gray-50 scroll-mt-24"> {/* scroll-mt matches sticky header height */}
+          <section id="search" className="py-6 bg-gray-50">
               <div className="container mx-auto px-4">
-                  <button
-                      onClick={handleEditFilters}
-                      className="w-full md:w-auto md:mx-auto flex items-center justify-center px-6 py-3 bg-white border border-gray-300 rounded-lg shadow-md hover:shadow-lg hover:bg-gray-50 transition duration-200 text-blue-600 font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      aria-label="Edit search filters"
-                  >
-                      {/* Filter Icon SVG */}
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L13 10.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-6.586L3.293 6.707A1 1 0 013 6V3zm3.707 4.707L10 11.414l3.293-3.707a1 1 0 00.293-.707V4H4v2a1 1 0 00.707.924l.001.001.001.001a.998.998 0 00.998-.001L6.707 7.707z" clipRule="evenodd" />
-                      </svg>
-                      Edit Filters
-                  </button>
+                  <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto">
+                      <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                              <div className="flex items-center gap-4">
+                                  <div>
+                                      <span className="text-sm text-gray-500">From</span>
+                                      <p className="font-medium">{fromDisplayValue || originAirportCode}</p>
+                                  </div>
+                                  <div>
+                                      <span className="text-sm text-gray-500">To</span>
+                                      <p className="font-medium">{toDisplayValue || destinationAirportCode}</p>
+                                  </div>
+                                  <div>
+                                      <span className="text-sm text-gray-500">Dates</span>
+                                      <p className="font-medium">
+                                          {departureDate} {returnDate ? `- ${returnDate}` : '(One-way)'}
+                                      </p>
+                                  </div>
+                                  <div>
+                                      <span className="text-sm text-gray-500">Passengers</span>
+                                      <p className="font-medium">
+                                          {passengers.adults + passengers.children} {passengers.infants > 0 ? `+ ${passengers.infants} infant` : ''}
+                                      </p>
+                                  </div>
+                                  <div>
+                                      <span className="text-sm text-gray-500">Class</span>
+                                      <p className="font-medium capitalize">{cabinClass.replace('_', ' ')}</p>
+                                  </div>
+                              </div>
+                          </div>
+                          <button
+                              onClick={handleEditFilters}
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                              Edit Search
+                          </button>
+                      </div>
+                  </div>
               </div>
           </section>
       );
@@ -173,7 +291,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
           </div>
 
           {/* Main Form Grid */}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-start">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* From Airport Input */}
             <div className="lg:col-span-1">
               <AirportSearchInput
@@ -196,18 +314,18 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             </div>
 
             {/* Date Inputs */}
-            <div className="sm:col-span-2 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="w-full">
+            <div className="lg:col-span-2 grid grid-cols-2 gap-4">
+              <div>
                 <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
                 <input
                     type="date" id="departure-date" name="departure-date" required
                     value={departureDate}
                     onChange={(e) => setDepartureDate(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out h-[42px]" // Match height
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                     min={today} // Prevent selecting past dates
                 />
               </div>
-              <div className="w-full">
+              <div>
                 <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
                 <input
                     type="date" id="return-date" name="return-date"
@@ -215,43 +333,124 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     disabled={tripType === 'one-way'}    // Disable for one-way
                     value={returnDate}
                     onChange={(e) => setReturnDate(e.target.value)}
-                    className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out h-[42px] ${tripType === 'one-way' ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`} // Style when disabled
+                    className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${tripType === 'one-way' ? 'bg-gray-100 cursor-not-allowed' : ''}`} // Style when disabled
                     min={departureDate || today} // Min return date is departure date or today
                  />
               </div>
             </div>
 
-            {/* Travelers Input */}
+            {/* Passengers */}
             <div className="lg:col-span-1">
-               <label htmlFor="travelers" className="block text-sm font-medium text-gray-700 mb-1">Travelers</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Passengers
+               </label>
+               <div className="grid grid-cols-3 gap-2">
+                   <div>
+                       <label className="block text-xs text-gray-500">Adults</label>
+                       <select
+                           value={passengers.adults}
+                           onChange={(e) => handlePassengerChange('adults', parseInt(e.target.value))}
+                           className="w-full p-2 border border-gray-300 rounded-md"
+                       >
+                           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                               <option key={num} value={num}>
+                                   {num}
+                               </option>
+                           ))}
+                       </select>
+                   </div>
+                   <div>
+                       <label className="block text-xs text-gray-500">Children</label>
+                       <select
+                           value={passengers.children}
+                           onChange={(e) => handlePassengerChange('children', parseInt(e.target.value))}
+                           className="w-full p-2 border border-gray-300 rounded-md"
+                       >
+                           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                               <option key={num} value={num}>
+                                   {num}
+                               </option>
+                           ))}
+                       </select>
+                   </div>
+                   <div>
+                       <label className="block text-xs text-gray-500">Infants</label>
+                       <select
+                           value={passengers.infants}
+                           onChange={(e) => handlePassengerChange('infants', parseInt(e.target.value))}
+                           className="w-full p-2 border border-gray-300 rounded-md"
+                       >
+                           {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                               <option key={num} value={num}>
+                                   {num}
+                               </option>
+                           ))}
+                       </select>
+                   </div>
+               </div>
+            </div>
+
+            {/* Cabin Class */}
+            <div className="lg:col-span-1">
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Cabin Class
+               </label>
                <select
-                   id="travelers" name="travelers" required
-                   value={travelers}
-                   onChange={(e) => setTravelers(e.target.value)}
-                   className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white h-[42px] transition duration-150 ease-in-out appearance-none pr-8 bg-no-repeat bg-right" // Basic styling for select
-                   style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>')`, backgroundPosition: 'right 0.5rem center', backgroundSize: '1.5em 1.5em' }}
+                   value={cabinClass}
+                   onChange={(e) => setCabinClass(e.target.value)}
+                   className="w-full p-2 border border-gray-300 rounded-md"
                >
-                   {/* Generate options programmatically or list them */}
-                   {[1, 2, 3, 4, 5, 6].map(num => ( // Example up to 6 travelers
-                       <option key={num} value={num}>
-                           {num} Adult{num > 1 ? 's' : ''}
+                   {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
+                       <option key={cabin.value} value={cabin.value}>
+                           {cabin.label}
                        </option>
                    ))}
-                   {/* Add options for children/infants if needed */}
+               </select>
+            </div>
+
+            {/* Currency */}
+            <div className="lg:col-span-1">
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Currency
+               </label>
+               <select
+                   value={currency}
+                   onChange={(e) => setCurrency(e.target.value)}
+                   className="w-full p-2 border border-gray-300 rounded-md"
+               >
+                   {DUFFEL_CONSTRAINTS.supportedCurrencies.map((curr) => (
+                       <option key={curr} value={curr}>
+                           {curr} ({curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'CAD' ? 'C$' : 'A$'})
+                       </option>
+                   ))}
+               </select>
+            </div>
+
+            {/* Max Connections */}
+            <div className="lg:col-span-1">
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Max Connections
+               </label>
+               <select
+                   value={maxConnections}
+                   onChange={(e) => setMaxConnections(parseInt(e.target.value))}
+                   className="w-full p-2 border border-gray-300 rounded-md"
+               >
+                   <option value="0">Non-stop only</option>
+                   {Array.from({ length: DUFFEL_CONSTRAINTS.maxConnections }, (_, i) => (
+                       <option key={i + 1} value={i + 1}>
+                           Max {i + 1} {i === 0 ? 'connection' : 'connections'}
+                       </option>
+                   ))}
                </select>
             </div>
 
             {/* Search Button */}
-            <div className="sm:col-span-2 lg:col-span-1 self-end">
-               {/* Add hidden label for accessibility or keep button text clear */}
-               <label htmlFor="search-button" className="block text-sm font-medium text-transparent mb-1 select-none">Search</label>
+            <div className="lg:col-span-4">
                <button
-                   id="search-button"
                    type="submit"
-                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 flex items-center justify-center h-[42px] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300"
                 >
-                   {/* Search Icon Optional */}
-                   {/* <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" /></svg> */}
                    Search Flights
                </button>
             </div>
