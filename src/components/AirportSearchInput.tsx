@@ -259,6 +259,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     );
   };
 
+  // Group suggestions by city for rendering
+  const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
+  suggestions.forEach((airport: Airport) => {
+    if (!grouped[airport.city_name]) grouped[airport.city_name] = { cityInfo: airport, airports: [] };
+    grouped[airport.city_name].airports.push(airport);
+  });
+  const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped).map(([city, { cityInfo, airports }]) => ({
+    city: cityInfo,
+    airports
+  }));
 
   // --- Render ---
   // (The JSX return statement you cut and pasted)
@@ -274,23 +284,56 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       {/* Loading Spinner */}
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
       {/* Suggestions Dropdown */}
-      {isDropdownOpen && suggestions.length > 0 && (
+      {isDropdownOpen && groupedSuggestions.length > 0 && (
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
-          {suggestions.map((airport, index) => (
-            <li key={airport.airport_code}
-              onMouseDown={() => handleSuggestionClick(airport)}
-              onMouseEnter={() => setActiveIndex(index)}
-              className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${index === activeIndex ? 'bg-blue-100' : ''}`}
-            >
-              <FaPlane className="mt-1 mr-2 text-blue-400" />
-              <div>
-                <div className="font-semibold text-gray-800">
-                  {highlightMatch(`${airport.airport_name} (${airport.airport_code})`, query)}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {airport.city_name}, {/* You may want to add state/country if available */}
-                </div>
+          {groupedSuggestions.map((group, groupIdx) => (
+            <li key={group.city.city_code + '-group'} className="">
+              {/* Selectable City Group Option */}
+              <div
+                className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
+                tabIndex={0}
+                onMouseDown={() => {
+                  const allCodes = group.airports.map(a => a.airport_code).join(',');
+                  const displayValue = `${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`;
+                  onAirportSelect(allCodes, group.city.city_code, displayValue);
+                  setQuery(displayValue);
+                  setIsDropdownOpen(false);
+                  setSuggestions([]);
+                  setActiveIndex(-1);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    const allCodes = group.airports.map(a => a.airport_code).join(',');
+                    const displayValue = `${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`;
+                    onAirportSelect(allCodes, group.city.city_code, displayValue);
+                    setQuery(displayValue);
+                    setIsDropdownOpen(false);
+                    setSuggestions([]);
+                    setActiveIndex(-1);
+                  }
+                }}
+              >
+                <FaCity className="mr-2 text-blue-500" />
+                <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`, query)}</span>
               </div>
+              {/* Airports under city */}
+              {group.airports.map((airport, index) => (
+                <div key={airport.airport_code}
+                  onMouseDown={() => handleSuggestionClick(airport)}
+                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.airport_code === airport.airport_code))}
+                  className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.airport_code === airport.airport_code ? 'bg-blue-100' : ''}`}
+                >
+                  <FaPlane className="mt-1 mr-2 text-blue-400" />
+                  <div>
+                    <div className="font-semibold text-gray-800">
+                      {highlightMatch(`${airport.airport_name} (${airport.airport_code})`, query)}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {airport.city_name}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </li>
           ))}
         </ul>
