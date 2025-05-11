@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import useDebounce from '@/hooks/useDebounce'; // Import the extracted hook
 import type { Airport } from '@/types'; // Import the Airport type
+import { FaPlane, FaCity } from 'react-icons/fa';
 
 // --- Component Props Interface ---
 // (This was part of the code you cut and pasted)
@@ -108,31 +109,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         );
 
         // --- GROUPING LOGIC START ---
-        const grouped: { [city: string]: Airport[] } = {};
+        const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
         validSuggestions.forEach(airport => {
-          if (!grouped[airport.city_name]) grouped[airport.city_name] = [];
-          grouped[airport.city_name].push(airport);
-        });
-
-        const combinedSuggestions: Airport[] = [];
-        Object.entries(grouped).forEach(([city, airports]) => {
-          if (airports.length > 1) {
-            // Add combined option
-            combinedSuggestions.push({
-              airport_code: airports.map(a => a.airport_code).join(','),
-              airport_name: `${city} – All airports`,
-              city_code: airports[0].city_code,
-              city_name: city,
-            });
-          }
-          // Add individual airports
-          combinedSuggestions.push(...airports);
+          if (!grouped[airport.city_name]) grouped[airport.city_name] = { cityInfo: airport, airports: [] };
+          grouped[airport.city_name].airports.push(airport);
         });
         // --- GROUPING LOGIC END ---
 
          if (query === debouncedQuery) {
-            setSuggestions(combinedSuggestions);
-            setIsDropdownOpen(combinedSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
+            setSuggestions(validSuggestions);
+            setIsDropdownOpen(validSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
             setActiveIndex(-1);
          }
       } catch (error) {
@@ -264,6 +250,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   }, [activeIndex]);
 
 
+  // Helper to highlight matching text
+  const highlightMatch = (text: string, query: string) => {
+    if (!query) return [text];
+    const regex = new RegExp(`(${query})`, 'ig');
+    return text.split(regex).map((part, i) =>
+      regex.test(part) ? <b key={i} className="font-bold text-blue-700">{part}</b> : part
+    );
+  };
+
+
   // --- Render ---
   // (The JSX return statement you cut and pasted)
   return (
@@ -282,14 +278,18 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
           {suggestions.map((airport, index) => (
             <li key={airport.airport_code}
-                // Use onMouseDown to register click before blur closes dropdown
-                onMouseDown={() => handleSuggestionClick(airport)}
-                onMouseEnter={() => setActiveIndex(index)} // Highlight on hover
-                className={`px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${index === activeIndex ? 'bg-blue-100' : ''}`} >
+              onMouseDown={() => handleSuggestionClick(airport)}
+              onMouseEnter={() => setActiveIndex(index)}
+              className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${index === activeIndex ? 'bg-blue-100' : ''}`}
+            >
+              <FaPlane className="mt-1 mr-2 text-blue-400" />
               <div>
-                <span className="font-semibold text-gray-800">{airport.airport_code}</span>
-                <span className="text-gray-700"> — {airport.airport_name}</span>
-                <span className="text-sm text-gray-500"> ({airport.city_name})</span>
+                <div className="font-semibold text-gray-800">
+                  {highlightMatch(`${airport.airport_name} (${airport.airport_code})`, query)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {airport.city_name}, {/* You may want to add state/country if available */}
+                </div>
               </div>
             </li>
           ))}
