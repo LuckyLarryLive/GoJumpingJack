@@ -48,7 +48,7 @@ async function upsertAirports(supabase: any, mapped: any[]) {
 async function syncAirports(req: Request) {
   // Secure with x-vercel-cron-secret header
   const secret = req.headers.get('x-vercel-cron-secret');
-  if (!secret || secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!secret || secret !== process.env.VERCEL_CRON_SECRET) {
     console.warn('Unauthorized cron attempt');
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
   }
