@@ -29,16 +29,10 @@ console.log('Lobster font variable:', lobster.variable);
 // --- Metadata (Your setup is correct) ---
 export const metadata: Metadata = {
   title: 'Go Jumping Jack',
-  description: 'Find the best flight deals powered by real people and AI.',
+  description: 'Your travel companion',
   icons: {
-    icon: [
-      { url: '/GJJ_Jack_blue.png', sizes: '32x32', type: 'image/png' },
-      { url: '/GJJ_Jack_blue.png', sizes: '16x16', type: 'image/png' }
-    ],
-    apple: [
-      { url: '/GJJ_Jack_blue.png', sizes: '180x180', type: 'image/png' }
-    ],
-    shortcut: '/GJJ_Jack_blue.png'
+    icon: '/GJJ_Jack_blue.png',
+    apple: '/GJJ_Jack_blue.png',
   },
 };
 

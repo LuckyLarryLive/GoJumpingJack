@@ -44,34 +44,48 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
     }
 
     const searchResults = searchAirports(value);
-    const cities = new Set(searchResults.map(airport => airport.city));
+    const cityMap = new Map<string, Airport[]>();
     
+    // Group airports by city
+    searchResults.forEach(airport => {
+      const cityKey = airport.city.toLowerCase();
+      if (!cityMap.has(cityKey)) {
+        cityMap.set(cityKey, []);
+      }
+      cityMap.get(cityKey)?.push(airport);
+    });
+
     const formattedResults: SearchResult[] = [];
     
-    // Add city results first
-    cities.forEach(city => {
-      const cityAirports = getAirportsByCity(city);
-      formattedResults.push({
-        type: 'city',
-        code: cityAirports[0].code,
-        name: `${city} - All airports`,
-        city,
-        state: cityAirports[0].state,
-        country: cityAirports[0].country,
-        airports: cityAirports
-      });
+    // Add city results first (only if there are multiple airports in the city)
+    cityMap.forEach((airports, cityKey) => {
+      if (airports.length > 1) {
+        formattedResults.push({
+          type: 'city',
+          code: airports[0].code,
+          name: `${airports[0].city} - All airports`,
+          city: airports[0].city,
+          state: airports[0].state,
+          country: airports[0].country,
+          airports: airports
+        });
+      }
     });
 
     // Add individual airport results
     searchResults.forEach(airport => {
-      formattedResults.push({
-        type: 'airport',
-        code: airport.code,
-        name: airport.name,
-        city: airport.city,
-        state: airport.state,
-        country: airport.country
-      });
+      // Only add individual airports if they're not part of a multi-airport city
+      const cityAirports = cityMap.get(airport.city.toLowerCase());
+      if (!cityAirports || cityAirports.length === 1) {
+        formattedResults.push({
+          type: 'airport',
+          code: airport.code,
+          name: airport.name,
+          city: airport.city,
+          state: airport.state,
+          country: airport.country
+        });
+      }
     });
 
     setResults(formattedResults);
