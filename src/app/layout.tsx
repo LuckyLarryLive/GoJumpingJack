@@ -31,8 +31,14 @@ export const metadata: Metadata = {
   title: 'Go Jumping Jack',
   description: 'Find the best flight deals powered by real people and AI.',
   icons: {
-    icon: '/GJJ_Jack_blue.png',
-    apple: '/GJJ_Jack_blue.png',
+    icon: [
+      { url: '/GJJ_Jack_blue.png', sizes: '32x32', type: 'image/png' },
+      { url: '/GJJ_Jack_blue.png', sizes: '16x16', type: 'image/png' }
+    ],
+    apple: [
+      { url: '/GJJ_Jack_blue.png', sizes: '180x180', type: 'image/png' }
+    ],
+    shortcut: '/GJJ_Jack_blue.png'
   },
 };
 
