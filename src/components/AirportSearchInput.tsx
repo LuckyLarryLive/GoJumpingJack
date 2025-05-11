@@ -91,47 +91,64 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
 
     const fetchSuggestions = async () => {
-      // Avoid fetching if query is exactly the current selected display value
       if (query === currentFormattedSelection && selectedAirport) {
           return;
       }
       setIsLoading(true);
       try {
-        // Ensure the API endpoint is correct
         const response = await fetch(`/api/search-airports?q=${encodeURIComponent(debouncedQuery)}`);
         if (!response.ok) throw new Error(`Network response error: ${response.statusText}`);
-        // Ensure response is JSON before parsing
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
             throw new Error(`Expected JSON response, got ${contentType}`);
         }
-        const data: Airport[] = await response.json(); // Expecting Airport[] directly or adjust if nested e.g. { data: Airport[] }
+        const data: Airport[] = await response.json();
         const validSuggestions = data.filter(airport =>
             airport.airport_code && airport.city_code && airport.airport_name && airport.city_name
         );
 
-         if (query === debouncedQuery) { // Check against current query state
-            setSuggestions(validSuggestions);
-            // Only open dropdown if results exist AND query isn't exactly a selected value AND query has content
-            setIsDropdownOpen(validSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
+        // --- GROUPING LOGIC START ---
+        const grouped: { [city: string]: Airport[] } = {};
+        validSuggestions.forEach(airport => {
+          if (!grouped[airport.city_name]) grouped[airport.city_name] = [];
+          grouped[airport.city_name].push(airport);
+        });
+
+        const combinedSuggestions: Airport[] = [];
+        Object.entries(grouped).forEach(([city, airports]) => {
+          if (airports.length > 1) {
+            // Add combined option
+            combinedSuggestions.push({
+              airport_code: airports.map(a => a.airport_code).join(','),
+              airport_name: `${city} – All airports`,
+              city_code: airports[0].city_code,
+              city_name: city,
+            });
+          }
+          // Add individual airports
+          combinedSuggestions.push(...airports);
+        });
+        // --- GROUPING LOGIC END ---
+
+         if (query === debouncedQuery) {
+            setSuggestions(combinedSuggestions);
+            setIsDropdownOpen(combinedSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
             setActiveIndex(-1);
          }
       } catch (error) {
         console.error("Failed to fetch airport suggestions:", error);
         setSuggestions([]); setIsDropdownOpen(false);
       } finally {
-        if (query === debouncedQuery) setIsLoading(false); // Check against current query state
+        if (query === debouncedQuery) setIsLoading(false);
       }
     };
 
-    // Trigger fetch only if conditions are met
     if (query !== '' && query !== currentFormattedSelection) {
       fetchSuggestions();
     } else {
-        setSuggestions([]); // Clear suggestions if query is blank or matches selection
+        setSuggestions([]);
         setIsDropdownOpen(false);
     }
-  // Dependency array includes everything that should trigger a re-fetch/re-evaluation
   }, [debouncedQuery, query, selectedAirport, getFormattedDisplay]);
 
 
