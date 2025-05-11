@@ -3,6 +3,7 @@ export interface Airport {
     airport_name: string; 
     city_code: string; 
     city_name: string;
+    country_code?: string;
 }
 
 export interface Flight { 
