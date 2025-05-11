@@ -43,10 +43,12 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
       return;
     }
 
+    console.log('Searching for:', value);
     const searchResults = searchAirports(value);
-    const cityMap = new Map<string, Airport[]>();
-    
+    console.log('Initial search results:', searchResults);
+
     // Group airports by city
+    const cityMap = new Map<string, Airport[]>();
     searchResults.forEach(airport => {
       const cityKey = airport.city.toLowerCase();
       if (!cityMap.has(cityKey)) {
@@ -55,11 +57,13 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
       cityMap.get(cityKey)?.push(airport);
     });
 
+    console.log('City map:', Object.fromEntries(cityMap));
+
     const formattedResults: SearchResult[] = [];
     
-    // Add city results first (only if there are multiple airports in the city)
+    // Add city results first
     cityMap.forEach((airports, cityKey) => {
-      if (airports.length > 1) {
+      if (airports.length > 0) {
         formattedResults.push({
           type: 'city',
           code: airports[0].code,
@@ -74,9 +78,8 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
 
     // Add individual airport results
     searchResults.forEach(airport => {
-      // Only add individual airports if they're not part of a multi-airport city
       const cityAirports = cityMap.get(airport.city.toLowerCase());
-      if (!cityAirports || cityAirports.length === 1) {
+      if (cityAirports && cityAirports.length === 1) {
         formattedResults.push({
           type: 'airport',
           code: airport.code,
@@ -88,17 +91,13 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
       }
     });
 
-    console.log('Search results:', {
-      query: value,
-      cityMap: Object.fromEntries(cityMap),
-      formattedResults
-    });
-
+    console.log('Final formatted results:', formattedResults);
     setResults(formattedResults);
     setIsOpen(true);
   };
 
   const handleSelect = (result: SearchResult) => {
+    console.log('Selected result:', result);
     onSelect(result);
     setQuery(result.type === 'city' ? result.city : result.name);
     setIsOpen(false);

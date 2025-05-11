@@ -32,14 +32,22 @@ export const metadata: Metadata = {
   description: 'Your travel companion',
   icons: {
     icon: [
-      { url: '/GJJ_Jack_blue.png', sizes: '32x32', type: 'image/png' },
-      { url: '/GJJ_Jack_blue.png', sizes: '16x16', type: 'image/png' }
+      { rel: 'icon', url: '/GJJ_Jack_blue.png' },
+      { rel: 'icon', url: '/GJJ_Jack_blue.png', sizes: '32x32', type: 'image/png' },
+      { rel: 'icon', url: '/GJJ_Jack_blue.png', sizes: '16x16', type: 'image/png' }
     ],
     apple: [
       { url: '/GJJ_Jack_blue.png', sizes: '180x180', type: 'image/png' }
     ],
-    shortcut: '/GJJ_Jack_blue.png'
+    shortcut: '/GJJ_Jack_blue.png',
+    other: [
+      {
+        rel: 'mask-icon',
+        url: '/GJJ_Jack_blue.png'
+      }
+    ]
   },
+  manifest: '/manifest.json'
 };
 
 // --- Root Layout Component (MODIFIED) ---
@@ -50,6 +58,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/GJJ_Jack_blue.png" />
+        <link rel="apple-touch-icon" href="/GJJ_Jack_blue.png" />
+      </head>
       <body
         className={`
             ${playfair.variable}
