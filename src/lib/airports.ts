@@ -1,6 +1,7 @@
 import { Airport } from '@/types/airport';
 
 export const airports: Airport[] = [
+  // Orlando airports
   {
     code: 'MCO',
     name: 'Orlando International Airport',
@@ -20,6 +21,16 @@ export const airports: Airport[] = [
     longitude: -81.2375
   },
   {
+    code: 'DAB',
+    name: 'Daytona Beach International Airport',
+    city: 'Orlando',
+    state: 'Florida',
+    country: 'United States',
+    latitude: 29.1799,
+    longitude: -81.0581
+  },
+  // New York airports
+  {
     code: 'JFK',
     name: 'John F. Kennedy International Airport',
     city: 'New York',
@@ -38,6 +49,16 @@ export const airports: Airport[] = [
     longitude: -73.8740
   },
   {
+    code: 'EWR',
+    name: 'Newark Liberty International Airport',
+    city: 'New York',
+    state: 'New York',
+    country: 'United States',
+    latitude: 40.6895,
+    longitude: -74.1745
+  },
+  // Los Angeles airports
+  {
     code: 'LAX',
     name: 'Los Angeles International Airport',
     city: 'Los Angeles',
@@ -45,6 +66,43 @@ export const airports: Airport[] = [
     country: 'United States',
     latitude: 33.9416,
     longitude: -118.4085
+  },
+  {
+    code: 'BUR',
+    name: 'Bob Hope Airport',
+    city: 'Los Angeles',
+    state: 'California',
+    country: 'United States',
+    latitude: 34.2006,
+    longitude: -118.3587
+  },
+  {
+    code: 'ONT',
+    name: 'Ontario International Airport',
+    city: 'Los Angeles',
+    state: 'California',
+    country: 'United States',
+    latitude: 34.0559,
+    longitude: -117.6011
+  },
+  // Single airport cities
+  {
+    code: 'MIA',
+    name: 'Miami International Airport',
+    city: 'Miami',
+    state: 'Florida',
+    country: 'United States',
+    latitude: 25.7959,
+    longitude: -80.2870
+  },
+  {
+    code: 'SEA',
+    name: 'Seattle-Tacoma International Airport',
+    city: 'Seattle',
+    state: 'Washington',
+    country: 'United States',
+    latitude: 47.4502,
+    longitude: -122.3088
   }
 ];
 

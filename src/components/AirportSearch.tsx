@@ -63,7 +63,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
         formattedResults.push({
           type: 'city',
           code: airports[0].code,
-          name: `${airports[0].city} - All airports`,
+          name: `${airports[0].city} - All airports (${airports.length})`,
           city: airports[0].city,
           state: airports[0].state,
           country: airports[0].country,
@@ -80,12 +80,18 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
         formattedResults.push({
           type: 'airport',
           code: airport.code,
-          name: airport.name,
+          name: `${airport.name} (${airport.code})`,
           city: airport.city,
           state: airport.state,
           country: airport.country
         });
       }
+    });
+
+    console.log('Search results:', {
+      query: value,
+      cityMap: Object.fromEntries(cityMap),
+      formattedResults
     });
 
     setResults(formattedResults);
