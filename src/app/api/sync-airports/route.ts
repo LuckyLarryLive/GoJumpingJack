@@ -45,12 +45,7 @@ async function upsertAirports(supabase: any, mapped: any[]) {
   }
 }
 
-export default async function handler(req: Request) {
-  // Allow GET and POST
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
-  }
-
+async function syncAirports(req: Request) {
   // Secure with x-vercel-cron-secret header
   const secret = req.headers.get('x-vercel-cron-secret');
   if (!secret || secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -72,4 +67,12 @@ export default async function handler(req: Request) {
     console.error('Error during sync:', err);
     return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), { status: 500 });
   }
+}
+
+export async function GET(req: Request) {
+  return syncAirports(req);
+}
+
+export async function POST(req: Request) {
+  return syncAirports(req);
 } 
