@@ -2,22 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 
-export async function POST(req: NextRequest) {
-  // 1. Secure with x-vercel-cron-secret header
-  const secret = req.headers.get('x-vercel-cron-secret');
-  if (!secret || secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('Unauthorized cron attempt');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-  }
-
-  // 2. Set up Supabase and Duffel
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-  const DUFFEL_TOKEN = process.env.DUFFEL_TOKEN!;
-
-  // 3. Fetch all airports from Duffel (pagination)
+async function fetchAllDuffelAirports(DUFFEL_TOKEN: string) {
   let airports: any[] = [];
   let after: string | null = null;
   const limit = 100;
@@ -31,9 +16,11 @@ export async function POST(req: NextRequest) {
     airports = airports.concat(response.data.data);
     after = response.data.meta?.after || null;
   } while (after);
+  return airports;
+}
 
-  // 4. Map and upsert
-  const mapped = airports.map((airport) => ({
+function mapDuffelToSupabase(airport: any) {
+  return {
     duffel_id: airport.id,
     iata_code: airport.iata_code,
     name: airport.name,
@@ -42,9 +29,10 @@ export async function POST(req: NextRequest) {
     latitude: airport.latitude,
     longitude: airport.longitude,
     updated_at: new Date().toISOString(),
-  }));
+  };
+}
 
-  // Upsert in chunks
+async function upsertAirports(supabase: any, mapped: any[]) {
   const chunkSize = 500;
   for (let i = 0; i < mapped.length; i += chunkSize) {
     const chunk = mapped.slice(i, i + chunkSize);
@@ -52,10 +40,36 @@ export async function POST(req: NextRequest) {
       .from('airports')
       .upsert(chunk, { onConflict: 'iata_code' });
     if (error) {
-      console.error('Upsert error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      throw new Error(error.message);
     }
   }
+}
 
-  return NextResponse.json({ message: 'Sync complete', count: mapped.length });
+export default async function handler(req: Request) {
+  // Allow GET and POST
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
+  }
+
+  // Secure with x-vercel-cron-secret header
+  const secret = req.headers.get('x-vercel-cron-secret');
+  if (!secret || secret !== process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('Unauthorized cron attempt');
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 });
+  }
+
+  try {
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+    const DUFFEL_TOKEN = process.env.DUFFEL_TOKEN!;
+    const duffelAirports = await fetchAllDuffelAirports(DUFFEL_TOKEN);
+    const mapped = duffelAirports.map(mapDuffelToSupabase);
+    await upsertAirports(supabase, mapped);
+    return new Response(JSON.stringify({ message: 'Sync complete', count: mapped.length }), { status: 200 });
+  } catch (err: any) {
+    console.error('Error during sync:', err);
+    return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), { status: 500 });
+  }
 } 
