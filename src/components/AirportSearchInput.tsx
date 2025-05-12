@@ -45,8 +45,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Helper to format display string
   const getFormattedDisplay = useCallback((airport: Airport | null): string => {
     if (!airport) return '';
-    // Using city_name as per your type def
-    return `${airport.airport_code} — ${airport.airport_name} (${airport.city_name || 'N/A'})`;
+    
+    // Format: "Airport Name (IATA) - City, Region, Country"
+    const parts = [
+      `${airport.airport_name} (${airport.airport_code})`,
+      airport.city_name || '',
+      airport.region || '',
+      airport.country_code || ''
+    ].filter(Boolean); // Remove empty strings
+    
+    return parts.join(' - ');
   }, []);
 
   // Effect to sync with initialDisplayValue from parent
@@ -121,8 +129,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
         mapped.forEach((airport: any) => {
           const cityKey = airport.city_name || `airport_${airport.airport_code}`; // Use airport code if city is NULL
-          if (!grouped[cityKey]) grouped[cityKey] = { cityInfo: airport, airports: [] };
-          grouped[cityKey].airports.push(airport);
+          if (!grouped[cityKey]) {
+            if (airport.city_name) {
+              grouped[cityKey] = { cityInfo: airport, airports: [] };
+            } else {
+              grouped[cityKey] = { cityInfo: airport, airports: [airport] };
+            }
+          }
+          if (airport.city_name) {
+            grouped[cityKey].airports.push(airport);
+          }
         });
         // --- GROUPING LOGIC END ---
 
@@ -185,6 +201,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     
     // Set the display value to the formatted airport name
     const displayValue = getFormattedDisplay(airport);
+    console.log('[AirportSearchInput] Setting display value:', displayValue);
     setQuery(displayValue);
     setSelectedAirport(airport);
     
@@ -195,42 +212,50 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     setIsDropdownOpen(false);
     setSuggestions([]);
 
-    // Fetch Unsplash image with proper parameters
-    const params = new URLSearchParams();
+    // Only attempt to fetch Unsplash image if we have a valid city name
     if (airport.city_name) {
+      const params = new URLSearchParams();
       params.append('city_name', airport.city_name);
-    }
-    if (airport.country_code) {
-      params.append('country_code', airport.country_code);
-    }
-    if (airport.region) {
-      params.append('region', airport.region);
-    }
-
-    console.log('[AirportSearchInput] Fetching Unsplash image with params:', params.toString());
-    
-    // Use a separate async function to handle the Unsplash API call
-    const fetchUnsplashImage = async () => {
-      try {
-        const response = await fetch(`/api/get-unsplash-image?${params.toString()}`);
-        if (!response.ok) {
-          throw new Error(`Unsplash API error: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('[AirportSearchInput] Unsplash response:', data);
-        
-        // Handle the Unsplash response data
-        if (data.imageUrl) {
-          // Update the background image
-          document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
-        }
-      } catch (error) {
-        console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
+      
+      if (airport.country_code) {
+        params.append('country_code', airport.country_code);
       }
-    };
+      
+      if (airport.region) {
+        params.append('region', airport.region);
+      }
 
-    // Call the Unsplash API asynchronously without affecting the input state
-    fetchUnsplashImage();
+      const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
+      console.log('[AirportSearchInput] Fetching Unsplash image:', {
+        url: unsplashUrl,
+        params: Object.fromEntries(params.entries())
+      });
+      
+      // Use a separate async function to handle the Unsplash API call
+      const fetchUnsplashImage = async () => {
+        try {
+          const response = await fetch(unsplashUrl);
+          if (!response.ok) {
+            throw new Error(`Unsplash API error: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log('[AirportSearchInput] Unsplash response:', data);
+          
+          // Handle the Unsplash response data
+          if (data.imageUrl) {
+            // Update the background image
+            document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
+          }
+        } catch (error) {
+          console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
+        }
+      };
+
+      // Call the Unsplash API asynchronously without affecting the input state
+      fetchUnsplashImage();
+    } else {
+      console.log('[AirportSearchInput] Skipping Unsplash image fetch - no city name available');
+    }
   };
 
   // Add a new function to handle city selection
@@ -324,14 +349,29 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Group suggestions by city for rendering
   const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
   suggestions.forEach((airport: Airport) => {
-    const cityKey = airport.city_name || `airport_${airport.airport_code}`; // Use airport code if city is NULL
-    if (!grouped[cityKey]) grouped[cityKey] = { cityInfo: airport, airports: [] };
-    grouped[cityKey].airports.push(airport);
+    const cityKey = airport.city_name || `airport_${airport.airport_code}`;
+    if (!grouped[cityKey]) {
+      if (airport.city_name) {
+        grouped[cityKey] = { cityInfo: airport, airports: [] };
+      } else {
+        grouped[cityKey] = { cityInfo: airport, airports: [airport] };
+      }
+    }
+    if (airport.city_name) {
+      grouped[cityKey].airports.push(airport);
+    }
   });
-  const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped).map(([city, { cityInfo, airports }]) => ({
-    city: cityInfo,
-    airports
-  }));
+
+  // Convert grouped object to array, filtering out invalid groups
+  const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped)
+    .map(([city, { cityInfo, airports }]) => ({
+      city: cityInfo,
+      airports
+    }))
+    .filter(group => {
+      // Only include groups that have a valid city name and multiple airports
+      return group.city.city_name && group.airports.length > 1;
+    });
 
   // --- Render ---
   // (The JSX return statement you cut and pasted)
@@ -351,26 +391,28 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       {isDropdownOpen && groupedSuggestions.length > 0 && (
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
           {groupedSuggestions.map((group, groupIdx) => (
-            <li key={group.city.city_code + '-group'} className="">
-              {/* Selectable City Group Option */}
-              <div
-                className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
-                tabIndex={0}
-                onMouseDown={() => handleCitySelection(group.city.city_name, group.airports.map((a: any) => a.airport_code))}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    handleCitySelection(group.city.city_name, group.airports.map((a: any) => a.airport_code));
-                  }
-                }}
-              >
-                <FaCity className="mr-2 text-blue-500" />
-                <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`, query)}</span>
-              </div>
+            <li key={group.city.city_name + '-group'} className="">
+              {/* Only render city group if we have a valid city name and multiple airports */}
+              {group.city.city_name && group.airports.length > 1 && (
+                <div
+                  className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
+                  tabIndex={0}
+                  onMouseDown={() => handleCitySelection(group.city.city_name, group.airports.map(a => a.airport_code))}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      handleCitySelection(group.city.city_name, group.airports.map(a => a.airport_code));
+                    }
+                  }}
+                >
+                  <FaCity className="mr-2 text-blue-500" />
+                  <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`, query)}</span>
+                </div>
+              )}
               {/* Airports under city */}
-              {group.airports.map((airport: any, index: number) => (
+              {group.airports.map((airport: Airport) => (
                 <div key={airport.airport_code}
                   onMouseDown={() => handleSuggestionClick(airport)}
-                  onMouseEnter={() => setActiveIndex(suggestions.findIndex((a: any) => a.airport_code === airport.airport_code))}
+                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.airport_code === airport.airport_code))}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.airport_code === airport.airport_code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
