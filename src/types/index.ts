@@ -4,6 +4,7 @@ export interface Airport {
     city_code: string; 
     city_name: string;
     country_code?: string;
+    region?: string;
 }
 
 export interface Flight { 

@@ -330,6 +330,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                     </div>
                     <div className="text-xs text-gray-500">
                       {airport.city_name}
+                      {airport.region ? `, ${airport.region}` : ''}
                       {airport.country_code ? ` – ${airport.country_code}` : ''}
                     </div>
                   </div>
