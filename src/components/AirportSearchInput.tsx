@@ -339,9 +339,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                       {highlightMatch(`${airport.airport_name} (${airport.airport_code})`, query)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {airport.city_name}
-                      {airport.region ? `, ${airport.region}` : ''}
-                      {airport.country_code ? ` – ${airport.country_code}` : ''}
+                      {airport.city_name ? airport.city_name : ''}
+                      {airport.city_name && airport.region ? `, ${airport.region}` : (!airport.city_name && airport.region ? airport.region : '')}
+                      {(airport.city_name || airport.region) && airport.country_code ? ` – ${airport.country_code}` : (!airport.city_name && !airport.region && airport.country_code ? airport.country_code : '')}
                     </div>
                   </div>
                 </div>
