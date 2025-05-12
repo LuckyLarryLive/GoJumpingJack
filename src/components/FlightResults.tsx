@@ -18,56 +18,75 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
 
   // --- Fetch Logic (Keep as is from Step 2) ---
   useEffect(() => {
-      if (!searchParams) {
-          setFlights([]); setError(null); setIsLoading(false); return;
-      }
-      const fetchFlights = async () => {
-          setIsLoading(true); setError(null); setFlights([]);
+    if (!searchParams) {
+      setFlights([]); setError(null); setIsLoading(false); return;
+    }
+
+    const fetchFlights = async () => {
+      setIsLoading(true); setError(null); setFlights([]);
+
+      const originAirports = searchParams.originAirport.split(',');
+      const destinationAirports = searchParams.destinationAirport.split(',');
+
+      const allFlights: Flight[] = [];
+      const errors: string[] = [];
+
+      for (const origin of originAirports) {
+        for (const destination of destinationAirports) {
           const query = new URLSearchParams({
-              originAirport: searchParams.originAirport,
-              destinationAirport: searchParams.destinationAirport,
-              departureDate: searchParams.departureDate,
-              adults: searchParams.adults.toString(),
+            originAirport: origin,
+            destinationAirport: destination,
+            departureDate: searchParams.departureDate,
+            adults: searchParams.adults.toString(),
           });
           if (searchParams.returnDate) {
-              query.set('returnDate', searchParams.returnDate);
+            query.set('returnDate', searchParams.returnDate);
           }
           console.log(`FlightResults fetching: /api/flights?${query.toString()}`);
           try {
-              const response = await fetch(`/api/flights?${query.toString()}`);
-              if (!response.ok) { /* ... error handling ... */
-                  const errorText = await response.text(); throw new Error(`Search failed: ${response.statusText} (Status: ${response.status})`);
-              }
-              const contentType = response.headers.get("content-type");
-              if (!contentType || !contentType.includes("application/json")) { /* ... error handling ... */
-                 throw new Error(`Received unexpected response format from server.`);
-              }
-              const apiResponse: FlightApiResponse = await response.json();
-              if (apiResponse && Array.isArray(apiResponse.data)) {
-                  const validFlights = apiResponse.data.filter((f: any) =>
-                      f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
-                      && typeof f.price === 'number' && typeof f.link === 'string'
-                  ).map((flight: any) => ({
-                      ...flight,
-                      stops: flight.transfers || 0,
-                      cabin_class: flight.cabin_class || 'economy',
-                      currency: flight.currency || 'USD',
-                      duration: flight.duration ? `${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m` : 'N/A'
-                  }));
-                  setFlights(validFlights);
-                  setError(null); // Clear error on success
-              } else {
-                  console.error("API response missing 'data' array or invalid structure.");
-                  setFlights([]);
-                  setError("Received invalid data structure from server.");
-              }
-          } catch (err: any) { /* ... error handling ... */
-              console.error("Fetch catch block error:", err); setError(err.message || 'An unexpected error occurred.'); setFlights([]);
-          } finally {
-              setIsLoading(false);
+            const response = await fetch(`/api/flights?${query.toString()}`);
+            if (!response.ok) {
+              const errorText = await response.text();
+              errors.push(`Search failed for ${origin} to ${destination}: ${response.statusText} (Status: ${response.status})`);
+              continue;
+            }
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              errors.push(`Received unexpected response format from server for ${origin} to ${destination}.`);
+              continue;
+            }
+            const apiResponse: FlightApiResponse = await response.json();
+            if (apiResponse && Array.isArray(apiResponse.data)) {
+              const validFlights = apiResponse.data.filter((f: any) =>
+                f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
+                && typeof f.price === 'number' && typeof f.link === 'string'
+              ).map((flight: any) => ({
+                ...flight,
+                stops: flight.transfers || 0,
+                cabin_class: flight.cabin_class || 'economy',
+                currency: flight.currency || 'USD',
+                duration: flight.duration ? `${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m` : 'N/A'
+              }));
+              allFlights.push(...validFlights);
+            } else {
+              errors.push(`Received invalid data structure from server for ${origin} to ${destination}.`);
+            }
+          } catch (err: any) {
+            errors.push(`An unexpected error occurred for ${origin} to ${destination}: ${err.message}`);
           }
-      };
-      fetchFlights();
+        }
+      }
+
+      if (errors.length > 0) {
+        setError(errors.join('; '));
+      } else {
+        setError(null);
+      }
+      setFlights(allFlights);
+      setIsLoading(false);
+    };
+
+    fetchFlights();
   }, [searchParams]);
 
   // --- ADD BACK: Helper function to build the results page link ---

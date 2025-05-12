@@ -87,7 +87,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       console.log(`Clearing local selection for ${id} because query changed from formatted value.`);
       setSelectedAirport(null);
     }
-    if (debouncedQuery.length < 2) {
+    if (debouncedQuery.length < 3) {
       setSuggestions([]); setIsDropdownOpen(false); return;
     }
 
@@ -120,8 +120,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         // --- GROUPING LOGIC START ---
         const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
         mapped.forEach((airport: any) => {
-          if (!grouped[airport.city_name]) grouped[airport.city_name] = { cityInfo: airport, airports: [] };
-          grouped[airport.city_name].airports.push(airport);
+          const cityKey = airport.city_name || `airport_${airport.airport_code}`; // Use airport code if city is NULL
+          if (!grouped[cityKey]) grouped[cityKey] = { cityInfo: airport, airports: [] };
+          grouped[cityKey].airports.push(airport);
         });
         // --- GROUPING LOGIC END ---
 
@@ -178,13 +179,58 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
   };
 
-  // Handle Suggestion Click
+  // Update handleSuggestionClick to handle city selections
   const handleSuggestionClick = (airport: Airport) => {
-    isInteracting.current = true; // User is selecting
+    console.log('[AirportSearchInput] Selected airport:', airport);
+    
+    // Set the display value to the formatted airport name
     const displayValue = getFormattedDisplay(airport);
     setQuery(displayValue);
-    setSelectedAirport(airport);
-    onAirportSelect(airport.airport_code, airport.city_code, displayValue); // Update parent
+    
+    // Call the parent's onAirportSelect with the airport code
+    onAirportSelect(airport.airport_code, airport.city_code, displayValue);
+
+    // Close the suggestions dropdown
+    setIsDropdownOpen(false);
+
+    // Fetch Unsplash image with proper parameters
+    const params = new URLSearchParams();
+    if (airport.city_name) {
+      params.append('city_name', airport.city_name);
+    }
+    if (airport.country_code) {
+      params.append('country_code', airport.country_code);
+    }
+    if (airport.region) {
+      params.append('region', airport.region);
+    }
+
+    console.log('[AirportSearchInput] Fetching Unsplash image with params:', params.toString());
+    fetch(`/api/get-unsplash-image?${params.toString()}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Unsplash API error: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('[AirportSearchInput] Unsplash response:', data);
+        // Handle the Unsplash response data
+        if (data.imageUrl) {
+          // Update the background image
+          document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
+        }
+      })
+      .catch(error => {
+        console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
+      });
+  };
+
+  // Add a new function to handle city selection
+  const handleCitySelection = (cityName: string, airportCodes: string[]) => {
+    isInteracting.current = true; // User is selecting
+    const displayValue = `${cityName} – All Airports (${airportCodes.join(', ')})`;
+    onAirportSelect(airportCodes.join(','), null, displayValue); // Pass comma-separated airport codes
     setSuggestions([]); setIsDropdownOpen(false); setActiveIndex(-1);
     // Set interacting false slightly later to allow state updates
     setTimeout(() => { isInteracting.current = false; }, 100);
@@ -271,8 +317,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Group suggestions by city for rendering
   const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
   suggestions.forEach((airport: Airport) => {
-    if (!grouped[airport.city_name]) grouped[airport.city_name] = { cityInfo: airport, airports: [] };
-    grouped[airport.city_name].airports.push(airport);
+    const cityKey = airport.city_name || `airport_${airport.airport_code}`; // Use airport code if city is NULL
+    if (!grouped[cityKey]) grouped[cityKey] = { cityInfo: airport, airports: [] };
+    grouped[cityKey].airports.push(airport);
   });
   const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped).map(([city, { cityInfo, airports }]) => ({
     city: cityInfo,
@@ -302,24 +349,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
               <div
                 className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
                 tabIndex={0}
-                onMouseDown={() => {
-                  const allCodes = group.airports.map((a: any) => a.airport_code).join(',');
-                  const displayValue = `${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`;
-                  onAirportSelect(allCodes, group.city.city_code, displayValue);
-                  setQuery(displayValue);
-                  setIsDropdownOpen(false);
-                  setSuggestions([]);
-                  setActiveIndex(-1);
-                }}
+                onMouseDown={() => handleCitySelection(group.city.city_name, group.airports.map((a: any) => a.airport_code))}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    const allCodes = group.airports.map((a: any) => a.airport_code).join(',');
-                    const displayValue = `${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`;
-                    onAirportSelect(allCodes, group.city.city_code, displayValue);
-                    setQuery(displayValue);
-                    setIsDropdownOpen(false);
-                    setSuggestions([]);
-                    setActiveIndex(-1);
+                    handleCitySelection(group.city.city_name, group.airports.map((a: any) => a.airport_code));
                   }
                 }}
               >

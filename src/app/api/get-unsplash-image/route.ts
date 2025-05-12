@@ -3,38 +3,81 @@ import { NextRequest, NextResponse } from 'next/server';
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const UNSPLASH_UTM = '?utm_source=gojumpingjack&utm_medium=referral';
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const city = searchParams.get('city');
-  const region = searchParams.get('region');
-  const country = searchParams.get('country');
-
-  let query = city || region || country;
-  if (!query) {
-    return NextResponse.json({ error: 'No location provided' }, { status: 400 });
-  }
-
+export async function GET(request: Request) {
   try {
-    const unsplashRes = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&orientation=landscape&per_page=1`, {
-      headers: {
-        Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-      },
+    const { searchParams } = new URL(request.url);
+    const city_name = searchParams.get('city_name');
+    const country_code = searchParams.get('country_code');
+    const region = searchParams.get('region');
+
+    console.log('[get-unsplash-image] Received parameters:', {
+      city_name,
+      country_code,
+      region
     });
-    if (!unsplashRes.ok) {
-      return NextResponse.json({ error: 'Unsplash API error' }, { status: 502 });
+
+    if (!city_name) {
+      console.error('[get-unsplash-image] Missing required city_name parameter');
+      return NextResponse.json(
+        { error: 'Missing required city_name parameter' },
+        { status: 400 }
+      );
     }
-    const data = await unsplashRes.json();
-    if (!data.results || data.results.length === 0) {
-      return NextResponse.json({ error: 'No image found' }, { status: 404 });
+
+    // Construct search query with fallbacks
+    let searchQuery = city_name;
+    if (region) {
+      searchQuery += ` ${region}`;
     }
-    const photo = data.results[0];
-    const imageUrl = photo.urls.regular;
-    const downloadLocationUrl = photo.links.download_location;
-    const photographerName = photo.user.name;
-    const photographerProfileUrl = photo.user.links.html + UNSPLASH_UTM;
-    const unsplashUrl = photo.links.html + UNSPLASH_UTM;
-    return NextResponse.json({ imageUrl, downloadLocationUrl, photographerName, photographerProfileUrl, unsplashUrl });
-  } catch (err) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    if (country_code) {
+      searchQuery += ` ${country_code}`;
+    }
+    searchQuery += ' cityscape landscape';
+
+    console.log('[get-unsplash-image] Constructed search query:', searchQuery);
+
+    const response = await fetch(
+      `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchQuery)}&orientation=landscape`,
+      {
+        headers: {
+          'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+          'Accept-Version': 'v1'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[get-unsplash-image] Unsplash API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      });
+      return NextResponse.json(
+        { error: `Unsplash API error: ${response.statusText}` },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    console.log('[get-unsplash-image] Unsplash API response:', {
+      id: data.id,
+      urls: data.urls,
+      user: data.user
+    });
+
+    return NextResponse.json({
+      imageUrl: data.urls.regular,
+      downloadLocationUrl: data.links.download_location,
+      photographerName: data.user.name,
+      photographerProfileUrl: `${data.user.links.html}?utm_source=gojumpingjack&utm_medium=referral`,
+      unsplashUrl: `https://unsplash.com/?utm_source=gojumpingjack&utm_medium=referral`
+    });
+  } catch (error) {
+    console.error('[get-unsplash-image] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 } 

@@ -105,11 +105,21 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // --- Callbacks for AirportSearchInput ---
     const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
-        setOriginAirportCode(airportCode || '');
+        if (airportCode && airportCode.includes(',')) {
+            // If it's a city selection with multiple airports, store the comma-separated list
+            setOriginAirportCode(airportCode);
+        } else {
+            setOriginAirportCode(airportCode || '');
+        }
     }, []);
 
     const handleToAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
-        setDestinationAirportCode(airportCode || '');
+        if (airportCode && airportCode.includes(',')) {
+            // If it's a city selection with multiple airports, store the comma-separated list
+            setDestinationAirportCode(airportCode);
+        } else {
+            setDestinationAirportCode(airportCode || '');
+        }
     }, []);
 
     // --- Handler for Trip Type Radio Buttons ---
@@ -128,25 +138,35 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             return;
         }
 
-        const searchParams: SearchParamsType = {
-            originAirport: originAirportCode,
-            destinationAirport: destinationAirportCode,
-            departureDate,
-            adults,
-            children: passengers.children || undefined,
-            infants: passengers.infants || undefined,
-            cabinClass,
-            currency,
-            maxConnections,
-            fromDisplayValue: originAirportCode,
-            toDisplayValue: destinationAirportCode
-        };
+        const originAirports = originAirportCode.split(',');
+        const destinationAirports = destinationAirportCode.split(',');
 
-        if (returnDate) {
-            searchParams.returnDate = returnDate;
-        }
+        // Prepare search params for each combination
+        const searchParamsList: SearchParamsType[] = [];
+        originAirports.forEach(origin => {
+            destinationAirports.forEach(destination => {
+                const searchParams: SearchParamsType = {
+                    originAirport: origin,
+                    destinationAirport: destination,
+                    departureDate,
+                    adults,
+                    children: passengers.children || undefined,
+                    infants: passengers.infants || undefined,
+                    cabinClass,
+                    currency,
+                    maxConnections,
+                    fromDisplayValue: originAirportCode,
+                    toDisplayValue: destinationAirportCode
+                };
+                if (returnDate) {
+                    searchParams.returnDate = returnDate;
+                }
+                searchParamsList.push(searchParams);
+            });
+        });
 
-        onSearchSubmit(searchParams);
+        // Call onSearchSubmit with the list of search params
+        searchParamsList.forEach(params => onSearchSubmit(params));
         setIsMinimized(true);
     };
 
