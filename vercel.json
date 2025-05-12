@@ -1,14 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/sync-airports",
-      "schedule": "0 2 1 * *"
-    }
-  ],
-  "functions": {
-    "api/sync-airports/*": {
-      "memory": 2048,
-      "maxDuration": 60
-    }
-  }
-} 
+{} 
