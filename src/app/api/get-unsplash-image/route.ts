@@ -5,6 +5,20 @@ const UNSPLASH_UTM = '?utm_source=gojumpingjack&utm_medium=referral';
 
 export async function GET(request: Request) {
   try {
+    // Log environment variables (without exposing the full key)
+    console.log('[get-unsplash-image] Environment check:', {
+      hasAccessKey: !!UNSPLASH_ACCESS_KEY,
+      accessKeyPrefix: UNSPLASH_ACCESS_KEY ? `${UNSPLASH_ACCESS_KEY.substring(0, 4)}...` : 'missing'
+    });
+
+    if (!UNSPLASH_ACCESS_KEY) {
+      console.error('[get-unsplash-image] Missing UNSPLASH_ACCESS_KEY environment variable');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing Unsplash API key' },
+        { status: 500 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const city_name = searchParams.get('city_name');
     const country_code = searchParams.get('country_code');
@@ -36,25 +50,32 @@ export async function GET(request: Request) {
 
     console.log('[get-unsplash-image] Constructed search query:', searchQuery);
 
-    const response = await fetch(
-      `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchQuery)}&orientation=landscape`,
-      {
-        headers: {
-          'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
-          'Accept-Version': 'v1'
-        }
+    const unsplashUrl = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchQuery)}&orientation=landscape`;
+    const headers = {
+      'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+      'Accept-Version': 'v1'
+    };
+
+    console.log('[get-unsplash-image] Making request to Unsplash:', {
+      url: unsplashUrl,
+      headers: {
+        ...headers,
+        'Authorization': 'Client-ID [REDACTED]' // Log headers without exposing the key
       }
-    );
+    });
+
+    const response = await fetch(unsplashUrl, { headers });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[get-unsplash-image] Unsplash API error:', {
         status: response.status,
         statusText: response.statusText,
-        error: errorText
+        error: errorText,
+        headers: Object.fromEntries(response.headers.entries())
       });
       return NextResponse.json(
-        { error: `Unsplash API error: ${response.statusText}` },
+        { error: `Unsplash API error: ${response.statusText}`, details: errorText },
         { status: response.status }
       );
     }
@@ -63,20 +84,21 @@ export async function GET(request: Request) {
     console.log('[get-unsplash-image] Unsplash API response:', {
       id: data.id,
       urls: data.urls,
-      user: data.user
+      user: data.user,
+      links: data.links
     });
 
     return NextResponse.json({
       imageUrl: data.urls.regular,
       downloadLocationUrl: data.links.download_location,
       photographerName: data.user.name,
-      photographerProfileUrl: `${data.user.links.html}?utm_source=gojumpingjack&utm_medium=referral`,
-      unsplashUrl: `https://unsplash.com/?utm_source=gojumpingjack&utm_medium=referral`
+      photographerProfileUrl: `${data.user.links.html}${UNSPLASH_UTM}`,
+      unsplashUrl: `https://unsplash.com/${UNSPLASH_UTM}`
     });
   } catch (error) {
     console.error('[get-unsplash-image] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

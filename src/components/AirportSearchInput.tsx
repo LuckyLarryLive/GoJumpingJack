@@ -186,12 +186,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     // Set the display value to the formatted airport name
     const displayValue = getFormattedDisplay(airport);
     setQuery(displayValue);
+    setSelectedAirport(airport);
     
     // Call the parent's onAirportSelect with the airport code
     onAirportSelect(airport.airport_code, airport.city_code, displayValue);
 
     // Close the suggestions dropdown
     setIsDropdownOpen(false);
+    setSuggestions([]);
 
     // Fetch Unsplash image with proper parameters
     const params = new URLSearchParams();
@@ -206,24 +208,29 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
 
     console.log('[AirportSearchInput] Fetching Unsplash image with params:', params.toString());
-    fetch(`/api/get-unsplash-image?${params.toString()}`)
-      .then(response => {
+    
+    // Use a separate async function to handle the Unsplash API call
+    const fetchUnsplashImage = async () => {
+      try {
+        const response = await fetch(`/api/get-unsplash-image?${params.toString()}`);
         if (!response.ok) {
           throw new Error(`Unsplash API error: ${response.status}`);
         }
-        return response.json();
-      })
-      .then(data => {
+        const data = await response.json();
         console.log('[AirportSearchInput] Unsplash response:', data);
+        
         // Handle the Unsplash response data
         if (data.imageUrl) {
           // Update the background image
           document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
-      });
+      }
+    };
+
+    // Call the Unsplash API asynchronously without affecting the input state
+    fetchUnsplashImage();
   };
 
   // Add a new function to handle city selection
