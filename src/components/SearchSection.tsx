@@ -47,6 +47,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const [currency, setCurrency] = useState<string>('USD');
     const [maxConnections, setMaxConnections] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
+    const [backgroundImage, setBackgroundImage] = useState('/default_background.png');
+    const [attribution, setAttribution] = useState<{ name: string; profileUrl: string; unsplashUrl: string } | null>(null);
+    const [isFading, setIsFading] = useState(false);
 
     // Calculate today's date for min attribute on date inputs
     const today = new Date().toISOString().split('T')[0];
@@ -70,6 +73,35 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             setMaxConnections(initialSearchParams.maxConnections || 0);
         }
     }, [initialSearchParams]);
+
+    // Update the useEffect for fetching Unsplash image
+    useEffect(() => {
+        if (destinationAirportCode) {
+            setIsFading(true);
+            fetch(`/api/get-unsplash-image?city=${encodeURIComponent(destinationAirportCode)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.imageUrl) {
+                        setBackgroundImage(data.imageUrl);
+                        setAttribution({
+                            name: data.photographerName,
+                            profileUrl: data.photographerProfileUrl,
+                            unsplashUrl: data.unsplashUrl
+                        });
+                        // Track download
+                        fetch('/api/track-unsplash-download', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
+                        });
+                    }
+                })
+                .catch(err => console.error('Error fetching Unsplash image:', err))
+                .finally(() => {
+                    setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
+                });
+        }
+    }, [destinationAirportCode]);
 
     // --- Callbacks for AirportSearchInput ---
     const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
@@ -141,9 +173,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     // Minimized View
     if (isMinimized) {
         return (
-            <section id="search" className="py-6 bg-gray-50">
+            <section id="search" className="py-6 bg-gray-50" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
                 <div className="container mx-auto px-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto">
+                    <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
                         <div className="flex items-center justify-between">
                             <div className="flex-1">
                                 <div className="flex items-center gap-4">
@@ -188,9 +220,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // Expanded View (Form)
     return (
-        <section id="search" className="py-6 bg-gray-50 scroll-mt-24">
+        <section id="search" className="py-6 bg-gray-50 scroll-mt-24" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
             <div className="container mx-auto px-4">
-                <div className="bg-white p-4 rounded-lg shadow-lg max-w-4xl mx-auto">
+                <div className="bg-white p-4 rounded-lg shadow-lg max-w-4xl mx-auto" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* From Airport Input */}
                         <div>
@@ -337,6 +369,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     </form>
                 </div>
             </div>
+            {attribution && (
+                <div className="text-center text-sm text-gray-500 mt-2">
+                    Photo by <a href={attribution.profileUrl} target="_blank" rel="noopener noreferrer">{attribution.name}</a> on <a href={attribution.unsplashUrl} target="_blank" rel="noopener noreferrer">Unsplash</a>
+                </div>
+            )}
         </section>
     );
 };
