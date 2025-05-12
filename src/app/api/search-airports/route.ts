@@ -25,32 +25,17 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    console.log(`[API /api/search-airports] Attempting Supabase query for term: "${searchTerm}"`);
-    const { data, error } = await supabase
-      .from('airports')
-      .select(`
-        iata_code,
-        name,
-        city_name,
-        country_code,
-        airport_regions!left(region)
-      `)
-      .or(`name.ilike.%${searchTerm}%,city_name.ilike.%${searchTerm}%,iata_code.ilike.%${searchTerm}%`)
-      .limit(20);
+    console.log(`[API /api/search-airports] Attempting Supabase RPC for term: "${searchTerm}"`);
+    const { data: airports, error } = await supabase
+      .rpc('search_airports_with_region', { search_query: searchTerm });
 
     if (error) {
-      console.error('[API /api/search-airports] Supabase query error:', JSON.stringify(error, null, 2));
+      console.error('[API /api/search-airports] Supabase RPC error:', JSON.stringify(error, null, 2));
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Flatten region for easier use in frontend
-    const airports = (data || []).map(a => ({
-      ...a,
-      region: a.airport_regions?.[0]?.region || null
-    }));
-
-    console.log(`[API /api/search-airports] Supabase query successful. Found ${airports.length} airports.`);
-    return NextResponse.json(airports);
+    console.log(`[API /api/search-airports] Supabase RPC successful. Found ${airports ? airports.length : 0} airports.`);
+    return NextResponse.json(airports || []);
   } catch (err: any) {
     console.error('[API /api/search-airports] UNEXPECTED CATCH BLOCK ERROR:', err);
     console.error('[API /api/search-airports] Error stack:', err.stack);
