@@ -98,31 +98,40 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       setIsLoading(true);
       try {
         const response = await fetch(`/api/search-airports?q=${encodeURIComponent(debouncedQuery)}`);
+        console.log('[AirportSearchInput] Fetch response:', response);
+        console.log('[AirportSearchInput] Response status:', response.status);
+
         if (!response.ok) throw new Error(`Network response error: ${response.statusText}`);
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            throw new Error(`Expected JSON response, got ${contentType}`);
-        }
-        const data: Airport[] = await response.json();
-        const validSuggestions = data.filter(airport =>
-            airport.airport_code && airport.city_code && airport.airport_name && airport.city_name
-        );
+
+        const data = await response.json();
+        console.log('[AirportSearchInput] Parsed data:', data);
+
+        // Map API keys to expected frontend keys if needed
+        const mapped = data.map((a: any) => ({
+          airport_code: a.iata_code,
+          airport_name: a.name,
+          city_name: a.city_name,
+          country_code: a.country_code,
+          region: a.region,
+        }));
+        setSuggestions(mapped);
+        console.log('[AirportSearchInput] Suggestions state set to:', mapped);
 
         // --- GROUPING LOGIC START ---
         const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
-        validSuggestions.forEach(airport => {
+        mapped.forEach((airport: any) => {
           if (!grouped[airport.city_name]) grouped[airport.city_name] = { cityInfo: airport, airports: [] };
           grouped[airport.city_name].airports.push(airport);
         });
         // --- GROUPING LOGIC END ---
 
          if (query === debouncedQuery) {
-            setSuggestions(validSuggestions);
-            setIsDropdownOpen(validSuggestions.length > 0 && query !== currentFormattedSelection && query.length > 0);
+            setSuggestions(mapped);
+            setIsDropdownOpen(mapped.length > 0 && query !== currentFormattedSelection && query.length > 0);
             setActiveIndex(-1);
          }
       } catch (error) {
-        console.error("Failed to fetch airport suggestions:", error);
+        console.error('[AirportSearchInput] Fetch error:', error);
         setSuggestions([]); setIsDropdownOpen(false);
       } finally {
         if (query === debouncedQuery) setIsLoading(false);
@@ -272,6 +281,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
   // --- Render ---
   // (The JSX return statement you cut and pasted)
+  console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
     <div ref={containerRef} className="relative w-full">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -293,8 +303,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                 className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
                 tabIndex={0}
                 onMouseDown={() => {
-                  const allCodes = group.airports.map(a => a.airport_code).join(',');
-                  const displayValue = `${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`;
+                  const allCodes = group.airports.map((a: any) => a.airport_code).join(',');
+                  const displayValue = `${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`;
                   onAirportSelect(allCodes, group.city.city_code, displayValue);
                   setQuery(displayValue);
                   setIsDropdownOpen(false);
@@ -303,8 +313,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                 }}
                 onKeyDown={e => {
                   if (e.key === 'Enter' || e.key === ' ') {
-                    const allCodes = group.airports.map(a => a.airport_code).join(',');
-                    const displayValue = `${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`;
+                    const allCodes = group.airports.map((a: any) => a.airport_code).join(',');
+                    const displayValue = `${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`;
                     onAirportSelect(allCodes, group.city.city_code, displayValue);
                     setQuery(displayValue);
                     setIsDropdownOpen(false);
@@ -314,13 +324,13 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                 }}
               >
                 <FaCity className="mr-2 text-blue-500" />
-                <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`, query)}</span>
+                <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map((a: any) => a.airport_code).join(', ')})`, query)}</span>
               </div>
               {/* Airports under city */}
-              {group.airports.map((airport, index) => (
+              {group.airports.map((airport: any, index: number) => (
                 <div key={airport.airport_code}
                   onMouseDown={() => handleSuggestionClick(airport)}
-                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.airport_code === airport.airport_code))}
+                  onMouseEnter={() => setActiveIndex(suggestions.findIndex((a: any) => a.airport_code === airport.airport_code))}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.airport_code === airport.airport_code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
@@ -344,4 +354,4 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   );
 };
 
-export default AirportSearchInput; // Export the component
+export default AirportSearchInput;
