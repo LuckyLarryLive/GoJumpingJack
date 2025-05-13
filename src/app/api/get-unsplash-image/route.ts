@@ -26,12 +26,15 @@ interface UnsplashPhoto {
     id: string;
     description: string | null;
     alt_description: string | null;
-    tags: Array<{ title: string }>;
-    location: { title: string | null } | null;
-    urls: { regular: string };
+    urls: {
+        raw: string;
+        full: string;
+        regular: string;
+        small: string;
+        thumb: string;
+    };
     links: {
         download_location: string;
-        html: string;
     };
     user: {
         name: string;
@@ -39,6 +42,12 @@ interface UnsplashPhoto {
             html: string;
         };
     };
+    tags: Array<{ title: string }>;
+    location: {
+        title: string | null;
+        city: string | null;
+        country: string | null;
+    } | null;
 }
 
 interface ScoredPhoto {
@@ -122,62 +131,64 @@ export async function GET(request: Request) {
     }
 
     // Score each photo based on relevance
-    const scoredPhotos: ScoredPhoto[] = data.results.slice(0, 5).map((photo: UnsplashPhoto) => {
-        let score = 0;
-        const description = (photo.description || photo.alt_description || '').toLowerCase();
-        const location = photo.location?.title?.toLowerCase() || '';
-        const tags = photo.tags?.map((tag: { title: string }) => tag.title.toLowerCase()) || [];
-        
-        // Check for city match in location
-        if (location.includes(city_name.toLowerCase())) {
-            score += 3;
-        }
-        
-        // Check for city match in description
-        if (description.includes(city_name.toLowerCase())) {
-            score += 2;
-        }
-        
-        // Check for city match in tags
-        if (tags.some((tag: string) => tag.includes(city_name.toLowerCase()))) {
-            score += 2;
-        }
-        
-        // Check for relevant keywords
-        const relevantKeywords = ['skyline', 'downtown', 'cityscape', 'architecture', 'urban'];
-        relevantKeywords.forEach(keyword => {
-            if (description.includes(keyword)) score += 1;
-            if (tags.some((tag: string) => tag.includes(keyword))) score += 1;
-        });
-        
-        // Check for country match
-        if (country_code && (location.includes(country_code.toLowerCase()) || 
-                           description.includes(country_code.toLowerCase()) ||
-                           tags.some((tag: string) => tag.includes(country_code.toLowerCase())))) {
-            score += 1;
-        }
-        
-        return { photo, score };
+    const relevantKeywords = ['skyline', 'urban', 'downtown', 'cityscape', 'architecture', 'building', 'night', 'day'];
+    const scoredPhotos = data.results.map((photo: UnsplashPhoto) => {
+      let score = 0;
+      const searchTerms = [city_name.toLowerCase(), region?.toLowerCase(), country_code?.toLowerCase()].filter(Boolean);
+      
+      // Check location matches
+      if (photo.location?.city?.toLowerCase() === city_name.toLowerCase()) score += 5;
+      if (country_code && photo.location?.country?.toLowerCase() === country_code.toLowerCase()) score += 3;
+      if (photo.location?.title?.toLowerCase().includes(city_name.toLowerCase())) score += 4;
+      
+      // Check description and alt_description
+      const description = (photo.description || photo.alt_description || '').toLowerCase();
+      searchTerms.forEach(term => {
+        if (term && description.includes(term)) score += 2;
+      });
+      
+      // Check tags
+      const tags = photo.tags?.map((tag: { title: string }) => tag.title.toLowerCase()) || [];
+      searchTerms.forEach(term => {
+        if (term && tags.some(tag => tag.includes(term))) score += 2;
+      });
+      
+      // Bonus points for relevant keywords
+      relevantKeywords.forEach(keyword => {
+        if (description.includes(keyword)) score += 1;
+        if (tags.some(tag => tag.includes(keyword))) score += 1;
+      });
+
+      // Penalize irrelevant photos
+      if (description.includes('mountain') || description.includes('beach')) score -= 2;
+      if (tags.some(tag => tag.includes('mountain') || tag.includes('beach'))) score -= 2;
+
+      return { photo, score };
     });
 
     // Sort by score and select the highest scoring photo
-    scoredPhotos.sort((a: ScoredPhoto, b: ScoredPhoto) => b.score - a.score);
-    const selectedPhoto: UnsplashPhoto = scoredPhotos[0].photo;
-    
+    scoredPhotos.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+    const selectedPhoto = scoredPhotos[0]?.photo;
+
+    if (!selectedPhoto) {
+      console.log('[get-unsplash-image] No suitable photos found');
+      return NextResponse.json({ error: 'No suitable images found' }, { status: 404 });
+    }
+
+    // Log the selected photo details
     console.log('[get-unsplash-image] Selected photo:', {
-        id: selectedPhoto.id,
-        description: selectedPhoto.description || selectedPhoto.alt_description,
-        tags: selectedPhoto.tags?.map(tag => tag.title).join(', '),
-        location: selectedPhoto.location?.title,
-        score: scoredPhotos[0].score,
-        relevance: {
-            has_city: selectedPhoto.description?.toLowerCase().includes(city_name.toLowerCase()) || 
-                     selectedPhoto.alt_description?.toLowerCase().includes(city_name.toLowerCase()),
-            has_country: country_code ? (selectedPhoto.description?.toLowerCase().includes(country_code.toLowerCase()) || 
-                        selectedPhoto.alt_description?.toLowerCase().includes(country_code.toLowerCase())) : false,
-            has_region: region ? (selectedPhoto.description?.toLowerCase().includes(region.toLowerCase()) || 
-                                selectedPhoto.alt_description?.toLowerCase().includes(region.toLowerCase())) : false
-        }
+      id: selectedPhoto.id,
+      score: scoredPhotos[0].score,
+      description: selectedPhoto.description || selectedPhoto.alt_description,
+      tags: selectedPhoto.tags?.map((tag: { title: string }) => tag.title).join(', '),
+      location: selectedPhoto.location?.title,
+      relevance: {
+        cityMatch: selectedPhoto.location?.city?.toLowerCase() === city_name.toLowerCase(),
+        countryMatch: country_code ? selectedPhoto.location?.country?.toLowerCase() === country_code.toLowerCase() : false,
+        hasRelevantTags: selectedPhoto.tags?.some((tag: { title: string }) => 
+          relevantKeywords.some((keyword: string) => tag.title.toLowerCase().includes(keyword))
+        )
+      }
     });
 
     // Return the image URL and attribution

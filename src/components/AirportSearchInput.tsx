@@ -226,11 +226,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const handleSuggestionClick = (suggestion: Airport) => {
     console.log('[AirportSearchInput] Suggestion clicked:', suggestion);
     
-    // For single airport selections (like JFK)
-    const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
+    // Construct display value with proper formatting
+    const displayValue = getFormattedDisplay(suggestion);
+    
+    // Update parent component with the correct values
     onAirportSelect(suggestion.code, suggestion.city, displayValue);
     
-    setQuery(suggestion.name);
+    // Update local state
+    setQuery(displayValue);
     setSelectedAirport(suggestion);
     setIsDropdownOpen(false);
     setSuggestions([]);
