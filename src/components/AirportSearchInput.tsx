@@ -46,6 +46,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const getFormattedDisplay = useCallback((airport: Airport | null): string => {
     if (!airport) return '';
     
+    console.log('[AirportSearchInput] Formatting display for airport:', {
+      name: airport.name,
+      code: airport.code,
+      city: airport.city,
+      state: airport.state,
+      country: airport.country
+    });
+    
     // Format: "Airport Name (IATA) - City, Region, Country"
     const parts = [
       `${airport.name} (${airport.code})`,
@@ -54,7 +62,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       airport.country || ''
     ].filter(Boolean); // Remove empty strings
     
-    return parts.join(' - ');
+    const formatted = parts.join(' - ');
+    console.log('[AirportSearchInput] Formatted display:', formatted);
+    return formatted;
   }, []);
 
   // Helper to condense display value for input field
@@ -139,22 +149,26 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         if (!response.ok) throw new Error(`Network response error: ${response.statusText}`);
 
         const data = await response.json();
-        console.log('[AirportSearchInput] Parsed data:', data);
+        console.log('[AirportSearchInput] Raw API response:', data);
 
         // Map API keys to expected frontend keys if needed
-        const mapped = data.map((a: any) => ({
-          code: a.iata_code,
-          name: a.name,
-          city: a.city_name,
-          country: a.country_code,
-          state: a.region,
-        }));
+        const mapped = data.map((a: any) => {
+          const airport = {
+            code: a.iata_code,
+            name: a.name,
+            city: a.city_name,
+            country: a.country_code,
+            state: a.region,
+          };
+          console.log('[AirportSearchInput] Mapped airport:', airport);
+          return airport;
+        });
         setSuggestions(mapped);
         console.log('[AirportSearchInput] Suggestions state set to:', mapped);
 
         // --- GROUPING LOGIC START ---
         const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
-        mapped.forEach((airport: any) => {
+        mapped.forEach((airport: Airport) => {
           const cityKey = airport.city || `airport_${airport.code}`; // Use airport code if city is NULL
           if (!grouped[cityKey]) {
             if (airport.city) {
@@ -224,7 +238,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
   // Update handleSuggestionClick to handle city selections
   const handleSuggestionClick = (suggestion: Airport) => {
-    console.log('[AirportSearchInput] Suggestion clicked:', suggestion);
+    console.log('[AirportSearchInput] Suggestion clicked:', {
+      name: suggestion.name,
+      code: suggestion.code,
+      city: suggestion.city,
+      state: suggestion.state,
+      country: suggestion.country,
+      raw: suggestion
+    });
     
     // Construct display value with proper formatting
     const displayValue = getFormattedDisplay(suggestion);
@@ -286,10 +307,61 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
   // Add a new function to handle city selection
   const handleCitySelection = (cityName: string, airportCodes: string[]) => {
+    console.log('[AirportSearchInput] City selection:', { cityName, airportCodes });
     isInteracting.current = true; // User is selecting
+    
+    // Get the first airport's details to use for country/region
+    const firstAirport = suggestions.find(a => a.code === airportCodes[0]);
+    console.log('[AirportSearchInput] First airport details:', firstAirport);
+    
     const displayValue = `${cityName} – All Airports (${airportCodes.join(', ')})`;
-    onAirportSelect(airportCodes.join(','), null, displayValue); // Pass comma-separated airport codes
-    setSuggestions([]); setIsDropdownOpen(false); setActiveIndex(-1);
+    onAirportSelect(airportCodes.join(','), cityName, displayValue); // Pass comma-separated airport codes
+    
+    // Update local state
+    setQuery(displayValue);
+    setSuggestions([]); 
+    setIsDropdownOpen(false); 
+    setActiveIndex(-1);
+
+    // Fetch Unsplash image using the city name and country from the first airport
+    if (firstAirport) {
+        const params = new URLSearchParams();
+        params.append('city_name', cityName);
+        params.append('country_code', firstAirport.country);
+        if (firstAirport.state && firstAirport.state !== firstAirport.country) {
+            params.append('region', firstAirport.state);
+        }
+
+        const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
+        console.log('[AirportSearchInput] Fetching Unsplash image for city selection:', {
+            url: unsplashUrl,
+            params: Object.fromEntries(params.entries())
+        });
+        
+        // Use a separate async function to handle the Unsplash API call
+        const fetchUnsplashImage = async () => {
+            try {
+                const response = await fetch(unsplashUrl);
+                if (!response.ok) {
+                    throw new Error(`Unsplash API error: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('[AirportSearchInput] Unsplash response for city selection:', data);
+                
+                // Handle the Unsplash response data
+                if (data.imageUrl) {
+                    // Update the background image
+                    document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
+                }
+            } catch (error) {
+                console.error('[AirportSearchInput] Error fetching Unsplash image for city selection:', error);
+            }
+        };
+
+        // Call the Unsplash API asynchronously without affecting the input state
+        fetchUnsplashImage();
+    }
+    
     // Set interacting false slightly later to allow state updates
     setTimeout(() => { isInteracting.current = false; }, 100);
   };
