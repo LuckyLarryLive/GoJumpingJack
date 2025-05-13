@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Move the API key check to a constant at the top level
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const UNSPLASH_UTM = '?utm_source=gojumpingjack&utm_medium=referral';
+
+// Helper function to check API key
+function checkApiKey() {
+  if (!UNSPLASH_ACCESS_KEY) {
+    console.error('[get-unsplash-image] Missing UNSPLASH_ACCESS_KEY environment variable');
+    return {
+      error: true,
+      response: NextResponse.json(
+        { 
+          error: 'Server configuration error: Missing Unsplash API key',
+          details: 'The server is not properly configured to access the Unsplash API'
+        },
+        { status: 503 }
+      )
+    };
+  }
+  return { error: false };
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,12 +30,10 @@ export async function GET(request: Request) {
       accessKeyPrefix: UNSPLASH_ACCESS_KEY ? `${UNSPLASH_ACCESS_KEY.substring(0, 4)}...` : 'missing'
     });
 
-    if (!UNSPLASH_ACCESS_KEY) {
-      console.error('[get-unsplash-image] Missing UNSPLASH_ACCESS_KEY environment variable');
-      return NextResponse.json(
-        { error: 'Server configuration error: Missing Unsplash API key' },
-        { status: 500 }
-      );
+    // Check API key first
+    const keyCheck = checkApiKey();
+    if (keyCheck.error) {
+      return keyCheck.response;
     }
 
     const { searchParams } = new URL(request.url);
@@ -33,7 +50,10 @@ export async function GET(request: Request) {
     if (!city_name) {
       console.error('[get-unsplash-image] Missing required city_name parameter');
       return NextResponse.json(
-        { error: 'Missing required city_name parameter' },
+        { 
+          error: 'Missing required city_name parameter',
+          details: 'The city_name parameter is required to search for images'
+        },
         { status: 400 }
       );
     }
@@ -74,8 +94,33 @@ export async function GET(request: Request) {
         error: errorText,
         headers: Object.fromEntries(response.headers.entries())
       });
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'Unsplash API authentication failed',
+            details: 'The server is not properly configured to access the Unsplash API'
+          },
+          { status: 503 }
+        );
+      }
+
+      if (response.status === 403) {
+        return NextResponse.json(
+          { 
+            error: 'Unsplash API rate limit exceeded',
+            details: 'The server has exceeded its rate limit for the Unsplash API'
+          },
+          { status: 429 }
+        );
+      }
+
       return NextResponse.json(
-        { error: `Unsplash API error: ${response.statusText}`, details: errorText },
+        { 
+          error: `Unsplash API error: ${response.statusText}`,
+          details: errorText
+        },
         { status: response.status }
       );
     }
@@ -98,7 +143,10 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('[get-unsplash-image] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -80,32 +80,66 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // Update the useEffect for fetching Unsplash image
     useEffect(() => {
-        if (destinationAirportCode) {
-            setIsFading(true);
-            fetch(`/api/get-unsplash-image?city=${encodeURIComponent(destinationAirportCode)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.imageUrl) {
-                        setBackgroundImage(data.imageUrl);
-                        setAttribution({
-                            name: data.photographerName,
-                            profileUrl: data.photographerProfileUrl,
-                            unsplashUrl: data.unsplashUrl
-                        });
-                        // Track download
-                        fetch('/api/track-unsplash-download', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
-                        });
-                    }
-                })
-                .catch(err => console.error('Error fetching Unsplash image:', err))
-                .finally(() => {
-                    setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
+        if (destinationAirportCode && destinationDisplayValue) {
+            // Extract city name and country code from the display value
+            // Format is typically: "Airport Name (IATA) - City, Region, Country"
+            const parts = destinationDisplayValue.split(' - ');
+            if (parts.length >= 2) {
+                const cityPart = parts[1].split(',')[0].trim();
+                const countryPart = parts[parts.length - 1].trim();
+                const regionPart = parts.length > 2 ? parts[2].split(',')[0].trim() : null;
+
+                console.log('[SearchSection] Fetching Unsplash image with params:', {
+                    city_name: cityPart,
+                    country_code: countryPart,
+                    region: regionPart
                 });
+
+                setIsFading(true);
+                const params = new URLSearchParams();
+                params.append('city_name', cityPart);
+                params.append('country_code', countryPart);
+                if (regionPart) {
+                    params.append('region', regionPart);
+                }
+
+                fetch(`/api/get-unsplash-image?${params.toString()}`)
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error(`Unsplash API error: ${res.status}`);
+                        }
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.imageUrl) {
+                            setBackgroundImage(data.imageUrl);
+                            setAttribution({
+                                name: data.photographerName,
+                                profileUrl: data.photographerProfileUrl,
+                                unsplashUrl: data.unsplashUrl
+                            });
+                            // Track download
+                            if (data.downloadLocationUrl) {
+                                fetch('/api/track-unsplash-download', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
+                                });
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('[SearchSection] Error fetching Unsplash image:', err);
+                        // Reset to default background on error
+                        setBackgroundImage('/default_background.png');
+                        setAttribution(null);
+                    })
+                    .finally(() => {
+                        setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
+                    });
+            }
         }
-    }, [destinationAirportCode]);
+    }, [destinationAirportCode, destinationDisplayValue]);
 
     // --- Handler for From Airport Selection ---
     const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
