@@ -34,6 +34,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     // State for form fields
     const [originAirportCode, setOriginAirportCode] = useState<string>('');
     const [destinationAirportCode, setDestinationAirportCode] = useState<string>('');
+    const [originDisplayValue, setOriginDisplayValue] = useState<string>('');
+    const [destinationDisplayValue, setDestinationDisplayValue] = useState<string>('');
     const [departureDate, setDepartureDate] = useState<string>('');
     const [returnDate, setReturnDate] = useState<string>('');
     const [adults, setAdults] = useState<number>(1);
@@ -59,6 +61,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         if (initialSearchParams) {
             setOriginAirportCode(initialSearchParams.originAirport);
             setDestinationAirportCode(initialSearchParams.destinationAirport);
+            setOriginDisplayValue(initialSearchParams.fromDisplayValue || '');
+            setDestinationDisplayValue(initialSearchParams.toDisplayValue || '');
             setDepartureDate(initialSearchParams.departureDate);
             setReturnDate(initialSearchParams.returnDate || '');
             setAdults(initialSearchParams.adults);
@@ -103,23 +107,28 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         }
     }, [destinationAirportCode]);
 
-    // --- Callbacks for AirportSearchInput ---
+    // --- Handler for From Airport Selection ---
     const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
+        console.log('[SearchSection] From airport selected:', { airportCode, displayValue });
         if (airportCode && airportCode.includes(',')) {
             // If it's a city selection with multiple airports, store the comma-separated list
             setOriginAirportCode(airportCode);
         } else {
             setOriginAirportCode(airportCode || '');
         }
+        setOriginDisplayValue(displayValue || '');
     }, []);
 
+    // --- Handler for To Airport Selection ---
     const handleToAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
+        console.log('[SearchSection] To airport selected:', { airportCode, displayValue });
         if (airportCode && airportCode.includes(',')) {
             // If it's a city selection with multiple airports, store the comma-separated list
             setDestinationAirportCode(airportCode);
         } else {
             setDestinationAirportCode(airportCode || '');
         }
+        setDestinationDisplayValue(displayValue || '');
     }, []);
 
     // --- Handler for Trip Type Radio Buttons ---
@@ -155,8 +164,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     cabinClass,
                     currency,
                     maxConnections,
-                    fromDisplayValue: originAirportCode,
-                    toDisplayValue: destinationAirportCode
+                    fromDisplayValue: originDisplayValue,
+                    toDisplayValue: destinationDisplayValue
                 };
                 if (returnDate) {
                     searchParams.returnDate = returnDate;
@@ -251,6 +260,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 label="From"
                                 placeholder="City or airport"
                                 onAirportSelect={handleFromAirportSelect}
+                                initialDisplayValue={originDisplayValue}
                             />
                         </div>
                         {/* To Airport Input */}
@@ -260,6 +270,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 label="To"
                                 placeholder="City or airport"
                                 onAirportSelect={handleToAirportSelect}
+                                initialDisplayValue={destinationDisplayValue}
                             />
                         </div>
 
