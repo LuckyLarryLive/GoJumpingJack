@@ -41,6 +41,11 @@ interface UnsplashPhoto {
     };
 }
 
+interface ScoredPhoto {
+    photo: UnsplashPhoto;
+    score: number;
+}
+
 export async function GET(request: Request) {
   try {
     // Log environment variables (without exposing the full key)
@@ -116,13 +121,55 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'No images found' }, { status: 404 });
     }
 
-    // Select the first result
-    const selectedPhoto: UnsplashPhoto = data.results[0];
+    // Score each photo based on relevance
+    const scoredPhotos: ScoredPhoto[] = data.results.slice(0, 5).map((photo: UnsplashPhoto) => {
+        let score = 0;
+        const description = (photo.description || photo.alt_description || '').toLowerCase();
+        const location = photo.location?.title?.toLowerCase() || '';
+        const tags = photo.tags?.map((tag: { title: string }) => tag.title.toLowerCase()) || [];
+        
+        // Check for city match in location
+        if (location.includes(city_name.toLowerCase())) {
+            score += 3;
+        }
+        
+        // Check for city match in description
+        if (description.includes(city_name.toLowerCase())) {
+            score += 2;
+        }
+        
+        // Check for city match in tags
+        if (tags.some((tag: string) => tag.includes(city_name.toLowerCase()))) {
+            score += 2;
+        }
+        
+        // Check for relevant keywords
+        const relevantKeywords = ['skyline', 'downtown', 'cityscape', 'architecture', 'urban'];
+        relevantKeywords.forEach(keyword => {
+            if (description.includes(keyword)) score += 1;
+            if (tags.some((tag: string) => tag.includes(keyword))) score += 1;
+        });
+        
+        // Check for country match
+        if (country_code && (location.includes(country_code.toLowerCase()) || 
+                           description.includes(country_code.toLowerCase()) ||
+                           tags.some((tag: string) => tag.includes(country_code.toLowerCase())))) {
+            score += 1;
+        }
+        
+        return { photo, score };
+    });
+
+    // Sort by score and select the highest scoring photo
+    scoredPhotos.sort((a: ScoredPhoto, b: ScoredPhoto) => b.score - a.score);
+    const selectedPhoto: UnsplashPhoto = scoredPhotos[0].photo;
+    
     console.log('[get-unsplash-image] Selected photo:', {
         id: selectedPhoto.id,
         description: selectedPhoto.description || selectedPhoto.alt_description,
-        tags: selectedPhoto.tags?.map((tag: { title: string }) => tag.title).join(', '),
+        tags: selectedPhoto.tags?.map(tag => tag.title).join(', '),
         location: selectedPhoto.location?.title,
+        score: scoredPhotos[0].score,
         relevance: {
             has_city: selectedPhoto.description?.toLowerCase().includes(city_name.toLowerCase()) || 
                      selectedPhoto.alt_description?.toLowerCase().includes(city_name.toLowerCase()),

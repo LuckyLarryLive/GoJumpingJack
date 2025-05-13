@@ -226,71 +226,52 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const handleSuggestionClick = (suggestion: Airport) => {
     console.log('[AirportSearchInput] Suggestion clicked:', suggestion);
     
-    // For single IATA code selections (like JFK), ensure we have the full airport data
-    if (suggestion.code && !suggestion.airports) {
-      // Construct a display value for single airport
-      const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
-      onAirportSelect(suggestion.code, suggestion.city, displayValue);
-    } else if (suggestion.airports) {
-      // Handle "All Airports" selection
-      const airportCodes = suggestion.airports.map(a => a.code).join(',');
-      const cityCode = suggestion.city || null;
-      const displayValue = `${suggestion.city} - All Airports (${airportCodes})`;
-      onAirportSelect(airportCodes, cityCode, displayValue);
-    } else {
-      // Handle regular airport selection
-      const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
-      onAirportSelect(suggestion.code, suggestion.city, displayValue);
-    }
+    // For single airport selections (like JFK)
+    const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
+    onAirportSelect(suggestion.code, suggestion.city, displayValue);
     
-    setQuery(suggestion.name || suggestion.city);
+    setQuery(suggestion.name);
     setSelectedAirport(suggestion);
     setIsDropdownOpen(false);
     setSuggestions([]);
 
     // Only attempt to fetch Unsplash image if we have a valid city name
     if (suggestion.city) {
-      const params = new URLSearchParams();
-      params.append('city_name', suggestion.city);
-      
-      if (suggestion.country) {
+        const params = new URLSearchParams();
+        params.append('city_name', suggestion.city);
         params.append('country_code', suggestion.country);
-      }
-      
-      if (suggestion.state) {
-        params.append('region', suggestion.state);
-      }
-
-      const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
-      console.log('[AirportSearchInput] Fetching Unsplash image:', {
-        url: unsplashUrl,
-        params: Object.fromEntries(params.entries())
-      });
-      
-      // Use a separate async function to handle the Unsplash API call
-      const fetchUnsplashImage = async () => {
-        try {
-          const response = await fetch(unsplashUrl);
-          if (!response.ok) {
-            throw new Error(`Unsplash API error: ${response.status}`);
-          }
-          const data = await response.json();
-          console.log('[AirportSearchInput] Unsplash response:', data);
-          
-          // Handle the Unsplash response data
-          if (data.imageUrl) {
-            // Update the background image
-            document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
-          }
-        } catch (error) {
-          console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
+        if (suggestion.state && suggestion.state !== suggestion.country) {
+            params.append('region', suggestion.state);
         }
-      };
 
-      // Call the Unsplash API asynchronously without affecting the input state
-      fetchUnsplashImage();
-    } else {
-      console.log('[AirportSearchInput] Skipping Unsplash image fetch - no city name available');
+        const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
+        console.log('[AirportSearchInput] Fetching Unsplash image:', {
+            url: unsplashUrl,
+            params: Object.fromEntries(params.entries())
+        });
+        
+        // Use a separate async function to handle the Unsplash API call
+        const fetchUnsplashImage = async () => {
+            try {
+                const response = await fetch(unsplashUrl);
+                if (!response.ok) {
+                    throw new Error(`Unsplash API error: ${response.status}`);
+                }
+                const data = await response.json();
+                console.log('[AirportSearchInput] Unsplash response:', data);
+                
+                // Handle the Unsplash response data
+                if (data.imageUrl) {
+                    // Update the background image
+                    document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
+                }
+            } catch (error) {
+                console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
+            }
+        };
+
+        // Call the Unsplash API asynchronously without affecting the input state
+        fetchUnsplashImage();
     }
   };
 
