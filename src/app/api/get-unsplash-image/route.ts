@@ -70,7 +70,7 @@ export async function GET(request: Request) {
 
     console.log('[get-unsplash-image] Constructed search query:', searchQuery);
 
-    const unsplashUrl = `https://api.unsplash.com/photos/random?query=${encodeURIComponent(searchQuery)}&orientation=landscape`;
+    const unsplashUrl = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&orientation=landscape&per_page=5&content_filter=high`;
     const headers = {
       'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`,
       'Accept-Version': 'v1'
@@ -126,55 +126,59 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    console.log('[get-unsplash-image] Unsplash API response:', {
-      id: data.id,
-      description: data.description || data.alt_description || 'No description available',
-      tags: data.tags?.map((tag: any) => ({
+    
+    // Log search results summary
+    console.log('[get-unsplash-image] Unsplash search results:', {
+      total: data.total,
+      total_pages: data.total_pages,
+      results_count: data.results?.length || 0
+    });
+
+    // If no results found, return a "no image" response
+    if (!data.results || data.results.length === 0) {
+      console.log('[get-unsplash-image] No images found for query:', searchQuery);
+      return NextResponse.json({
+        imageUrl: null,
+        error: 'No images found',
+        details: `No images found for query: ${searchQuery}`
+      });
+    }
+
+    // Get the first (best matching) result
+    const photo = data.results[0];
+    
+    console.log('[get-unsplash-image] Selected photo details:', {
+      id: photo.id,
+      description: photo.description || photo.alt_description || 'No description available',
+      tags: photo.tags?.map((tag: any) => ({
         title: tag.title,
         type: tag.type
       })) || [],
-      location: data.location ? {
-        city: data.location.city,
-        country: data.location.country,
-        name: data.location.name,
-        position: data.location.position
+      location: photo.location ? {
+        city: photo.location.city,
+        country: photo.location.country,
+        name: photo.location.name,
+        position: photo.location.position
       } : 'No location data',
-      urls: {
-        raw: data.urls.raw,
-        full: data.urls.full,
-        regular: data.urls.regular,
-        small: data.urls.small
-      },
-      user: {
-        name: data.user.name,
-        username: data.user.username,
-        portfolio_url: data.user.portfolio_url
-      },
-      links: {
-        html: data.links.html,
-        download: data.links.download,
-        download_location: data.links.download_location
-      },
-      searchQuery: searchQuery,
       relevance: {
-        hasCityMatch: data.description?.toLowerCase().includes(city_name.toLowerCase()) || 
-                     data.alt_description?.toLowerCase().includes(city_name.toLowerCase()) || 
-                     data.location?.city?.toLowerCase().includes(city_name.toLowerCase()),
-        hasCountryMatch: data.location?.country?.toLowerCase().includes(country_code?.toLowerCase() || ''),
-        hasRegionMatch: region ? data.location?.name?.toLowerCase().includes(region.toLowerCase()) : false
+        hasCityMatch: photo.description?.toLowerCase().includes(city_name.toLowerCase()) || 
+                     photo.alt_description?.toLowerCase().includes(city_name.toLowerCase()) || 
+                     photo.location?.city?.toLowerCase().includes(city_name.toLowerCase()),
+        hasCountryMatch: photo.location?.country?.toLowerCase().includes(country_code?.toLowerCase() || ''),
+        hasRegionMatch: region ? photo.location?.name?.toLowerCase().includes(region.toLowerCase()) : false
       }
     });
 
     return NextResponse.json({
-      imageUrl: data.urls.regular,
-      downloadLocationUrl: data.links.download_location,
-      photographerName: data.user.name,
-      photographerProfileUrl: `${data.user.links.html}${UNSPLASH_UTM}`,
+      imageUrl: photo.urls.regular,
+      downloadLocationUrl: photo.links.download_location,
+      photographerName: photo.user.name,
+      photographerProfileUrl: `${photo.user.links.html}${UNSPLASH_UTM}`,
       unsplashUrl: `https://unsplash.com/${UNSPLASH_UTM}`,
       imageDetails: {
-        description: data.description || data.alt_description,
-        location: data.location,
-        tags: data.tags?.map((tag: any) => tag.title)
+        description: photo.description || photo.alt_description,
+        location: photo.location,
+        tags: photo.tags?.map((tag: any) => tag.title)
       }
     });
   } catch (error) {
