@@ -128,9 +128,41 @@ export async function GET(request: Request) {
     const data = await response.json();
     console.log('[get-unsplash-image] Unsplash API response:', {
       id: data.id,
-      urls: data.urls,
-      user: data.user,
-      links: data.links
+      description: data.description || data.alt_description || 'No description available',
+      tags: data.tags?.map((tag: any) => ({
+        title: tag.title,
+        type: tag.type
+      })) || [],
+      location: data.location ? {
+        city: data.location.city,
+        country: data.location.country,
+        name: data.location.name,
+        position: data.location.position
+      } : 'No location data',
+      urls: {
+        raw: data.urls.raw,
+        full: data.urls.full,
+        regular: data.urls.regular,
+        small: data.urls.small
+      },
+      user: {
+        name: data.user.name,
+        username: data.user.username,
+        portfolio_url: data.user.portfolio_url
+      },
+      links: {
+        html: data.links.html,
+        download: data.links.download,
+        download_location: data.links.download_location
+      },
+      searchQuery: searchQuery,
+      relevance: {
+        hasCityMatch: data.description?.toLowerCase().includes(city_name.toLowerCase()) || 
+                     data.alt_description?.toLowerCase().includes(city_name.toLowerCase()) || 
+                     data.location?.city?.toLowerCase().includes(city_name.toLowerCase()),
+        hasCountryMatch: data.location?.country?.toLowerCase().includes(country_code?.toLowerCase() || ''),
+        hasRegionMatch: region ? data.location?.name?.toLowerCase().includes(region.toLowerCase()) : false
+      }
     });
 
     return NextResponse.json({
@@ -138,7 +170,12 @@ export async function GET(request: Request) {
       downloadLocationUrl: data.links.download_location,
       photographerName: data.user.name,
       photographerProfileUrl: `${data.user.links.html}${UNSPLASH_UTM}`,
-      unsplashUrl: `https://unsplash.com/${UNSPLASH_UTM}`
+      unsplashUrl: `https://unsplash.com/${UNSPLASH_UTM}`,
+      imageDetails: {
+        description: data.description || data.alt_description,
+        location: data.location,
+        tags: data.tags?.map((tag: any) => tag.title)
+      }
     });
   } catch (error) {
     console.error('[get-unsplash-image] Unexpected error:', error);
