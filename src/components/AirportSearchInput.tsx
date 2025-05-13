@@ -398,11 +398,18 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         id={id}
         name={id}
         placeholder={placeholder}
-        value={currentValue !== undefined ? (currentValue || '') : query}
+        value={isInteracting.current ? query : (currentValue || '')}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
-        onBlur={() => setTimeout(() => { if (containerRef.current && !containerRef.current.contains(document.activeElement)) setIsDropdownOpen(false); }, 150)}
+        onBlur={() => {
+          setTimeout(() => { 
+            if (containerRef.current && !containerRef.current.contains(document.activeElement)) {
+              setIsDropdownOpen(false);
+              isInteracting.current = false;
+            }
+          }, 150);
+        }}
         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm"
         autoComplete="off"
       />
