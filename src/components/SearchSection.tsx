@@ -40,6 +40,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const [returnDate, setReturnDate] = useState<string>('');
     const [adults, setAdults] = useState<number>(1);
     const [isMinimized, setIsMinimized] = useState<boolean>(false);
+    const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
+    const [tripType, setTripType] = useState<'round-trip' | 'one-way'>('round-trip');
     const [passengers, setPassengers] = useState({
         adults: 1,
         children: 0,
@@ -170,6 +172,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     // --- Handler for Trip Type Radio Buttons ---
     const handleTripTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newTripType = event.target.value as 'round-trip' | 'one-way';
+        setTripType(newTripType);
         if (newTripType === 'one-way') {
             setReturnDate(''); // Clear return date for one-way trips
         }
@@ -289,6 +292,32 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             <div className="container mx-auto px-4">
                 <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-4xl mx-auto">
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Trip Type Toggle */}
+                        <div className="md:col-span-2 lg:col-span-4 flex items-center space-x-4 mb-2">
+                            <label className="inline-flex items-center">
+                                <input
+                                    type="radio"
+                                    name="tripType"
+                                    value="round-trip"
+                                    checked={tripType === 'round-trip'}
+                                    onChange={handleTripTypeChange}
+                                    className="form-radio text-blue-600"
+                                />
+                                <span className="ml-2">Round Trip</span>
+                            </label>
+                            <label className="inline-flex items-center">
+                                <input
+                                    type="radio"
+                                    name="tripType"
+                                    value="one-way"
+                                    checked={tripType === 'one-way'}
+                                    onChange={handleTripTypeChange}
+                                    className="form-radio text-blue-600"
+                                />
+                                <span className="ml-2">One Way</span>
+                            </label>
+                        </div>
+
                         {/* From Airport Input */}
                         <div>
                             <AirportSearchInput
@@ -332,10 +361,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 type="date"
                                 id="return-date"
                                 name="return-date"
-                                required={false}
+                                required={tripType === 'round-trip'}
                                 value={returnDate}
                                 onChange={(e) => setReturnDate(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm"
+                                disabled={tripType === 'one-way'}
+                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm ${tripType === 'one-way' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 min={departureDate || today}
                             />
                         </div>
@@ -383,52 +413,76 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             </div>
                         </div>
 
-                        {/* Cabin Class */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
-                            <select
-                                value={cabinClass}
-                                onChange={(e) => setCabinClass(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                        {/* Advanced Options Toggle */}
+                        <div className="md:col-span-2 lg:col-span-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
                             >
-                                {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
-                                    <option key={cabin.value} value={cabin.value}>{cabin.label}</option>
-                                ))}
-                            </select>
+                                {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
+                                <svg
+                                    className={`ml-2 w-4 h-4 transform transition-transform ${showAdvancedOptions ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
                         </div>
 
-                        {/* Currency */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                            <select
-                                value={currency}
-                                onChange={(e) => setCurrency(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
-                            >
-                                {DUFFEL_CONSTRAINTS.supportedCurrencies.map((curr) => (
-                                    <option key={curr} value={curr}>
-                                        {curr} ({curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'CAD' ? 'C$' : 'A$'})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        {/* Advanced Options */}
+                        {showAdvancedOptions && (
+                            <>
+                                {/* Cabin Class */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
+                                    <select
+                                        value={cabinClass}
+                                        onChange={(e) => setCabinClass(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                    >
+                                        {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
+                                            <option key={cabin.value} value={cabin.value}>{cabin.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                        {/* Max Connections */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Max Connections</label>
-                            <select
-                                value={maxConnections}
-                                onChange={(e) => setMaxConnections(parseInt(e.target.value))}
-                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
-                            >
-                                <option value="0">Non-stop only</option>
-                                {Array.from({ length: DUFFEL_CONSTRAINTS.maxConnections }, (_, i) => (
-                                    <option key={i + 1} value={i + 1}>
-                                        Max {i + 1} {i === 0 ? 'connection' : 'connections'}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                                {/* Currency */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                    <select
+                                        value={currency}
+                                        onChange={(e) => setCurrency(e.target.value)}
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                    >
+                                        {DUFFEL_CONSTRAINTS.supportedCurrencies.map((curr) => (
+                                            <option key={curr} value={curr}>
+                                                {curr} ({curr === 'USD' ? '$' : curr === 'EUR' ? '€' : curr === 'GBP' ? '£' : curr === 'CAD' ? 'C$' : 'A$'})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Max Connections */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Connections</label>
+                                    <select
+                                        value={maxConnections}
+                                        onChange={(e) => setMaxConnections(parseInt(e.target.value))}
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                    >
+                                        <option value="0">Non-stop only</option>
+                                        {Array.from({ length: DUFFEL_CONSTRAINTS.maxConnections }, (_, i) => (
+                                            <option key={i + 1} value={i + 1}>
+                                                Max {i + 1} {i === 0 ? 'connection' : 'connections'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        )}
 
                         {/* Search Button */}
                         <div className="md:col-span-2 lg:col-span-4">

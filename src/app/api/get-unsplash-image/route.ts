@@ -66,7 +66,8 @@ export async function GET(request: Request) {
     if (country_code) {
       searchQuery += ` ${country_code}`;
     }
-    searchQuery += ' cityscape landscape';
+    // Update search terms to be more specific for city images
+    searchQuery += ' downtown skyline cityscape urban landscape';
 
     console.log('[get-unsplash-image] Constructed search query:', searchQuery);
 
@@ -127,11 +128,21 @@ export async function GET(request: Request) {
 
     const data = await response.json();
     
-    // Log search results summary
+    // Log search results summary with more details
     console.log('[get-unsplash-image] Unsplash search results:', {
+      query: searchQuery,
       total: data.total,
       total_pages: data.total_pages,
-      results_count: data.results?.length || 0
+      results_count: data.results?.length || 0,
+      first_few_results: data.results?.slice(0, 3).map((photo: any) => ({
+        id: photo.id,
+        description: photo.description || photo.alt_description || 'No description',
+        tags: photo.tags?.map((tag: any) => tag.title) || [],
+        location: photo.location ? {
+          city: photo.location.city,
+          country: photo.location.country
+        } : 'No location'
+      }))
     });
 
     // If no results found, return a "no image" response
@@ -147,6 +158,7 @@ export async function GET(request: Request) {
     // Get the first (best matching) result
     const photo = data.results[0];
     
+    // Enhanced logging for selected photo
     console.log('[get-unsplash-image] Selected photo details:', {
       id: photo.id,
       description: photo.description || photo.alt_description || 'No description available',
@@ -165,7 +177,16 @@ export async function GET(request: Request) {
                      photo.alt_description?.toLowerCase().includes(city_name.toLowerCase()) || 
                      photo.location?.city?.toLowerCase().includes(city_name.toLowerCase()),
         hasCountryMatch: photo.location?.country?.toLowerCase().includes(country_code?.toLowerCase() || ''),
-        hasRegionMatch: region ? photo.location?.name?.toLowerCase().includes(region.toLowerCase()) : false
+        hasRegionMatch: region ? photo.location?.name?.toLowerCase().includes(region.toLowerCase()) : false,
+        matchDetails: {
+          descriptionMatch: photo.description?.toLowerCase().includes(city_name.toLowerCase()) || false,
+          altDescriptionMatch: photo.alt_description?.toLowerCase().includes(city_name.toLowerCase()) || false,
+          locationMatch: photo.location?.city?.toLowerCase().includes(city_name.toLowerCase()) || false,
+          tagMatches: photo.tags?.filter((tag: any) => 
+            tag.title.toLowerCase().includes(city_name.toLowerCase()) ||
+            tag.title.toLowerCase().includes(country_code?.toLowerCase() || '')
+          ).map((tag: any) => tag.title) || []
+        }
       }
     });
 
