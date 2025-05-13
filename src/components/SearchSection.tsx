@@ -145,8 +145,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
         console.log('[SearchSection] From airport selected:', { airportCode, displayValue });
         if (airportCode && airportCode.includes(',')) {
-            // If it's a city selection with multiple airports, store the comma-separated list
-            setOriginAirportCode(airportCode);
+            // If it's a city selection with multiple airports, store the first airport code
+            const firstAirportCode = airportCode.split(',')[0].trim();
+            setOriginAirportCode(firstAirportCode);
         } else {
             setOriginAirportCode(airportCode || '');
         }
@@ -157,8 +158,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const handleToAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
         console.log('[SearchSection] To airport selected:', { airportCode, displayValue });
         if (airportCode && airportCode.includes(',')) {
-            // If it's a city selection with multiple airports, store the comma-separated list
-            setDestinationAirportCode(airportCode);
+            // If it's a city selection with multiple airports, store the first airport code
+            const firstAirportCode = airportCode.split(',')[0].trim();
+            setDestinationAirportCode(firstAirportCode);
         } else {
             setDestinationAirportCode(airportCode || '');
         }
@@ -285,7 +287,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     return (
         <section id="search" className="py-6 bg-gray-50 scroll-mt-24" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
             <div className="container mx-auto px-4">
-                <div className="bg-white p-4 rounded-lg shadow-lg max-w-4xl mx-auto" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
+                <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-4xl mx-auto">
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {/* From Airport Input */}
                         <div>
@@ -295,6 +297,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 placeholder="City or airport"
                                 onAirportSelect={handleFromAirportSelect}
                                 initialDisplayValue={originDisplayValue}
+                                currentValue={originDisplayValue}
                             />
                         </div>
                         {/* To Airport Input */}
@@ -305,6 +308,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 placeholder="City or airport"
                                 onAirportSelect={handleToAirportSelect}
                                 initialDisplayValue={destinationDisplayValue}
+                                currentValue={destinationDisplayValue}
                             />
                         </div>
 
@@ -312,22 +316,27 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         <div>
                             <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
                             <input
-                                type="date" id="departure-date" name="departure-date" required
+                                type="date"
+                                id="departure-date"
+                                name="departure-date"
+                                required
                                 value={departureDate}
                                 onChange={(e) => setDepartureDate(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm"
                                 min={today}
                             />
                         </div>
                         <div>
                             <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
                             <input
-                                type="date" id="return-date" name="return-date"
+                                type="date"
+                                id="return-date"
+                                name="return-date"
                                 required={returnDate !== ''}
                                 disabled={returnDate === ''}
                                 value={returnDate}
                                 onChange={(e) => setReturnDate(e.target.value)}
-                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${returnDate === '' ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm ${returnDate === '' ? 'cursor-not-allowed' : ''}`}
                                 min={departureDate || today}
                             />
                         </div>
@@ -341,7 +350,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                     <select
                                         value={adults}
                                         onChange={(e) => setAdults(parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                                             <option key={num} value={num}>{num}</option>
@@ -353,7 +362,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                     <select
                                         value={passengers.children}
                                         onChange={(e) => handlePassengerChange('children', parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                                     >
                                         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                                             <option key={num} value={num}>{num}</option>
@@ -365,7 +374,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                     <select
                                         value={passengers.infants}
                                         onChange={(e) => handlePassengerChange('infants', parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md"
+                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                                     >
                                         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
                                             <option key={num} value={num}>{num}</option>
@@ -381,7 +390,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             <select
                                 value={cabinClass}
                                 onChange={(e) => setCabinClass(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                             >
                                 {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
                                     <option key={cabin.value} value={cabin.value}>{cabin.label}</option>
@@ -395,7 +404,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             <select
                                 value={currency}
                                 onChange={(e) => setCurrency(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                             >
                                 {DUFFEL_CONSTRAINTS.supportedCurrencies.map((curr) => (
                                     <option key={curr} value={curr}>
@@ -411,7 +420,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             <select
                                 value={maxConnections}
                                 onChange={(e) => setMaxConnections(parseInt(e.target.value))}
-                                className="w-full p-2 border border-gray-300 rounded-md"
+                                className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
                             >
                                 <option value="0">Non-stop only</option>
                                 {Array.from({ length: DUFFEL_CONSTRAINTS.maxConnections }, (_, i) => (

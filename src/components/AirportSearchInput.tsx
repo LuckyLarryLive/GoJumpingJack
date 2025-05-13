@@ -6,27 +6,27 @@ import type { Airport } from '@/types'; // Import the Airport type
 import { FaPlane, FaCity } from 'react-icons/fa';
 
 // --- Component Props Interface ---
-// (This was part of the code you cut and pasted)
 interface AirportSearchInputProps {
   id: string;
   label: string;
   placeholder: string;
   onAirportSelect: (
     airportCode: string | null,
-    cityCode: string | null, // Keep cityCode if needed by onAirportSelect signature, even if not used later
+    cityCode: string | null,
     displayValue: string | null
   ) => void;
   initialDisplayValue?: string | null;
+  currentValue?: string | null; // Add this prop for controlled behavior
 }
 
 // --- Airport Search Input Component ---
-// (This is the main component code you cut and pasted)
 const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   id,
   label,
   placeholder,
   onAirportSelect,
   initialDisplayValue,
+  currentValue,
 }) => {
   const [query, setQuery] = useState(initialDisplayValue || '');
   const [suggestions, setSuggestions] = useState<Airport[]>([]);
@@ -34,7 +34,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const debouncedQuery = useDebounce(query, 300); // Use the imported hook
+  const debouncedQuery = useDebounce(query, 300);
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const isInteracting = useRef(false);
@@ -57,31 +57,45 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     return parts.join(' - ');
   }, []);
 
-  // Effect to sync with initialDisplayValue from parent
+  // Effect to sync with currentValue from parent
   useEffect(() => {
-    // Only sync if not actively interacting and value differs or is reset
-    if (!isInteracting.current) {
-       if (initialDisplayValue !== query) {
-            console.log(`Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
-            const newQuery = initialDisplayValue || '';
-            setQuery(newQuery);
-            // If syncing to an empty value, clear local selection
-            if (!initialDisplayValue) {
-                setSelectedAirport(null);
-            } else {
-                // Reset local if display value doesn't match current local selection format
-                 if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
-                    setSelectedAirport(null);
-                 }
-            }
-            setIsDropdownOpen(false);
-       }
+    if (!isInteracting.current && currentValue !== undefined) {
+      console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
+      setQuery(currentValue || '');
+      // If syncing to an empty value, clear local selection
+      if (!currentValue) {
+        setSelectedAirport(null);
+      } else {
+        // Reset local if display value doesn't match current local selection format
+        if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
+          setSelectedAirport(null);
+        }
+      }
+      setIsDropdownOpen(false);
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
+  }, [currentValue, selectedAirport, getFormattedDisplay]);
 
-  }, [initialDisplayValue, query, selectedAirport, getFormattedDisplay]); // Added dependencies
-
+  // Effect to sync with initialDisplayValue from parent (for initial mount)
+  useEffect(() => {
+    if (!isInteracting.current && initialDisplayValue !== undefined) {
+      console.log(`[AirportSearchInput] Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
+      setQuery(initialDisplayValue || '');
+      // If syncing to an empty value, clear local selection
+      if (!initialDisplayValue) {
+        setSelectedAirport(null);
+      } else {
+        // Reset local if display value doesn't match current local selection format
+        if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
+          setSelectedAirport(null);
+        }
+      }
+      setIsDropdownOpen(false);
+    }
+    // Reset interaction flag after sync attempt
+    isInteracting.current = false;
+  }, [initialDisplayValue, selectedAirport, getFormattedDisplay]);
 
   // Fetch suggestions Effect
   useEffect(() => {
@@ -184,14 +198,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
     // If user clears the input manually, ensure parent state is cleared
     if (newValue === '') {
-      console.log(`Input ${id} cleared manually, clearing parent state.`);
+      console.log(`[AirportSearchInput] Input ${id} cleared manually, clearing parent state.`);
       setSelectedAirport(null); // Clear local selection
       onAirportSelect(null, null, null); // Clear parent state
       setSuggestions([]); setIsDropdownOpen(false);
     } else if (selectedAirport) {
       // If user starts typing *over* a selected value, clear the selection state locally
       setSelectedAirport(null);
-      console.log(`Input ${id} changed from selected value, clearing local selection.`);
+      console.log(`[AirportSearchInput] Input ${id} changed from selected value, clearing local selection.`);
     }
   };
 
@@ -275,7 +289,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
         // If a valid airport is selected AND the input field exactly matches its display value
         if (selectedAirport && query === currentFormattedSelection) {
-            console.log(`Clearing input ${id} on focus because a valid selection existed.`);
+            console.log(`[AirportSearchInput] Clearing input ${id} on focus because a valid selection existed.`);
             setQuery('');               // Clear the visual input
             setSelectedAirport(null);   // Clear the internal selected state
             onAirportSelect(null, null, null); // **Crucially, clear the parent state**
@@ -380,11 +394,18 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     <div ref={containerRef} className="relative w-full">
       <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       <input
-          type="text" id={id} name={id} placeholder={placeholder} value={query}
-          onChange={handleInputChange} onKeyDown={handleKeyDown} onFocus={handleFocus}
-          onBlur={() => setTimeout(() => { if (containerRef.current && !containerRef.current.contains(document.activeElement)) setIsDropdownOpen(false); }, 150)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out"
-          autoComplete="off" />
+        type="text"
+        id={id}
+        name={id}
+        placeholder={placeholder}
+        value={currentValue !== undefined ? (currentValue || '') : query}
+        onChange={handleInputChange}
+        onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
+        onBlur={() => setTimeout(() => { if (containerRef.current && !containerRef.current.contains(document.activeElement)) setIsDropdownOpen(false); }, 150)}
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm"
+        autoComplete="off"
+      />
       {/* Loading Spinner */}
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
       {/* Suggestions Dropdown */}
