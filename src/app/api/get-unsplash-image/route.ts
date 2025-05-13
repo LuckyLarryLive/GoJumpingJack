@@ -92,12 +92,12 @@ export async function GET(request: Request) {
     }
 
     // Construct the search query
-    const searchQuery = `${city_name} ${region ? region + ' ' : ''}${country_code} downtown skyline cityscape urban landscape`;
+    const searchQuery = `${city_name} ${region ? region + ' ' : ''}${country_code} city downtown skyline urban architecture`;
     console.log('[get-unsplash-image] Constructed search query:', searchQuery);
 
     // Make the request to Unsplash API
     const response = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&orientation=landscape&per_page=5&content_filter=high`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&orientation=landscape&per_page=10&content_filter=high`,
         {
             headers: {
                 'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`

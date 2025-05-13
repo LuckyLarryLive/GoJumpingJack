@@ -535,7 +535,17 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
               {group.airports.map((airport: Airport) => (
                 <div 
                   key={airport.code}
-                  onMouseDown={() => handleSuggestionClick(airport)}
+                  onMouseDown={(e) => {
+                    e.preventDefault(); // Prevent blur
+                    console.log('[AirportSearchInput] Airport suggestion clicked:', {
+                      code: airport.code,
+                      name: airport.name,
+                      city: airport.city,
+                      country: airport.country,
+                      state: airport.state
+                    });
+                    handleSuggestionClick(airport);
+                  }}
                   onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
