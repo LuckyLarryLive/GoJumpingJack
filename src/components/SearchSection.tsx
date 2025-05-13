@@ -84,12 +84,29 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     useEffect(() => {
         if (destinationAirportCode && destinationDisplayValue) {
             // Extract city name and country code from the display value
-            // Format is typically: "Airport Name (IATA) - City, Region, Country"
+            // Format is typically: "Airport Name (IATA) - City, Region, Country" or "City - All Airports (IATA1,IATA2,...)"
             const parts = destinationDisplayValue.split(' - ');
             if (parts.length >= 2) {
-                const cityPart = parts[1].split(',')[0].trim();
-                const countryPart = parts[parts.length - 1].trim();
-                const regionPart = parts.length > 2 ? parts[2].split(',')[0].trim() : null;
+                let cityPart, countryPart, regionPart;
+                
+                if (parts[1].includes('All Airports')) {
+                    // Handle "All Airports" case
+                    cityPart = parts[0].trim(); // City name is the first part
+                    const lastPart = parts[parts.length - 1].trim();
+                    const lastParts = lastPart.split(',');
+                    countryPart = lastParts[lastParts.length - 1].trim();
+                    regionPart = lastParts.length > 1 ? lastParts[lastParts.length - 2].trim() : null;
+                } else {
+                    // Handle regular airport case
+                    cityPart = parts[1].split(',')[0].trim();
+                    countryPart = parts[parts.length - 1].trim();
+                    regionPart = parts.length > 2 ? parts[2].split(',')[0].trim() : null;
+                }
+
+                // Only include region if it's different from country code
+                if (regionPart === countryPart) {
+                    regionPart = null;
+                }
 
                 console.log('[SearchSection] Fetching Unsplash image with params:', {
                     city_name: cityPart,

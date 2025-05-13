@@ -6,6 +6,10 @@ export interface Airport {
   country: string;
   latitude: number;
   longitude: number;
+  airports?: Array<{
+    code: string;
+    name: string;
+  }>;
 }
 
 export interface SearchResult {

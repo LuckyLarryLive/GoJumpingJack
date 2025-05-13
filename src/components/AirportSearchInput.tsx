@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import useDebounce from '@/hooks/useDebounce'; // Import the extracted hook
-import type { Airport } from '@/types'; // Import the Airport type
+import type { Airport } from '@/types/airport'; // Import the Airport type
 import { FaPlane, FaCity } from 'react-icons/fa';
 
 // --- Component Props Interface ---
@@ -48,10 +48,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     
     // Format: "Airport Name (IATA) - City, Region, Country"
     const parts = [
-      `${airport.airport_name} (${airport.airport_code})`,
-      airport.city_name || '',
-      airport.region || '',
-      airport.country_code || ''
+      `${airport.name} (${airport.code})`,
+      airport.city || '',
+      airport.state || '',
+      airport.country || ''
     ].filter(Boolean); // Remove empty strings
     
     return parts.join(' - ');
@@ -143,11 +143,11 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
         // Map API keys to expected frontend keys if needed
         const mapped = data.map((a: any) => ({
-          airport_code: a.iata_code,
-          airport_name: a.name,
-          city_name: a.city_name,
-          country_code: a.country_code,
-          region: a.region,
+          code: a.iata_code,
+          name: a.name,
+          city: a.city_name,
+          country: a.country_code,
+          state: a.region,
         }));
         setSuggestions(mapped);
         console.log('[AirportSearchInput] Suggestions state set to:', mapped);
@@ -155,15 +155,15 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         // --- GROUPING LOGIC START ---
         const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
         mapped.forEach((airport: any) => {
-          const cityKey = airport.city_name || `airport_${airport.airport_code}`; // Use airport code if city is NULL
+          const cityKey = airport.city || `airport_${airport.code}`; // Use airport code if city is NULL
           if (!grouped[cityKey]) {
-            if (airport.city_name) {
+            if (airport.city) {
               grouped[cityKey] = { cityInfo: airport, airports: [] };
             } else {
               grouped[cityKey] = { cityInfo: airport, airports: [airport] };
             }
           }
-          if (airport.city_name) {
+          if (airport.city) {
             grouped[cityKey].airports.push(airport);
           }
         });
@@ -223,33 +223,42 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   };
 
   // Update handleSuggestionClick to handle city selections
-  const handleSuggestionClick = (airport: Airport) => {
-    console.log('[AirportSearchInput] Selected airport:', airport);
+  const handleSuggestionClick = (suggestion: Airport) => {
+    console.log('[AirportSearchInput] Suggestion clicked:', suggestion);
     
-    // Set the display value to the formatted airport name
-    const displayValue = getFormattedDisplay(airport);
-    console.log('[AirportSearchInput] Setting display value:', displayValue);
-    setQuery(displayValue);
-    setSelectedAirport(airport);
+    // For single IATA code selections (like JFK), ensure we have the full airport data
+    if (suggestion.code && !suggestion.airports) {
+      // Construct a display value for single airport
+      const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
+      onAirportSelect(suggestion.code, suggestion.city, displayValue);
+    } else if (suggestion.airports) {
+      // Handle "All Airports" selection
+      const airportCodes = suggestion.airports.map(a => a.code).join(',');
+      const cityCode = suggestion.city || null;
+      const displayValue = `${suggestion.city} - All Airports (${airportCodes})`;
+      onAirportSelect(airportCodes, cityCode, displayValue);
+    } else {
+      // Handle regular airport selection
+      const displayValue = `${suggestion.name} (${suggestion.code}) - ${suggestion.city}, ${suggestion.state || ''}, ${suggestion.country}`;
+      onAirportSelect(suggestion.code, suggestion.city, displayValue);
+    }
     
-    // Call the parent's onAirportSelect with the airport code
-    onAirportSelect(airport.airport_code, airport.city_code, displayValue);
-
-    // Close the suggestions dropdown
+    setQuery(suggestion.name || suggestion.city);
+    setSelectedAirport(suggestion);
     setIsDropdownOpen(false);
     setSuggestions([]);
 
     // Only attempt to fetch Unsplash image if we have a valid city name
-    if (airport.city_name) {
+    if (suggestion.city) {
       const params = new URLSearchParams();
-      params.append('city_name', airport.city_name);
+      params.append('city_name', suggestion.city);
       
-      if (airport.country_code) {
-        params.append('country_code', airport.country_code);
+      if (suggestion.country) {
+        params.append('country_code', suggestion.country);
       }
       
-      if (airport.region) {
-        params.append('region', airport.region);
+      if (suggestion.state) {
+        params.append('region', suggestion.state);
       }
 
       const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
@@ -376,15 +385,15 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Group suggestions by city for rendering
   const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
   suggestions.forEach((airport: Airport) => {
-    const cityKey = airport.city_name || `airport_${airport.airport_code}`;
+    const cityKey = airport.city || `airport_${airport.code}`;
     if (!grouped[cityKey]) {
-      if (airport.city_name) {
+      if (airport.city) {
         grouped[cityKey] = { cityInfo: airport, airports: [] };
       } else {
         grouped[cityKey] = { cityInfo: airport, airports: [airport] };
       }
     }
-    if (airport.city_name) {
+    if (airport.city) {
       grouped[cityKey].airports.push(airport);
     }
   });
@@ -397,7 +406,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }))
     .filter(group => {
       // Only include groups that have a valid city name and multiple airports
-      return group.city.city_name && group.airports.length > 1;
+      return group.city.city && group.airports.length > 1;
     });
 
   // --- Render ---
@@ -446,40 +455,40 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       {isDropdownOpen && groupedSuggestions.length > 0 && (
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
           {groupedSuggestions.map((group, groupIdx) => (
-            <li key={group.city.city_name + '-group'} className="">
+            <li key={group.city.city + '-group'} className="">
               {/* Only render city group if we have a valid city name and multiple airports */}
-              {group.city.city_name && group.airports.length > 1 && (
+              {group.city.city && group.airports.length > 1 && (
                 <div
                   className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
                   tabIndex={0}
-                  onMouseDown={() => handleCitySelection(group.city.city_name, group.airports.map(a => a.airport_code))}
+                  onMouseDown={() => handleCitySelection(group.city.city, group.airports.map(a => a.code))}
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      handleCitySelection(group.city.city_name, group.airports.map(a => a.airport_code));
+                      handleCitySelection(group.city.city, group.airports.map(a => a.code));
                     }
                   }}
                 >
                   <FaCity className="mr-2 text-blue-500" />
-                  <span>{highlightMatch(`${group.city.city_name} – All Airports (${group.airports.map(a => a.airport_code).join(', ')})`, query)}</span>
+                  <span>{highlightMatch(`${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`, query)}</span>
                 </div>
               )}
               {/* Airports under city */}
               {group.airports.map((airport: Airport) => (
                 <div 
-                  key={airport.airport_code}
+                  key={airport.code}
                   onMouseDown={() => handleSuggestionClick(airport)}
-                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.airport_code === airport.airport_code))}
-                  className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.airport_code === airport.airport_code ? 'bg-blue-100' : ''}`}
+                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
+                  className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
                   <div>
                     <div className="font-semibold text-gray-800">
-                      {highlightMatch(`${airport.airport_name} (${airport.airport_code})`, query)}
+                      {highlightMatch(`${airport.name} (${airport.code})`, query)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {airport.city_name ? airport.city_name : ''}
-                      {airport.city_name && airport.region ? `, ${airport.region}` : (!airport.city_name && airport.region ? airport.region : '')}
-                      {(airport.city_name || airport.region) && airport.country_code ? ` – ${airport.country_code}` : (!airport.city_name && !airport.region && airport.country_code ? airport.country_code : '')}
+                      {airport.city ? airport.city : ''}
+                      {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
+                      {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}
                     </div>
                   </div>
                 </div>
