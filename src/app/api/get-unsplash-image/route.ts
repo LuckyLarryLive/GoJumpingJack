@@ -122,7 +122,12 @@ export async function GET(request: Request) {
         id: photo.id,
         description: photo.description || photo.alt_description,
         tags: photo.tags?.map((tag: { title: string }) => tag.title).join(', '),
-        location: photo.location?.title
+        location: {
+            title: photo.location?.title,
+            city: photo.location?.city,
+            country: photo.location?.country
+        },
+        score: 0 // Will be calculated below
     })));
 
     if (!data.results || data.results.length === 0) {
@@ -168,6 +173,20 @@ export async function GET(request: Request) {
 
     // Sort by score and select the highest scoring photo
     scoredPhotos.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+    
+    // Log the top 3 scored photos
+    console.log('[get-unsplash-image] Top 3 scored photos:', scoredPhotos.slice(0, 3).map(({ photo, score }: { photo: UnsplashPhoto; score: number }) => ({
+        id: photo.id,
+        score,
+        description: photo.description || photo.alt_description,
+        tags: photo.tags?.map((tag: { title: string }) => tag.title).join(', '),
+        location: {
+            title: photo.location?.title,
+            city: photo.location?.city,
+            country: photo.location?.country
+        }
+    })));
+
     const selectedPhoto = scoredPhotos[0]?.photo;
 
     if (!selectedPhoto) {
@@ -181,7 +200,11 @@ export async function GET(request: Request) {
       score: scoredPhotos[0].score,
       description: selectedPhoto.description || selectedPhoto.alt_description,
       tags: selectedPhoto.tags?.map((tag: { title: string }) => tag.title).join(', '),
-      location: selectedPhoto.location?.title,
+      location: {
+          title: selectedPhoto.location?.title,
+          city: selectedPhoto.location?.city,
+          country: selectedPhoto.location?.country
+      },
       relevance: {
         cityMatch: selectedPhoto.location?.city?.toLowerCase() === city_name.toLowerCase(),
         countryMatch: country_code ? selectedPhoto.location?.country?.toLowerCase() === country_code.toLowerCase() : false,

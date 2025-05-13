@@ -228,9 +228,15 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     
     // Construct display value with proper formatting
     const displayValue = getFormattedDisplay(suggestion);
+    console.log('[AirportSearchInput] Constructed display value:', displayValue);
     
     // Update parent component with the correct values
     onAirportSelect(suggestion.code, suggestion.city, displayValue);
+    console.log('[AirportSearchInput] Updated parent with:', {
+      code: suggestion.code,
+      city: suggestion.city,
+      displayValue
+    });
     
     // Update local state
     setQuery(displayValue);
@@ -295,13 +301,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
     // If a valid airport is selected AND the input field exactly matches its display value
     if (selectedAirport && query === currentFormattedSelection) {
-      console.log(`[AirportSearchInput] Clearing input ${id} on focus because a valid selection existed.`);
-      setQuery('');               // Clear the visual input
-      setSelectedAirport(null);   // Clear the internal selected state
-      onAirportSelect(null, null, null); // **Crucially, clear the parent state**
-      setSuggestions([]);         // Ensure suggestions are cleared
-      setIsDropdownOpen(false);   // Ensure dropdown is closed
-      setActiveIndex(-1);         // Reset keyboard nav index
+      // Don't clear the input, just reopen dropdown if there are suggestions
+      if (suggestions.length > 0) {
+        setIsDropdownOpen(true);
+      }
     }
     // Reopen dropdown if there are suggestions relevant to current query (and query isn't empty/selected)
     else if (suggestions.length > 0 && query !== currentFormattedSelection && query.length > 0) {
