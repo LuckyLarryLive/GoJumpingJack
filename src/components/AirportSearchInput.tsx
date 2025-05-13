@@ -209,8 +209,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     const newValue = event.target.value;
     setQuery(newValue);
 
-    // If user clears the input manually, ensure parent state is cleared
-    if (newValue === '') {
+    // Only clear parent state if the input is completely empty (no spaces)
+    if (newValue.trim() === '') {
       console.log(`[AirportSearchInput] Input ${id} cleared manually, clearing parent state.`);
       setSelectedAirport(null); // Clear local selection
       onAirportSelect(null, null, null); // Clear parent state
@@ -297,26 +297,26 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
    // Handle Focus
    const handleFocus = () => {
-        isInteracting.current = true; // User focused
-        const currentFormattedSelection = getFormattedDisplay(selectedAirport);
+    isInteracting.current = true; // User focused
+    const currentFormattedSelection = getFormattedDisplay(selectedAirport);
 
-        // If a valid airport is selected AND the input field exactly matches its display value
-        if (selectedAirport && query === currentFormattedSelection) {
-            console.log(`[AirportSearchInput] Clearing input ${id} on focus because a valid selection existed.`);
-            setQuery('');               // Clear the visual input
-            setSelectedAirport(null);   // Clear the internal selected state
-            onAirportSelect(null, null, null); // **Crucially, clear the parent state**
-            setSuggestions([]);         // Ensure suggestions are cleared
-            setIsDropdownOpen(false);   // Ensure dropdown is closed
-            setActiveIndex(-1);         // Reset keyboard nav index
-        }
-        // Reopen dropdown if there are suggestions relevant to current query (and query isn't empty/selected)
-        else if (suggestions.length > 0 && query !== currentFormattedSelection && query.length > 0) {
-             setIsDropdownOpen(true);
-        }
-        // Set interacting false slightly later
-        setTimeout(() => { isInteracting.current = false; }, 100);
-    };
+    // If a valid airport is selected AND the input field exactly matches its display value
+    if (selectedAirport && query === currentFormattedSelection) {
+      console.log(`[AirportSearchInput] Clearing input ${id} on focus because a valid selection existed.`);
+      setQuery('');               // Clear the visual input
+      setSelectedAirport(null);   // Clear the internal selected state
+      onAirportSelect(null, null, null); // **Crucially, clear the parent state**
+      setSuggestions([]);         // Ensure suggestions are cleared
+      setIsDropdownOpen(false);   // Ensure dropdown is closed
+      setActiveIndex(-1);         // Reset keyboard nav index
+    }
+    // Reopen dropdown if there are suggestions relevant to current query (and query isn't empty/selected)
+    else if (suggestions.length > 0 && query !== currentFormattedSelection && query.length > 0) {
+      setIsDropdownOpen(true);
+    }
+    // Set interacting false slightly later
+    setTimeout(() => { isInteracting.current = false; }, 100);
+  };
 
 
   // Handle Keyboard Navigation
@@ -411,8 +411,22 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         id={id}
         name={id}
         placeholder={placeholder}
-        value={isInteracting.current ? query : getCondensedDisplay(currentValue || '')}
-        onChange={handleInputChange}
+        value={isInteracting.current ? query : (currentValue || '')}
+        onChange={(e) => {
+          isInteracting.current = true;
+          const newValue = e.target.value;
+          setQuery(newValue);
+          
+          // Only clear parent state if the input is completely empty (no spaces)
+          if (newValue.trim() === '') {
+            setSelectedAirport(null);
+            onAirportSelect(null, null, null);
+            setSuggestions([]);
+            setIsDropdownOpen(false);
+          } else if (selectedAirport) {
+            setSelectedAirport(null);
+          }
+        }}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onBlur={() => {
@@ -451,7 +465,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
               )}
               {/* Airports under city */}
               {group.airports.map((airport: Airport) => (
-                <div key={airport.airport_code}
+                <div 
+                  key={airport.airport_code}
                   onMouseDown={() => handleSuggestionClick(airport)}
                   onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.airport_code === airport.airport_code))}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.airport_code === airport.airport_code ? 'bg-blue-100' : ''}`}
