@@ -332,11 +332,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 type="date"
                                 id="return-date"
                                 name="return-date"
-                                required={returnDate !== ''}
-                                disabled={returnDate === ''}
+                                required={false}
                                 value={returnDate}
                                 onChange={(e) => setReturnDate(e.target.value)}
-                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm ${returnDate === '' ? 'cursor-not-allowed' : ''}`}
+                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm"
                                 min={departureDate || today}
                             />
                         </div>
