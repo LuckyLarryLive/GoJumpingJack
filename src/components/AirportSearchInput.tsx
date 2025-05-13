@@ -57,11 +57,24 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     return parts.join(' - ');
   }, []);
 
+  // Helper to condense display value for input field
+  const getCondensedDisplay = useCallback((displayValue: string | null): string => {
+    if (!displayValue) return '';
+    
+    // If it's an "All Airports" selection, condense it
+    if (displayValue.includes(' – All Airports')) {
+      const cityName = displayValue.split(' – All Airports')[0];
+      return `${cityName} (All Airports)`;
+    }
+    
+    return displayValue;
+  }, []);
+
   // Effect to sync with currentValue from parent
   useEffect(() => {
     if (!isInteracting.current && currentValue !== undefined) {
       console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
-      setQuery(currentValue || '');
+      setQuery(getCondensedDisplay(currentValue) || '');
       // If syncing to an empty value, clear local selection
       if (!currentValue) {
         setSelectedAirport(null);
@@ -75,13 +88,13 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [currentValue, selectedAirport, getFormattedDisplay]);
+  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay]);
 
   // Effect to sync with initialDisplayValue from parent (for initial mount)
   useEffect(() => {
     if (!isInteracting.current && initialDisplayValue !== undefined) {
       console.log(`[AirportSearchInput] Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
-      setQuery(initialDisplayValue || '');
+      setQuery(getCondensedDisplay(initialDisplayValue) || '');
       // If syncing to an empty value, clear local selection
       if (!initialDisplayValue) {
         setSelectedAirport(null);
@@ -95,7 +108,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [initialDisplayValue, selectedAirport, getFormattedDisplay]);
+  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay]);
 
   // Fetch suggestions Effect
   useEffect(() => {
@@ -398,7 +411,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         id={id}
         name={id}
         placeholder={placeholder}
-        value={isInteracting.current ? query : (currentValue || '')}
+        value={isInteracting.current ? query : getCondensedDisplay(currentValue || '')}
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
