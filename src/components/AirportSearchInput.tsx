@@ -322,22 +322,24 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
    // Handle Focus
    const handleFocus = () => {
-    isInteracting.current = true; // User focused
-    const currentFormattedSelection = getFormattedDisplay(selectedAirport);
+    isInteracting.current = true; 
 
-    // If a valid airport is selected AND the input field exactly matches its display value
+    // If a valid airport was previously selected and its full display text is in the input
+    const currentFormattedSelection = selectedAirport ? getFormattedDisplay(selectedAirport) : null;
     if (selectedAirport && query === currentFormattedSelection) {
-      // Don't clear the input, just reopen dropdown if there are suggestions
-      if (suggestions.length > 0) {
-        setIsDropdownOpen(true);
-      }
-    }
-    // Reopen dropdown if there are suggestions relevant to current query (and query isn't empty/selected)
-    else if (suggestions.length > 0 && query !== currentFormattedSelection && query.length > 0) {
+      console.log(`[AirportSearchInput] Focus on fully selected field '${id}'. Clearing for new input.`);
+      setQuery('');
+      setSelectedAirport(null);
+      onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
+      setSuggestions([]); 
+      setIsDropdownOpen(false); 
+    } 
+    // If there is text but it's not a confirmed selection, or field is empty, just allow typing / show suggestions
+    else if (query.length > 0 && suggestions.length > 0 && !selectedAirport) {
       setIsDropdownOpen(true);
     }
-    // Set interacting false slightly later
-    setTimeout(() => { isInteracting.current = false; }, 100);
+    // No specific action if field is empty and gets focus, user will just start typing.
+    // The normal input onChange and debouncedQuery useEffect will handle fetching new suggestions.
   };
 
 

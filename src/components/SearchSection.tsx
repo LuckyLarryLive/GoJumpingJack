@@ -90,57 +90,89 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // Update the useEffect for fetching Unsplash image
     useEffect(() => {
+        // The value of backgroundImage at the time this effect is triggered.
+        const currentImageOnEffectTrigger = backgroundImage;
+
         if (destinationCityNameForApi && destinationCountryCodeForApi) {
-            console.log('[SearchSection] useEffect Unsplash: Fetching image for', {
+            console.log('[SearchSection] useEffect Unsplash: Checking for image update for', {
                 city: destinationCityNameForApi,
                 country: destinationCountryCodeForApi,
-                region: destinationRegionForApi
+                region: destinationRegionForApi,
+                currentBg: currentImageOnEffectTrigger
             });
 
-            setIsFading(true);
-            const params = new URLSearchParams();
-            params.append('city_name', destinationCityNameForApi);
-            params.append('country_code', destinationCountryCodeForApi);
-            if (destinationRegionForApi) {
-                params.append('region', destinationRegionForApi);
-            }
+            let imageWillActuallyChange = false;
 
-            fetch(`/api/get-unsplash-image?${params.toString()}`)
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error(`Unsplash API error: ${res.status}`);
-                    }
-                    return res.json();
-                })
+            fetch(`/api/get-unsplash-image?${new URLSearchParams({
+                city_name: destinationCityNameForApi,
+                country_code: destinationCountryCodeForApi,
+                ...(destinationRegionForApi && { region: destinationRegionForApi }),
+            }).toString()}`)
+                .then(res => res.json())
                 .then(data => {
-                    if (data.imageUrl) {
-                        setBackgroundImage(data.imageUrl);
-                        setAttribution({
-                            name: data.photographerName,
-                            profileUrl: data.photographerProfileUrl,
-                            unsplashUrl: data.unsplashUrl
-                        });
-                        // Track download
-                        if (data.downloadLocationUrl) {
-                            fetch('/api/track-unsplash-download', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
-                            });
+                    const newImageUrl = data.imageUrl || '/default_background.png';
+                    const newAttribution = data.imageUrl ? { name: data.photographerName, profileUrl: data.photographerProfileUrl, unsplashUrl: data.unsplashUrl } : null;
+
+                    if (newImageUrl !== currentImageOnEffectTrigger) {
+                        console.log(`[SearchSection] Image will change from ${currentImageOnEffectTrigger} to ${newImageUrl}. Initiating fade.`);
+                        imageWillActuallyChange = true;
+                        setIsFading(true); // Start fade-out of the current backgroundImage
+                        
+                        // Set the new image and attribution. This happens while opacity is 0 (or transitioning to 0).
+                        setBackgroundImage(newImageUrl);
+                        setAttribution(newAttribution);
+                    } else {
+                        console.log(`[SearchSection] New image URL (${newImageUrl}) is same as current. No visual change needed for image itself.`);
+                        // Image is the same. Update attribution if it changed, and ensure not fading.
+                        if (JSON.stringify(attribution) !== JSON.stringify(newAttribution)) {
+                            setAttribution(newAttribution);
                         }
+                        if (isFading) {
+                            setIsFading(false); // If it was fading for some other reason, snap back.
+                        }
+                        imageWillActuallyChange = false;
                     }
                 })
                 .catch(err => {
                     console.error('[SearchSection] Error fetching Unsplash image:', err);
-                    // Reset to default background on error
-                    setBackgroundImage('/default_background.png');
-                    setAttribution(null);
+                    // If an error occurs, revert to default background if not already default
+                    if (currentImageOnEffectTrigger !== '/default_background.png') {
+                        imageWillActuallyChange = true;
+                        setIsFading(true);
+                        setBackgroundImage('/default_background.png');
+                        setAttribution(null);
+                    } else {
+                        if (isFading) setIsFading(false);
+                        imageWillActuallyChange = false;
+                    }
                 })
                 .finally(() => {
-                    setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
+                    if (imageWillActuallyChange) {
+                        // If an image change was processed and fade-out started (setIsFading(true)),
+                        // now trigger the fade-in of the new image.
+                        console.log('[SearchSection] finally: an image change occurred, ensuring fade-in starts.');
+                        setIsFading(false); 
+                    } else {
+                        console.log('[SearchSection] finally: no actual image change, or fade already corrected.');
+                    }
                 });
+        } else {
+            // No destination selected, ensure default background is set if not already.
+            if (currentImageOnEffectTrigger !== '/default_background.png') {
+                console.log('[SearchSection] No destination, changing to default background.');
+                setIsFading(true);
+                setBackgroundImage('/default_background.png');
+                setAttribution(null);
+                // The setIsFading(false) will make the default image appear with a fade.
+                // This needs to be handled carefully if isFading can be triggered by other means.
+                // For simplicity, we assume this effect is the main driver of background and fading.
+                // The subsequent setIsFading(false) ensures the default background becomes visible.
+                setTimeout(() => setIsFading(false), 50); // Small delay to ensure fade-out starts, then fade-in default.
+            } else {
+                 if (isFading) setIsFading(false); // Was already default, ensure not fading.
+            }
         }
-    }, [destinationCityNameForApi, destinationCountryCodeForApi, destinationRegionForApi]);
+    }, [destinationCityNameForApi, destinationCountryCodeForApi, destinationRegionForApi]); // Dependencies that trigger the image fetch
 
     // --- Handler for From Airport Selection ---
     const handleFromAirportSelect = useCallback((airportCode: string | null, displayValue: string | null, selectionType: 'airport' | 'city' | null, cityNameForApi: string | null, countryCodeForApi: string | null, regionForApi?: string | null) => {
