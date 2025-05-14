@@ -542,8 +542,21 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                       name: airport.name,
                       city: airport.city,
                       country: airport.country,
-                      state: airport.state
+                      state: airport.state,
+                      raw: airport
                     });
+                    
+                    // Log the formatted display value before calling handleSuggestionClick
+                    const displayValue = getFormattedDisplay(airport);
+                    console.log('[AirportSearchInput] Formatted display value:', displayValue);
+                    
+                    // Log the values that will be passed to parent
+                    console.log('[AirportSearchInput] Will call parent with:', {
+                      airportCode: airport.code,
+                      city: airport.city,
+                      displayValue
+                    });
+                    
                     handleSuggestionClick(airport);
                   }}
                   onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
