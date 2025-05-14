@@ -229,11 +229,15 @@ export async function GET(request: Request) {
     }
 
     if (!selectedPhoto) {
-      console.log('[get-unsplash-image] No suitable city-specific photos found after trying all queries');
+      console.log('[get-unsplash-image] No suitable city-specific photos found after trying all queries. Returning 200 with null imageUrl.');
       return NextResponse.json({ 
-        error: 'No city-specific images found',
-        details: 'Could not find any images specifically matching the requested city'
-      }, { status: 404 });
+        imageUrl: null,
+        message: 'No suitable city-specific image found after trying all queries.',
+        photographerName: null,
+        photographerProfileUrl: null,
+        unsplashUrl: null,
+        downloadLocationUrl: null
+      }, { status: 200 });
     }
 
     // Log the selected photo details
@@ -255,7 +259,8 @@ export async function GET(request: Request) {
       downloadLocationUrl: selectedPhoto.links.download_location,
       photographerName: selectedPhoto.user.name,
       photographerProfileUrl: selectedPhoto.user.links.html,
-      unsplashUrl: selectedPhoto.links.html
+      unsplashUrl: selectedPhoto.links.html,
+      message: 'Image successfully fetched.'
     });
   } catch (error) {
     console.error('[get-unsplash-image] Unexpected error:', error);
