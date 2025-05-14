@@ -38,4 +38,8 @@ export interface SearchParamsType {
     maxConnections?: number;
     fromDisplayValue?: string;
     toDisplayValue?: string;
+    toCityNameForApi?: string;
+    toCountryCodeForApi?: string;
+    toRegionForApi?: string;
+    toSelectionType?: 'airport' | 'city' | null;
 }

@@ -54,6 +54,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const [backgroundImage, setBackgroundImage] = useState('/default_background.png');
     const [attribution, setAttribution] = useState<{ name: string; profileUrl: string; unsplashUrl: string } | null>(null);
     const [isFading, setIsFading] = useState(false);
+    const [destinationSelectionType, setDestinationSelectionType] = useState<'airport' | 'city' | null>(null);
+    const [destinationCityNameForApi, setDestinationCityNameForApi] = useState<string | null>(null);
+    const [destinationCountryCodeForApi, setDestinationCountryCodeForApi] = useState<string | null>(null);
+    const [destinationRegionForApi, setDestinationRegionForApi] = useState<string | null>(null);
 
     // Calculate today's date for min attribute on date inputs
     const today = new Date().toISOString().split('T')[0];
@@ -65,6 +69,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             setDestinationAirportCode(initialSearchParams.destinationAirport);
             setOriginDisplayValue(initialSearchParams.fromDisplayValue || '');
             setDestinationDisplayValue(initialSearchParams.toDisplayValue || '');
+            setDestinationCityNameForApi(initialSearchParams.toCityNameForApi || null);
+            setDestinationCountryCodeForApi(initialSearchParams.toCountryCodeForApi || null);
+            setDestinationRegionForApi(initialSearchParams.toRegionForApi || null);
+            setDestinationSelectionType(initialSearchParams.toSelectionType || null);
             setDepartureDate(initialSearchParams.departureDate);
             setReturnDate(initialSearchParams.returnDate || '');
             setAdults(initialSearchParams.adults);
@@ -82,108 +90,82 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
     // Update the useEffect for fetching Unsplash image
     useEffect(() => {
-        if (destinationAirportCode && destinationDisplayValue) {
-            // Extract city name and country code from the display value
-            // Format is typically: "Airport Name (IATA) - City, Region, Country" or "City - All Airports (IATA1,IATA2,...)"
-            const parts = destinationDisplayValue.split(' - ');
-            if (parts.length >= 2) {
-                let cityPart, countryPart, regionPart;
-                
-                if (parts[1].includes('All Airports')) {
-                    // Handle "All Airports" case
-                    cityPart = parts[0].trim(); // City name is the first part
-                    const lastPart = parts[parts.length - 1].trim();
-                    const lastParts = lastPart.split(',');
-                    countryPart = lastParts[lastParts.length - 1].trim();
-                    regionPart = lastParts.length > 1 ? lastParts[lastParts.length - 2].trim() : null;
-                } else {
-                    // Handle regular airport case
-                    cityPart = parts[1].split(',')[0].trim();
-                    countryPart = parts[parts.length - 1].trim();
-                    regionPart = parts.length > 2 ? parts[2].split(',')[0].trim() : null;
-                }
+        if (destinationCityNameForApi && destinationCountryCodeForApi) {
+            console.log('[SearchSection] useEffect Unsplash: Fetching image for', {
+                city: destinationCityNameForApi,
+                country: destinationCountryCodeForApi,
+                region: destinationRegionForApi
+            });
 
-                // Only include region if it's different from country code
-                if (regionPart === countryPart) {
-                    regionPart = null;
-                }
-
-                console.log('[SearchSection] Fetching Unsplash image with params:', {
-                    city_name: cityPart,
-                    country_code: countryPart,
-                    region: regionPart
-                });
-
-                setIsFading(true);
-                const params = new URLSearchParams();
-                params.append('city_name', cityPart);
-                params.append('country_code', countryPart);
-                if (regionPart) {
-                    params.append('region', regionPart);
-                }
-
-                fetch(`/api/get-unsplash-image?${params.toString()}`)
-                    .then(res => {
-                        if (!res.ok) {
-                            throw new Error(`Unsplash API error: ${res.status}`);
-                        }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.imageUrl) {
-                            setBackgroundImage(data.imageUrl);
-                            setAttribution({
-                                name: data.photographerName,
-                                profileUrl: data.photographerProfileUrl,
-                                unsplashUrl: data.unsplashUrl
-                            });
-                            // Track download
-                            if (data.downloadLocationUrl) {
-                                fetch('/api/track-unsplash-download', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
-                                });
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        console.error('[SearchSection] Error fetching Unsplash image:', err);
-                        // Reset to default background on error
-                        setBackgroundImage('/default_background.png');
-                        setAttribution(null);
-                    })
-                    .finally(() => {
-                        setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
-                    });
+            setIsFading(true);
+            const params = new URLSearchParams();
+            params.append('city_name', destinationCityNameForApi);
+            params.append('country_code', destinationCountryCodeForApi);
+            if (destinationRegionForApi) {
+                params.append('region', destinationRegionForApi);
             }
+
+            fetch(`/api/get-unsplash-image?${params.toString()}`)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Unsplash API error: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (data.imageUrl) {
+                        setBackgroundImage(data.imageUrl);
+                        setAttribution({
+                            name: data.photographerName,
+                            profileUrl: data.photographerProfileUrl,
+                            unsplashUrl: data.unsplashUrl
+                        });
+                        // Track download
+                        if (data.downloadLocationUrl) {
+                            fetch('/api/track-unsplash-download', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ downloadLocationUrl: data.downloadLocationUrl })
+                            });
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('[SearchSection] Error fetching Unsplash image:', err);
+                    // Reset to default background on error
+                    setBackgroundImage('/default_background.png');
+                    setAttribution(null);
+                })
+                .finally(() => {
+                    setTimeout(() => setIsFading(false), 1750); // 1.75 seconds
+                });
         }
-    }, [destinationAirportCode, destinationDisplayValue]);
+    }, [destinationCityNameForApi, destinationCountryCodeForApi, destinationRegionForApi]);
 
     // --- Handler for From Airport Selection ---
-    const handleFromAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
-        console.log('[SearchSection] From airport selected:', { airportCode, displayValue });
-        if (airportCode && airportCode.includes(',')) {
-            // If it's a city selection with multiple airports, store the first airport code
-            const firstAirportCode = airportCode.split(',')[0].trim();
-            setOriginAirportCode(firstAirportCode);
-        } else {
-            setOriginAirportCode(airportCode || '');
-        }
+    const handleFromAirportSelect = useCallback((airportCode: string | null, displayValue: string | null, selectionType: 'airport' | 'city' | null, cityNameForApi: string | null, countryCodeForApi: string | null, regionForApi?: string | null) => {
+        console.log('[SearchSection] From airport selected:', { airportCode, displayValue, selectionType, cityNameForApi, countryCodeForApi, regionForApi });
+        setOriginAirportCode(airportCode || '');
         setOriginDisplayValue(displayValue || '');
     }, []);
 
     // --- Handler for To Airport Selection ---
-    const handleToAirportSelect = useCallback((airportCode: string | null, _cityCode: string | null, displayValue: string | null) => {
-        console.log('[SearchSection] To airport selected:', { airportCode, displayValue });
-        if (airportCode && airportCode.includes(',')) {
-            // If it's a city selection with multiple airports, store the first airport code
-            const firstAirportCode = airportCode.split(',')[0].trim();
-            setDestinationAirportCode(firstAirportCode);
-        } else {
-            setDestinationAirportCode(airportCode || '');
-        }
+    const handleToAirportSelect = useCallback((airportCode: string | null, displayValue: string | null, selectionType: 'airport' | 'city' | null, cityNameForApi: string | null, countryCodeForApi: string | null, regionForApi?: string | null) => {
+        console.log('[SearchSection] To airport selected (received from AirportSearchInput):', { 
+            airportCode, 
+            displayValue, 
+            selectionType,
+            cityNameForApi,
+            countryCodeForApi,
+            regionForApi
+        });
+
+        setDestinationAirportCode(airportCode || '');
         setDestinationDisplayValue(displayValue || '');
+        setDestinationSelectionType(selectionType);
+        setDestinationCityNameForApi(cityNameForApi);
+        setDestinationCountryCodeForApi(countryCodeForApi);
+        setDestinationRegionForApi(regionForApi || null);
     }, []);
 
     // --- Handler for Trip Type Radio Buttons ---
