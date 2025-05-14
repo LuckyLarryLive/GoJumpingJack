@@ -472,8 +472,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         autoComplete="off"
       />
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
-      {isDropdownOpen && groupedSuggestions.length > 0 && (
+      {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
+          {/* Render grouped city suggestions (multiple airports) */}
           {groupedSuggestions.map((group, groupIdx) => (
             <li key={group.city.city + '-group'} className="">
               {group.city.city && group.airports.length > 1 && (
@@ -534,6 +535,47 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
               ))}
             </li>
           ))}
+          {/* Render individual airports not in any group (e.g., single-airport results like JFK) */}
+          {suggestions
+            .filter(a => !groupedSuggestions.some(g => g.airports.some(ga => ga.code === a.code)))
+            .map((airport: Airport) => (
+              <div 
+                key={airport.code}
+                onMouseDown={(e) => {
+                  e.preventDefault(); 
+                  console.log('[AirportSearchInput] Airport suggestion clicked:', {
+                    code: airport.code,
+                    name: airport.name,
+                    city: airport.city,
+                    country: airport.country,
+                    state: airport.state,
+                    raw: airport
+                  });
+                  const displayValue = getFormattedDisplay(airport);
+                  console.log('[AirportSearchInput] Formatted display value:', displayValue);
+                  console.log('[AirportSearchInput] Will call parent with:', {
+                    airportCode: airport.code,
+                    city: airport.city,
+                    displayValue
+                  });
+                  handleSuggestionClick(airport);
+                }}
+                onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
+                className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
+              >
+                <FaPlane className="mt-1 mr-2 text-blue-400" />
+                <div>
+                  <div className="font-semibold text-gray-800">
+                    {highlightMatch(`${airport.name} (${airport.code})`, query)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {airport.city ? airport.city : ''}
+                    {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
+                    {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}
+                  </div>
+                </div>
+              </div>
+            ))}
         </ul>
       )}
     </div>
