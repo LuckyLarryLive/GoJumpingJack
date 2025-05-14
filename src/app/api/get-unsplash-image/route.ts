@@ -320,6 +320,26 @@ export async function GET(request: Request) {
 
     console.log(`[get-unsplash-image] Final selected photo from Unsplash: id=${finalSelectedPhoto.id}, score=${finalScore}. Reason: ${selectionReason}`);
     
+    // --- Trigger Unsplash Download Location Endpoint (Compliance) ---
+    if (finalSelectedPhoto.links && finalSelectedPhoto.links.download_location) {
+        console.log(`[get-unsplash-image] Triggering download_location for photo ID: ${finalSelectedPhoto.id}`);
+        fetch(finalSelectedPhoto.links.download_location, { method: 'GET' })
+            .then(response => {
+                if (response.ok) {
+                    console.log(`[get-unsplash-image] Successfully triggered download_location for Unsplash photo ID: ${finalSelectedPhoto.id}, status: ${response.status}`);
+                } else {
+                    console.warn(`[get-unsplash-image] Warning: Failed to trigger download_location for Unsplash photo ID: ${finalSelectedPhoto.id}, status: ${response.status}`);
+                }
+            })
+            .catch(triggerError => {
+                console.error(`[get-unsplash-image] Error triggering download_location for Unsplash photo ID ${finalSelectedPhoto.id}:`, triggerError);
+            });
+        // This is a fire-and-forget, so we don't await it or let its failure block caching/response.
+    } else {
+        console.warn(`[get-unsplash-image] No download_location link found for Unsplash photo ID: ${finalSelectedPhoto.id}`);
+    }
+    // --- End Trigger --- 
+
     // Store in Supabase Cache
     if (supabase) {
         console.log('[get-unsplash-image] Storing new image to cache...');
