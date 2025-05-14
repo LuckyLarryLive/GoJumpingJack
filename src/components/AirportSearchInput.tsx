@@ -11,12 +11,15 @@ interface AirportSearchInputProps {
   label: string;
   placeholder: string;
   onAirportSelect: (
-    airportCode: string | null,
-    cityCode: string | null,
-    displayValue: string | null
+    airportCode: string | null, // IATA for single, comma-separated for city
+    displayValue: string | null, // Full string for display in input
+    selectionType: 'airport' | 'city' | null, // Type of selection
+    cityNameForApi: string | null,    // Explicit city name for API call
+    countryCodeForApi: string | null, // Explicit country code for API call
+    regionForApi?: string | null      // Explicit region for API call (optional)
   ) => void;
   initialDisplayValue?: string | null;
-  currentValue?: string | null; // Add this prop for controlled behavior
+  currentValue?: string | null; 
 }
 
 // --- Airport Search Input Component ---
@@ -227,7 +230,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     if (newValue.trim() === '') {
       console.log(`[AirportSearchInput] Input ${id} cleared manually, clearing parent state.`);
       setSelectedAirport(null); // Clear local selection
-      onAirportSelect(null, null, null); // Clear parent state
+      onAirportSelect(null, null, null, null, null, null); // Clear parent state with all nulls
       setSuggestions([]); setIsDropdownOpen(false);
     } else if (selectedAirport) {
       // If user starts typing *over* a selected value, clear the selection state locally
@@ -247,122 +250,73 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       raw: suggestion
     });
     
-    // Construct display value with proper formatting
     const displayValue = getFormattedDisplay(suggestion);
-    console.log('[AirportSearchInput] Constructed display value:', displayValue);
+    console.log('[AirportSearchInput] Constructed display value for single airport:', displayValue);
     
-    // Update parent component with the correct values
-    onAirportSelect(suggestion.code, suggestion.city, displayValue);
-    console.log('[AirportSearchInput] Updated parent with:', {
-      code: suggestion.code,
-      city: suggestion.city,
-      displayValue
+    const cityNameForApi = suggestion.city;
+    const countryCodeForApi = suggestion.country;
+    const regionForApi = (suggestion.state && suggestion.state !== suggestion.country) ? suggestion.state : null;
+
+    console.log('[AirportSearchInput] Calling onAirportSelect for SINGLE airport:', {
+      airportCode: suggestion.code,
+      displayValue,
+      selectionType: 'airport',
+      cityNameForApi,
+      countryCodeForApi,
+      regionForApi
     });
+    onAirportSelect(
+      suggestion.code, 
+      displayValue, 
+      'airport', 
+      cityNameForApi, 
+      countryCodeForApi,
+      regionForApi
+    );
     
-    // Update local state
     setQuery(displayValue);
     setSelectedAirport(suggestion);
     setIsDropdownOpen(false);
     setSuggestions([]);
-
-    // Only attempt to fetch Unsplash image if we have a valid city name
-    if (suggestion.city) {
-        const params = new URLSearchParams();
-        params.append('city_name', suggestion.city);
-        params.append('country_code', suggestion.country);
-        if (suggestion.state && suggestion.state !== suggestion.country) {
-            params.append('region', suggestion.state);
-        }
-
-        const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
-        console.log('[AirportSearchInput] Fetching Unsplash image:', {
-            url: unsplashUrl,
-            params: Object.fromEntries(params.entries())
-        });
-        
-        // Use a separate async function to handle the Unsplash API call
-        const fetchUnsplashImage = async () => {
-            try {
-                const response = await fetch(unsplashUrl);
-                if (!response.ok) {
-                    throw new Error(`Unsplash API error: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('[AirportSearchInput] Unsplash response:', data);
-                
-                // Handle the Unsplash response data
-                if (data.imageUrl) {
-                    // Update the background image
-                    document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
-                }
-            } catch (error) {
-                console.error('[AirportSearchInput] Error fetching Unsplash image:', error);
-            }
-        };
-
-        // Call the Unsplash API asynchronously without affecting the input state
-        fetchUnsplashImage();
-    }
   };
 
   // Add a new function to handle city selection
   const handleCitySelection = (cityName: string, airportCodes: string[]) => {
-    console.log('[AirportSearchInput] City selection:', { cityName, airportCodes });
-    isInteracting.current = true; // User is selecting
+    console.log('[AirportSearchInput] City selection clicked:', { cityName, airportCodes });
+    isInteracting.current = true; 
     
-    // Get the first airport's details to use for country/region
-    const firstAirport = suggestions.find(a => a.code === airportCodes[0]);
-    console.log('[AirportSearchInput] First airport details:', firstAirport);
+    const firstAirport = suggestions.find(a => airportCodes.includes(a.code)); // Ensure firstAirport is from current suggestions
+    console.log('[AirportSearchInput] First airport details for city selection:', firstAirport);
     
     const displayValue = `${cityName} – All Airports (${airportCodes.join(', ')})`;
-    onAirportSelect(airportCodes.join(','), cityName, displayValue); // Pass comma-separated airport codes
+    const joinedAirportCodes = airportCodes.join(',');
+
+    const cityNameForApi = cityName;
+    const countryCodeForApi = firstAirport ? firstAirport.country : null;
+    const regionForApi = (firstAirport && firstAirport.state && firstAirport.state !== firstAirport.country) ? firstAirport.state : null;
+
+    console.log('[AirportSearchInput] Calling onAirportSelect for CITY (All Airports):', {
+      airportCode: joinedAirportCodes,
+      displayValue,
+      selectionType: 'city',
+      cityNameForApi,
+      countryCodeForApi,
+      regionForApi
+    });
+    onAirportSelect(
+      joinedAirportCodes, 
+      displayValue, 
+      'city', 
+      cityNameForApi, 
+      countryCodeForApi,
+      regionForApi
+    );
     
-    // Update local state
     setQuery(displayValue);
-    setSuggestions([]); 
     setIsDropdownOpen(false); 
+    setSuggestions([]);
     setActiveIndex(-1);
-
-    // Fetch Unsplash image using the city name and country from the first airport
-    if (firstAirport) {
-        const params = new URLSearchParams();
-        params.append('city_name', cityName);
-        params.append('country_code', firstAirport.country);
-        if (firstAirport.state && firstAirport.state !== firstAirport.country) {
-            params.append('region', firstAirport.state);
-        }
-
-        const unsplashUrl = `/api/get-unsplash-image?${params.toString()}`;
-        console.log('[AirportSearchInput] Fetching Unsplash image for city selection:', {
-            url: unsplashUrl,
-            params: Object.fromEntries(params.entries())
-        });
-        
-        // Use a separate async function to handle the Unsplash API call
-        const fetchUnsplashImage = async () => {
-            try {
-                const response = await fetch(unsplashUrl);
-                if (!response.ok) {
-                    throw new Error(`Unsplash API error: ${response.status}`);
-                }
-                const data = await response.json();
-                console.log('[AirportSearchInput] Unsplash response for city selection:', data);
-                
-                // Handle the Unsplash response data
-                if (data.imageUrl) {
-                    // Update the background image
-                    document.documentElement.style.setProperty('--background-image', `url(${data.imageUrl})`);
-                }
-            } catch (error) {
-                console.error('[AirportSearchInput] Error fetching Unsplash image for city selection:', error);
-            }
-        };
-
-        // Call the Unsplash API asynchronously without affecting the input state
-        fetchUnsplashImage();
-    }
     
-    // Set interacting false slightly later to allow state updates
     setTimeout(() => { isInteracting.current = false; }, 100);
   };
 
@@ -469,7 +423,6 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     });
 
   // --- Render ---
-  // (The JSX return statement you cut and pasted)
   console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
     <div ref={containerRef} className="relative w-full">
@@ -485,10 +438,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
           const newValue = e.target.value;
           setQuery(newValue);
           
-          // Only clear parent state if the input is completely empty (no spaces)
           if (newValue.trim() === '') {
             setSelectedAirport(null);
-            onAirportSelect(null, null, null);
+            onAirportSelect(null, null, null, null, null, null); 
             setSuggestions([]);
             setIsDropdownOpen(false);
           } else if (selectedAirport) {
@@ -508,14 +460,11 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm"
         autoComplete="off"
       />
-      {/* Loading Spinner */}
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
-      {/* Suggestions Dropdown */}
       {isDropdownOpen && groupedSuggestions.length > 0 && (
         <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
           {groupedSuggestions.map((group, groupIdx) => (
             <li key={group.city.city + '-group'} className="">
-              {/* Only render city group if we have a valid city name and multiple airports */}
               {group.city.city && group.airports.length > 1 && (
                 <div
                   className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
@@ -531,12 +480,11 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   <span>{highlightMatch(`${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`, query)}</span>
                 </div>
               )}
-              {/* Airports under city */}
               {group.airports.map((airport: Airport) => (
                 <div 
                   key={airport.code}
                   onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent blur
+                    e.preventDefault(); 
                     console.log('[AirportSearchInput] Airport suggestion clicked:', {
                       code: airport.code,
                       name: airport.name,
@@ -546,11 +494,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                       raw: airport
                     });
                     
-                    // Log the formatted display value before calling handleSuggestionClick
                     const displayValue = getFormattedDisplay(airport);
                     console.log('[AirportSearchInput] Formatted display value:', displayValue);
                     
-                    // Log the values that will be passed to parent
                     console.log('[AirportSearchInput] Will call parent with:', {
                       airportCode: airport.code,
                       city: airport.city,
