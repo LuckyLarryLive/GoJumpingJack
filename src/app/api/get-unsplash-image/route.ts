@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js'; // Import Supabase client
 
 // Move the API key check to a constant at the top level
 const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
 const UNSPLASH_UTM = '?utm_source=gojumpingjack&utm_medium=referral';
+
+// Supabase Environment Variables
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY; // Use service role key for backend operations
+
+// Initialize Supabase client (do this once outside the handler if possible, or ensure it's memoized)
+// For serverless functions, creating it per request is common but check Supabase docs for best practices.
+let supabase: any;
+if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+} else {
+    console.warn('[get-unsplash-image] Supabase URL or Service Key is missing. Cache will be disabled.');
+}
 
 // Helper function to check API key
 function checkApiKey() {
@@ -187,35 +201,73 @@ export async function GET(request: Request) {
       region
     });
 
-    if (!city_name) {
-      console.error('[get-unsplash-image] Missing required city_name parameter');
-      return NextResponse.json(
-        { 
-          error: 'Missing required city_name parameter',
-          details: 'The city_name parameter is required to search for images'
-        },
-        { status: 400 }
-      );
+    if (!city_name || !country_code) { // country_code also essential for cache key
+        console.error('[get-unsplash-image] Missing required city_name or country_code parameter');
+        return NextResponse.json(
+            { error: 'Missing required city_name or country_code parameter' },
+            { status: 400 }
+        );
     }
 
+    // A. Check Cache
+    if (supabase) {
+        console.log(`[get-unsplash-image] Checking cache for: city=${city_name}, country=${country_code}, region=${region}`);
+        try {
+            let query = supabase
+                .from('city_images')
+                .select('*')
+                .eq('city_name', city_name)
+                .eq('country_code', country_code);
+
+            if (region) {
+                query = query.eq('region', region);
+            } else {
+                query = query.is('region', null);
+            }
+            query = query.limit(1);
+
+            const { data: cachedImageData, error: cacheError } = await query;
+
+            if (cacheError) {
+                console.error('[get-unsplash-image] Supabase cache read error:', cacheError);
+                // Don't fail, just proceed to Unsplash fetch
+            } else if (cachedImageData && cachedImageData.length > 0) {
+                const cachedImage = cachedImageData[0];
+                console.log('[get-unsplash-image] Cache hit! Returning cached image:', cachedImage.id);
+                return NextResponse.json({
+                    imageUrl: cachedImage.unsplash_regular_url,
+                    downloadLocationUrl: cachedImage.download_location_url,
+                    photographerName: cachedImage.photographer_name,
+                    photographerProfileUrl: cachedImage.photographer_profile_url,
+                    unsplashUrl: cachedImage.unsplash_page_url,
+                    message: 'Image successfully fetched from cache.'
+                }, { status: 200 });
+            } else {
+                console.log('[get-unsplash-image] Cache miss.');
+            }
+        } catch (e) {
+            console.error('[get-unsplash-image] Exception during Supabase cache check:', e);
+            // Proceed to Unsplash fetch
+        }
+    }
+
+    // B. Fetch from Unsplash & Store (if not in cache or cache check failed)
     const queries = [
       `${city_name} ${region ? region + ' ' : ''}skyline`,
       `${city_name} ${region ? region + ' ' : ''}cityscape`,
       `${city_name} ${region ? region + ' ' : ''}landmark`,
-      `${city_name} ${country_code ? country_code + ' ' : ''}city`,
-      city_name // Plain city name as the broadest query
-    ].filter(q => q.trim() !== ""); // Filter out potentially empty queries if region/country_code are null
+      `${country_code ? city_name + ' ' + country_code + ' ' : city_name + ' ' }city`, // Added check for country_code
+      city_name
+    ].filter(q => q.trim() !== "");
 
     let bestPhotoOverall: UnsplashPhoto | null = null;
     let highestScoreOverall = -1; 
     let bestQueryForOverallPhoto: string | null = null;
-
     let bestFallbackPhoto: UnsplashPhoto | null = null;
     let highestFallbackScore = -1;
 
     for (const currentQuery of queries) {
       const topScoredResultForThisQuery = await fetchAndScorePhotos(currentQuery, city_name, region, country_code);
-
       if (topScoredResultForThisQuery) {
         console.log(`[get-unsplash-image] Main GET: Top result for query '${currentQuery}': score=${topScoredResultForThisQuery.score}, id=${topScoredResultForThisQuery.photo.id}`);
 
@@ -255,7 +307,7 @@ export async function GET(request: Request) {
     }
 
     if (!finalSelectedPhoto) {
-      console.log('[get-unsplash-image] No suitable photo found after all queries and fallbacks. Returning 200 with null imageUrl.');
+      console.log('[get-unsplash-image] No suitable photo from Unsplash. Returning 200 with null imageUrl.');
       return NextResponse.json({ 
         imageUrl: null,
         message: 'No suitable city-specific image found after trying all queries and fallbacks.',
@@ -266,16 +318,44 @@ export async function GET(request: Request) {
       }, { status: 200 });
     }
 
-    console.log(`[get-unsplash-image] Final selected photo: id=${finalSelectedPhoto.id}, score=${finalScore}. Reason: ${selectionReason}`);
+    console.log(`[get-unsplash-image] Final selected photo from Unsplash: id=${finalSelectedPhoto.id}, score=${finalScore}. Reason: ${selectionReason}`);
     
-    // Return the image URL and attribution
+    // Store in Supabase Cache
+    if (supabase) {
+        console.log('[get-unsplash-image] Storing new image to cache...');
+        try {
+            const { error: insertError } = await supabase
+                .from('city_images')
+                .insert({
+                    city_name: city_name, // Ensure city_name is not null here
+                    country_code: country_code, // Ensure country_code is not null
+                    region: region, // Can be null
+                    unsplash_regular_url: finalSelectedPhoto.urls.regular,
+                    photographer_name: finalSelectedPhoto.user.name,
+                    photographer_profile_url: finalSelectedPhoto.user.links.html,
+                    unsplash_page_url: finalSelectedPhoto.links.html,
+                    download_location_url: finalSelectedPhoto.links.download_location
+                    // last_fetched_at and created_at have defaults
+                });
+            if (insertError) {
+                console.error('[get-unsplash-image] Supabase cache insert error:', insertError);
+                // Log error but proceed with returning the image to the client
+            } else {
+                console.log('[get-unsplash-image] Successfully stored image in cache.');
+            }
+        } catch (e) {
+            console.error('[get-unsplash-image] Exception during Supabase cache insert:', e);
+        }
+    }
+    
+    // Return the image URL and attribution (fetched from Unsplash)
     return NextResponse.json({
         imageUrl: finalSelectedPhoto.urls.regular,
         downloadLocationUrl: finalSelectedPhoto.links.download_location,
         photographerName: finalSelectedPhoto.user.name,
         photographerProfileUrl: finalSelectedPhoto.user.links.html,
         unsplashUrl: finalSelectedPhoto.links.html,
-        message: `Image successfully fetched. ${selectionReason}`
+        message: `Image successfully fetched from Unsplash. ${selectionReason}`
     });
 
   } catch (error) {
