@@ -424,6 +424,15 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       return group.city.city && group.airports.length > 1;
     });
 
+  // Add render-time debug logging
+  console.log('[AirportSearchInput][RENDER]', {
+    id,
+    query,
+    suggestions,
+    isDropdownOpen,
+    selectedAirport
+  });
+
   // --- Render ---
   console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
