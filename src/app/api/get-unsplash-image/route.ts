@@ -117,8 +117,8 @@ export async function GET(request: Request) {
         results_count: data.results.length
       });
 
-      // Log details of first few results
-      console.log('[get-unsplash-image] First 3 results:', data.results.slice(0, 3).map((photo: UnsplashPhoto) => ({
+      // Log details of first few results before scoring
+      console.log('[get-unsplash-image] First 3 results for query ' + query + ':', data.results.slice(0, 3).map((photo: UnsplashPhoto) => ({
         id: photo.id,
         description: photo.description || photo.alt_description,
         tags: photo.tags?.map((tag: { title: string }) => tag.title).join(', '),
@@ -130,39 +130,80 @@ export async function GET(request: Request) {
       })));
 
       if (!data.results || data.results.length === 0) {
+        console.log(`[get-unsplash-image] No results from Unsplash for query '${query}'.`);
         return null;
       }
 
       // Score each photo
       const scoredPhotos = data.results.map((photo: UnsplashPhoto) => {
         let score = 0;
-        const cityNameLower = city_name.toLowerCase();
-        
-        // STRICT LOCATION MATCHING - Highest Priority
-        if (photo.location?.city?.toLowerCase() === cityNameLower) {
+        const cityNameLower = city_name.toLowerCase(); // city_name is from GET params
+
+        console.log(`[get-unsplash-image] Scoring photo ${photo.id} for city: '${cityNameLower}' (Query: '${query}')`);
+        const photoLocationCityLower = photo.location?.city?.toLowerCase();
+        const photoLocationTitleLower = photo.location?.title?.toLowerCase();
+        const photoTagsLower = photo.tags?.map(tag => tag.title.toLowerCase()) || [];
+
+        console.log(`  Photo details: id=${photo.id}, locCity='${photoLocationCityLower}', locTitle='${photoLocationTitleLower}', tags='${photoTagsLower.join(', ')}'`);
+
+        // Priority 1: Exact match on location.city
+        if (photoLocationCityLower === cityNameLower) {
           score += 20;
-          console.log(`[get-unsplash-image] Found exact city match in location.city for ${photo.id}`);
-        }
-        
-        if (photo.location?.title?.toLowerCase().includes(cityNameLower)) {
-          score += 15;
-          console.log(`[get-unsplash-image] Found city name in location.title for ${photo.id}`);
-        }
-        
-        const hasCityTag = photo.tags?.some((tag: { title: string }) => 
-          tag.title.toLowerCase().includes(cityNameLower)
-        );
-        if (hasCityTag) {
-          score += 15;
-          console.log(`[get-unsplash-image] Found city name in tags for ${photo.id}`);
+          console.log(`  [+] Score +20 (exact city match in location.city) for ${photo.id}`);
+        } 
+        // Priority 2: location.city includes city_name (e.g., "Tampa Bay" for "Tampa")
+        else if (photoLocationCityLower && photoLocationCityLower.includes(cityNameLower)) {
+          score += 10; // Less than exact, but still good
+          console.log(`  [+] Score +10 (location.city '${photoLocationCityLower}' includes '${cityNameLower}') for ${photo.id}`);
+        } else {
+            if (photo.location?.city === undefined) console.log(`  [-] location.city is undefined.`);
+            else if (photo.location?.city === null) console.log(`  [-] location.city is null.`);
+            else console.log(`  [-] No match or include for location.city ('${photoLocationCityLower}') with '${cityNameLower}'`);
         }
 
+        // Priority 3: location.title includes city_name
+        if (photoLocationTitleLower && photoLocationTitleLower.includes(cityNameLower)) {
+          score += 15;
+          console.log(`  [+] Score +15 (location.title '${photoLocationTitleLower}' includes '${cityNameLower}') for ${photo.id}`);
+        } else {
+            if (photo.location?.title === undefined) console.log(`  [-] location.title is undefined.`);
+            else if (photo.location?.title === null) console.log(`  [-] location.title is null.`);
+            else console.log(`  [-] No include for location.title ('${photoLocationTitleLower}') with '${cityNameLower}'`);
+        }
+        
+        // Priority 4: Tags include city_name
+        const hasCityTag = photoTagsLower.some(tagTitle => tagTitle.includes(cityNameLower));
+        if (hasCityTag) {
+          score += 15;
+          console.log(`  [+] Score +15 (tags include '${cityNameLower}') for ${photo.id}`);
+        } else {
+            if (!photo.tags || photo.tags.length === 0) console.log(`  [-] No tags present or tags array is empty.`);
+            else console.log(`  [-] No tag includes '${cityNameLower}'. Tags: ${photoTagsLower.join(', ')}`);
+        }
+
+        console.log(`  Photo ${photo.id} final score for city '${cityNameLower}': ${score}`);
         return { photo, score };
       });
 
-      // Sort by score and return the highest scoring photo if it meets the threshold
-      scoredPhotos.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
-      return scoredPhotos[0].score >= 15 ? scoredPhotos[0] : null;
+      // Sort by score
+      scoredPhotos.sort((a: { photo: UnsplashPhoto; score: number }, b: { photo: UnsplashPhoto; score: number }) => b.score - a.score);
+
+      if (scoredPhotos.length > 0) {
+          const topScoredPhoto = scoredPhotos[0];
+          console.log(`[get-unsplash-image] Top scored photo for query '${query}': id=${topScoredPhoto.photo.id}, score=${topScoredPhoto.score}, locCity='${topScoredPhoto.photo.location?.city}', locTitle='${topScoredPhoto.photo.location?.title}'`);
+          if (topScoredPhoto.score >= 15) {
+              console.log(`[get-unsplash-image] Photo ${topScoredPhoto.photo.id} meets score threshold (>=15) for query '${query}'. Selecting this photo.`);
+              return topScoredPhoto;
+          } else {
+              console.log(`[get-unsplash-image] Top photo ${topScoredPhoto.photo.id} for query '${query}' did not meet score threshold of 15 (score: ${topScoredPhoto.score}).`);
+              return null;
+          }
+      } else {
+          // This case should ideally not be reached if data.results had items,
+          // but as a fallback if scoredPhotos array ends up empty for some reason.
+          console.log(`[get-unsplash-image] No photos were scored for query '${query}'.`);
+          return null;
+      }
     };
 
     // Try queries in sequence
