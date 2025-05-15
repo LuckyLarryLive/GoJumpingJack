@@ -101,12 +101,13 @@ export async function GET(request: Request) {
     }
 
     const flights = await searchFlights(flightSearchParams);
+    console.log('Duffel API raw response:', flights); // Log the raw response
 
     // Return the actual flight data from Duffel
     return NextResponse.json({ data: flights }, { status: 200 });
 
-  } catch (error: any) { // Specify 'any' or a more specific error type if known
-    console.error('Error in flight search calling searchFlights:', error);
+  } catch (error: any) {
+    console.error('Duffel API error:', error); // Log any errors
     // It's better to parse Duffel errors more robustly.
     // For now, logging the whole error and returning a generic message.
     let errorMessage = 'Failed to fetch flight data.';

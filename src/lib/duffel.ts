@@ -1,12 +1,19 @@
 import { Duffel } from '@duffel/api';
 
-if (!process.env.DUFFEL_TOKEN) {
-  throw new Error('DUFFEL_TOKEN is not defined in environment variables');
+// Mode switch: 'live' or 'test' (default to 'test')
+const mode = process.env.DUFFEL_MODE || 'test';
+const duffelToken =
+  mode === 'live'
+    ? process.env.DUFFEL_LIVE_TOKEN
+    : process.env.DUFFEL_TEST_TOKEN;
+
+if (!duffelToken) {
+  throw new Error('Duffel API token is not defined in environment variables');
 }
 
 // Initialize the Duffel client
 const duffel = new Duffel({
-  token: process.env.DUFFEL_TOKEN,
+  token: duffelToken,
 });
 
 // Types for our flight search
