@@ -105,22 +105,30 @@ export async function GET(request: Request) {
 
     // Map Duffel offers to Flight type (limit to 50 for safety)
     const flights = flightsRaw.slice(0, 50).map((offer: any) => {
-      // Extract slice info (Duffel supports multi-slice, but we use first for one-way, both for round-trip)
       const slice = offer.slices && offer.slices[0];
       const segment = slice && slice.segments && slice.segments[0];
       const lastSegment = slice && slice.segments && slice.segments[slice.segments.length - 1];
+      // Parse duration from ISO 8601 (e.g. PT10H30M)
+      function parseDuration(isoDuration: string | undefined): string {
+        if (!isoDuration) return 'N/A';
+        const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+        if (!match) return 'N/A';
+        const hours = match[1] ? parseInt(match[1], 10) : 0;
+        const minutes = match[2] ? parseInt(match[2], 10) : 0;
+        return `${hours}h ${minutes}m`;
+      }
       return {
         origin_airport: segment ? segment.origin.iata_code : offer.owner.iata_code || '',
         destination_airport: lastSegment ? lastSegment.destination.iata_code : offer.owner.iata_code || '',
-        departure_at: segment ? segment.departure : offer.slices[0]?.segments[0]?.departure || '',
-        return_at: lastSegment ? lastSegment.arrival : undefined,
+        departure_at: segment ? segment.departing_at : '',
+        return_at: lastSegment ? lastSegment.arriving_at : undefined,
         airline: offer.owner?.name || offer.owner?.iata_code || 'Unknown',
         price: Number(offer.total_amount),
-        link: offer.id ? `/book/${offer.id}` : '', // Placeholder link, update as needed
+        link: offer.id ? `/book/${offer.id}` : '',
         stops: slice && slice.segments ? slice.segments.length - 1 : 0,
         cabin_class: offer.cabin_class || flightSearchParams.cabinClass,
         currency: offer.total_currency || 'USD',
-        duration: slice ? slice.duration : '',
+        duration: parseDuration(slice && slice.duration ? slice.duration : segment && segment.duration ? segment.duration : undefined),
       };
     });
 
