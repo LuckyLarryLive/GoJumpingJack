@@ -47,6 +47,7 @@ interface OfferRequestSlice {
 // Function to search for flights
 export async function searchFlights(params: FlightSearchParams) {
   try {
+    console.log('Duffel searchFlights: Calling offerRequests.create with params:', params);
     const timeRange: TimeRange = {
       from: '00:00',
       to: '23:59',
@@ -86,15 +87,16 @@ export async function searchFlights(params: FlightSearchParams) {
       ],
       cabin_class: params.cabinClass,
     });
+    console.log('Duffel searchFlights: offerRequests.create response:', offerRequest);
 
-    // Get the offers for this request
     const offers = await duffel.offers.list({
       offer_request_id: offerRequest.data.id,
     });
+    console.log('Duffel searchFlights: offers.list response:', offers);
 
     return offers.data;
   } catch (error) {
-    console.error('Error searching flights:', error);
+    console.error('Duffel searchFlights: Error searching flights:', error);
     throw error;
   }
 }
