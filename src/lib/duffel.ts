@@ -91,6 +91,8 @@ export async function searchFlights(params: FlightSearchParams) {
 
     const offers = await duffel.offers.list({
       offer_request_id: offerRequest.data.id,
+      limit: 50,
+      sort: 'total_amount',
     });
     console.log('Duffel searchFlights: offers.list response:', offers);
 

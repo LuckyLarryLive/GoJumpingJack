@@ -103,8 +103,8 @@ export async function GET(request: Request) {
     const flightsRaw = await searchFlights(flightSearchParams);
     console.log('Duffel API raw response:', flightsRaw); // Log the raw response
 
-    // Map Duffel offers to Flight type
-    const flights = flightsRaw.map((offer: any) => {
+    // Map Duffel offers to Flight type (limit to 50 for safety)
+    const flights = flightsRaw.slice(0, 50).map((offer: any) => {
       // Extract slice info (Duffel supports multi-slice, but we use first for one-way, both for round-trip)
       const slice = offer.slices && offer.slices[0];
       const segment = slice && slice.segments && slice.segments[0];

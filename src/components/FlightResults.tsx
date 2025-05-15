@@ -154,6 +154,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
   }
 
   // 5. Results Found - Render Flight Cards (RESTORED MAPPING)
+  // Sort flights by price ascending
+  const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
   return (
     <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
       <div className="container mx-auto px-4">
@@ -162,7 +164,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
         </h2>
         <div className="space-y-4 max-w-4xl mx-auto">
           {/* Map over the first 3 flights and render FlightCard */}
-          {flights.slice(0, 3).map((flight, index) => (
+          {sortedFlights.slice(0, 3).map((flight, index) => (
             <FlightCard
               key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
               flight={flight}
@@ -170,13 +172,13 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
           ))}
 
           {/* "See More Results" Link */}
-          {flights.length > 3 && (
+          {sortedFlights.length > 3 && (
              <div className="text-center pt-4">
                  <Link
                      href={buildResultsLink(searchParams)}
                      className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-colors duration-200"
                  >
-                     See all {flights.length} results →
+                     See all {sortedFlights.length} results →
                  </Link>
              </div>
           )}

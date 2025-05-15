@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import FlightCard from '@/components/FlightCard';
 import type { Flight } from '@/types';
 
+const unique = (arr: string[]) => Array.from(new Set(arr));
+
 // --- Component ---
 export default function ResultsContent() {
   const searchParamsHook = useSearchParams();
@@ -14,6 +16,9 @@ export default function ResultsContent() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
+  const [priceFilter, setPriceFilter] = useState<[number, number] | null>(null);
+  const [cabinClassFilter, setCabinClassFilter] = useState<string>('');
+  const [airlineFilter, setAirlineFilter] = useState<string>('');
   const pageSize = 10;
 
   // Extract search params
@@ -105,6 +110,24 @@ export default function ResultsContent() {
     setPage(1); // Reset to first page if search params change
   }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, currency]);
 
+  // --- Filtering and Sorting ---
+  const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
+  const minPrice = sortedFlights.length ? sortedFlights[0].price : 0;
+  const maxPrice = sortedFlights.length ? sortedFlights[sortedFlights.length - 1].price : 0;
+  const filteredFlights = sortedFlights.filter(flight => {
+    let pass = true;
+    if (priceFilter) {
+      pass = pass && flight.price >= priceFilter[0] && flight.price <= priceFilter[1];
+    }
+    if (cabinClassFilter) {
+      pass = pass && flight.cabin_class === cabinClassFilter;
+    }
+    if (airlineFilter) {
+      pass = pass && flight.airline === airlineFilter;
+    }
+    return pass;
+  });
+
   // --- Render Logic ---
   const renderContent = () => {
     if (isLoading) {
@@ -122,7 +145,7 @@ export default function ResultsContent() {
       return <div className="text-center py-10 text-red-600">Error: {error}</div>;
     }
 
-    if (flights.length === 0) {
+    if (filteredFlights.length === 0) {
       return (
         <div className="text-center text-gray-600 py-10">
           <p className="text-xl mb-2">No flights found matching your criteria.</p>
@@ -134,10 +157,69 @@ export default function ResultsContent() {
     // Pagination logic
     const startIdx = (page - 1) * pageSize;
     const endIdx = startIdx + pageSize;
-    const pageFlights = flights.slice(startIdx, endIdx);
-    const totalPages = Math.ceil(flights.length / pageSize);
+    const pageFlights = filteredFlights.slice(startIdx, endIdx);
+    const totalPages = Math.ceil(filteredFlights.length / pageSize);
     return (
       <>
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 mb-6 items-end">
+          {/* Price Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                min={minPrice}
+                max={maxPrice}
+                value={priceFilter ? priceFilter[0] : minPrice}
+                onChange={e => setPriceFilter([Number(e.target.value), priceFilter ? priceFilter[1] : maxPrice])}
+                className="w-20 p-1 border border-gray-300 rounded"
+              />
+              <span>-</span>
+              <input
+                type="number"
+                min={minPrice}
+                max={maxPrice}
+                value={priceFilter ? priceFilter[1] : maxPrice}
+                onChange={e => setPriceFilter([priceFilter ? priceFilter[0] : minPrice, Number(e.target.value)])}
+                className="w-20 p-1 border border-gray-300 rounded"
+              />
+              <button
+                className="ml-2 px-2 py-1 bg-gray-200 rounded"
+                onClick={() => setPriceFilter(null)}
+                disabled={!priceFilter}
+              >Clear</button>
+            </div>
+          </div>
+          {/* Cabin Class Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
+            <select
+              value={cabinClassFilter}
+              onChange={e => setCabinClassFilter(e.target.value)}
+              className="p-1 border border-gray-300 rounded"
+            >
+              <option value="">All</option>
+              {unique(sortedFlights.map(f => f.cabin_class)).map(cabin => (
+                <option key={cabin} value={cabin}>{cabin.charAt(0).toUpperCase() + cabin.slice(1).replace('_', ' ')}</option>
+              ))}
+            </select>
+          </div>
+          {/* Airline Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Airline</label>
+            <select
+              value={airlineFilter}
+              onChange={e => setAirlineFilter(e.target.value)}
+              className="p-1 border border-gray-300 rounded"
+            >
+              <option value="">All</option>
+              {unique(sortedFlights.map(f => f.airline)).map(airline => (
+                <option key={airline} value={airline}>{airline}</option>
+              ))}
+            </select>
+          </div>
+        </div>
         <div className="space-y-4">
           {pageFlights.map((flight, index) => (
             <FlightCard key={`${flight.link || 'flight-result'}-${startIdx + index}`} flight={flight} />
