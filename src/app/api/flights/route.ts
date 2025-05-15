@@ -100,10 +100,31 @@ export async function GET(request: Request) {
       flightSearchParams.returnDate = returnDate;
     }
 
-    const flights = await searchFlights(flightSearchParams);
-    console.log('Duffel API raw response:', flights); // Log the raw response
+    const flightsRaw = await searchFlights(flightSearchParams);
+    console.log('Duffel API raw response:', flightsRaw); // Log the raw response
 
-    // Return the actual flight data from Duffel
+    // Map Duffel offers to Flight type
+    const flights = flightsRaw.map((offer: any) => {
+      // Extract slice info (Duffel supports multi-slice, but we use first for one-way, both for round-trip)
+      const slice = offer.slices && offer.slices[0];
+      const segment = slice && slice.segments && slice.segments[0];
+      const lastSegment = slice && slice.segments && slice.segments[slice.segments.length - 1];
+      return {
+        origin_airport: segment ? segment.origin.iata_code : offer.owner.iata_code || '',
+        destination_airport: lastSegment ? lastSegment.destination.iata_code : offer.owner.iata_code || '',
+        departure_at: segment ? segment.departure : offer.slices[0]?.segments[0]?.departure || '',
+        return_at: lastSegment ? lastSegment.arrival : undefined,
+        airline: offer.owner?.name || offer.owner?.iata_code || 'Unknown',
+        price: Number(offer.total_amount),
+        link: offer.id ? `/book/${offer.id}` : '', // Placeholder link, update as needed
+        stops: slice && slice.segments ? slice.segments.length - 1 : 0,
+        cabin_class: offer.cabin_class || flightSearchParams.cabinClass,
+        currency: offer.total_currency || 'USD',
+        duration: slice ? slice.duration : '',
+      };
+    });
+
+    // Return the mapped flight data
     return NextResponse.json({ data: flights }, { status: 200 });
 
   } catch (error: any) {
