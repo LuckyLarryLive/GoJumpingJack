@@ -109,26 +109,45 @@ export async function GET(request: Request) {
       const segment = slice && slice.segments && slice.segments[0];
       const lastSegment = slice && slice.segments && slice.segments[slice.segments.length - 1];
       // Parse duration from ISO 8601 (e.g. PT10H30M)
-      function parseDuration(isoDuration: string | undefined): string {
-        if (!isoDuration) return 'N/A';
-        const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
-        if (!match) return 'N/A';
-        const hours = match[1] ? parseInt(match[1], 10) : 0;
-        const minutes = match[2] ? parseInt(match[2], 10) : 0;
-        return `${hours}h ${minutes}m`;
+      function parseDuration(isoDuration: string | undefined, departingAt?: string, arrivingAt?: string): string {
+        if (isoDuration && typeof isoDuration === 'string' && isoDuration.startsWith('PT')) {
+          const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+          if (match) {
+            const hours = match[1] ? parseInt(match[1], 10) : 0;
+            const minutes = match[2] ? parseInt(match[2], 10) : 0;
+            return `${hours}h ${minutes}m`;
+          }
+        }
+        // Fallback: calculate from departing_at and arriving_at
+        if (departingAt && arrivingAt) {
+          const dep = new Date(departingAt);
+          const arr = new Date(arrivingAt);
+          if (!isNaN(dep.getTime()) && !isNaN(arr.getTime())) {
+            const diffMs = arr.getTime() - dep.getTime();
+            if (diffMs > 0) {
+              const totalMinutes = Math.floor(diffMs / 60000);
+              const hours = Math.floor(totalMinutes / 60);
+              const minutes = totalMinutes % 60;
+              return `${hours}h ${minutes}m`;
+            }
+          }
+        }
+        return 'N/A';
       }
+      const departingAt = segment ? segment.departing_at : '';
+      const arrivingAt = lastSegment ? lastSegment.arriving_at : '';
       return {
         origin_airport: segment ? segment.origin.iata_code : offer.owner.iata_code || '',
         destination_airport: lastSegment ? lastSegment.destination.iata_code : offer.owner.iata_code || '',
-        departure_at: segment ? segment.departing_at : '',
-        return_at: lastSegment ? lastSegment.arriving_at : undefined,
+        departure_at: departingAt,
+        return_at: arrivingAt || undefined,
         airline: offer.owner?.name || offer.owner?.iata_code || 'Unknown',
         price: Number(offer.total_amount),
         link: offer.id ? `/book/${offer.id}` : '',
         stops: slice && slice.segments ? slice.segments.length - 1 : 0,
         cabin_class: offer.cabin_class || flightSearchParams.cabinClass,
         currency: offer.total_currency || 'USD',
-        duration: parseDuration(slice && slice.duration ? slice.duration : segment && segment.duration ? segment.duration : undefined),
+        duration: parseDuration(slice && slice.duration ? slice.duration : segment && segment.duration ? segment.duration : undefined, departingAt, arrivingAt),
       };
     });
 
