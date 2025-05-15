@@ -13,6 +13,8 @@ export default function ResultsContent() {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 10;
 
   // Extract search params
   const originAirport = searchParamsHook.get('originAirport');
@@ -99,6 +101,10 @@ export default function ResultsContent() {
 
   }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, currency]);
 
+  useEffect(() => {
+    setPage(1); // Reset to first page if search params change
+  }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, currency]);
+
   // --- Render Logic ---
   const renderContent = () => {
     if (isLoading) {
@@ -125,12 +131,39 @@ export default function ResultsContent() {
       );
     }
 
+    // Pagination logic
+    const startIdx = (page - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const pageFlights = flights.slice(startIdx, endIdx);
+    const totalPages = Math.ceil(flights.length / pageSize);
     return (
-      <div className="space-y-4">
-        {flights.map((flight, index) => (
-          <FlightCard key={`${flight.link || 'flight-result'}-${index}`} flight={flight} />
-        ))}
-      </div>
+      <>
+        <div className="space-y-4">
+          {pageFlights.map((flight, index) => (
+            <FlightCard key={`${flight.link || 'flight-result'}-${startIdx + index}`} flight={flight} />
+          ))}
+        </div>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              onClick={() => setPage(page - 1)}
+              disabled={page === 1}
+            >
+              Previous
+            </button>
+            <span className="text-gray-700">Page {page} of {totalPages}</span>
+            <button
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              onClick={() => setPage(page + 1)}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </>
     );
   };
 
