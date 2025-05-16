@@ -141,6 +141,9 @@ export async function GET(request: Request) {
       const slices = offer.slices || [];
       const outboundSegments = slices[0]?.segments ? mapSegments(slices[0].segments) : [];
       const returnSegments = slices[1]?.segments ? mapSegments(slices[1].segments) : [];
+      
+      // Get origin and destination from first outbound segment
+      const firstOutboundSegment = outboundSegments[0];
       return {
         airline: offer.owner?.name || offer.owner?.iata_code || 'Unknown',
         price: Number(offer.total_amount),
@@ -150,6 +153,9 @@ export async function GET(request: Request) {
         currency: offer.total_currency || 'USD',
         outbound_segments: outboundSegments,
         return_segments: returnSegments,
+        // Add top-level origin and destination from first outbound segment
+        origin_airport: firstOutboundSegment?.origin_airport || '',
+        destination_airport: firstOutboundSegment?.destination_airport || '',
       };
     });
 
