@@ -378,12 +378,21 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   };
 
 
-  // Scroll active item into view
+  // Scroll active item into view - Modified to be more stable
   useEffect(() => {
     if (activeIndex < 0 || !listRef.current) return;
     const activeItem = listRef.current.children[activeIndex] as HTMLLIElement;
     if (activeItem) {
-        activeItem.scrollIntoView({ block: 'nearest' });
+      // Only scroll if the item is not fully visible
+      const container = listRef.current;
+      const itemTop = activeItem.offsetTop;
+      const itemBottom = itemTop + activeItem.offsetHeight;
+      const containerTop = container.scrollTop;
+      const containerBottom = containerTop + container.offsetHeight;
+
+      if (itemTop < containerTop || itemBottom > containerBottom) {
+        activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
     }
   }, [activeIndex]);
 
@@ -432,6 +441,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     isDropdownOpen,
     selectedAirport
   });
+
+  // Modified hover handling for list items
+  const handleItemHover = (index: number) => {
+    // Only update activeIndex if it's different to prevent unnecessary re-renders
+    if (activeIndex !== index) {
+      setActiveIndex(index);
+    }
+  };
 
   // --- Render ---
   console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
@@ -517,7 +534,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                     
                     handleSuggestionClick(airport);
                   }}
-                  onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
+                  onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
@@ -560,7 +577,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   });
                   handleSuggestionClick(airport);
                 }}
-                onMouseEnter={() => setActiveIndex(suggestions.findIndex(a => a.code === airport.code))}
+                onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
                 className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
               >
                 <FaPlane className="mt-1 mr-2 text-blue-400" />
