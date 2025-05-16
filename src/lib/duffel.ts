@@ -47,12 +47,14 @@ interface OfferRequestSlice {
 // Function to search for flights
 export async function searchFlights(params: FlightSearchParams) {
   try {
-    console.log('Duffel searchFlights: Calling offerRequests.create with params:', params);
+    console.log('Duffel searchFlights: Starting search with params:', params);
+    
     const timeRange: TimeRange = {
       from: '00:00',
       to: '23:59',
     };
 
+    console.log('Duffel searchFlights: Creating offer request...');
     const offerRequest = await duffel.offerRequests.create({
       slices: [
         {
@@ -87,18 +89,35 @@ export async function searchFlights(params: FlightSearchParams) {
       ],
       cabin_class: params.cabinClass,
     });
-    console.log('Duffel searchFlights: offerRequests.create response:', offerRequest);
+    console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
 
+    console.log('Duffel searchFlights: Fetching offers...');
     const offers = await duffel.offers.list({
       offer_request_id: offerRequest.data.id,
       limit: 50,
       sort: 'total_amount',
     });
-    console.log('Duffel searchFlights: offers.list response:', offers);
+    console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
 
     return offers.data;
-  } catch (error) {
-    console.error('Duffel searchFlights: Error searching flights:', error);
+  } catch (error: any) {
+    console.error('Duffel searchFlights: Error details:', {
+      message: error.message,
+      code: error.code,
+      status: error.status,
+      errors: error.errors,
+      meta: error.meta
+    });
+    
+    // Check for specific error types
+    if (error.status === 504) {
+      throw new Error('The flight search request timed out. Please try again.');
+    } else if (error.status === 401) {
+      throw new Error('Authentication error with flight search provider. Please contact support.');
+    } else if (error.status === 429) {
+      throw new Error('Too many requests. Please try again in a few minutes.');
+    }
+    
     throw error;
   }
 }
