@@ -56,6 +56,11 @@ export async function searchFlights(params: FlightSearchParams) {
       to: '22:00',    // More reasonable time range
     };
 
+    // Create a timeout promise that rejects after 10 seconds
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timed out')), 10000)
+    );
+
     console.log('Duffel searchFlights: Creating offer request...');
     const offerRequest = await Promise.race([
       duffel.offerRequests.create({
@@ -92,10 +97,8 @@ export async function searchFlights(params: FlightSearchParams) {
         ],
         cabin_class: params.cabinClass,
       }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Offer request creation timed out')), 15000)
-      )
-    ]) as any; // Type assertion for offerRequest
+      timeoutPromise
+    ]) as any;
     
     console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
 
@@ -103,19 +106,17 @@ export async function searchFlights(params: FlightSearchParams) {
     const offers = await Promise.race([
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
-        limit: 100, // Increased limit to get more results for better sorting/filtering
-        sort: 'total_amount', // Ensure we get the cheapest flights first
-        after: params.after, // Support pagination through all results
+        limit: 50, // Reduced from 100 to improve response time
+        sort: 'total_amount',
+        after: params.after,
       }),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Offers fetch timed out')), 15000)
-      )
-    ]) as any; // Type assertion for offers
+      timeoutPromise
+    ]) as any;
     
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
     return {
       data: offers.data,
-      meta: offers.meta, // Include pagination metadata
+      meta: offers.meta,
     };
   } catch (error: any) {
     console.error('Duffel searchFlights: Error details:', {
@@ -129,9 +130,9 @@ export async function searchFlights(params: FlightSearchParams) {
     
     // Check for specific error types
     if (error.message?.includes('timed out')) {
-      throw new Error('The flight search request timed out. Please try again with a simpler search.');
+      throw new Error('The flight search request timed out. Please try again with a simpler search or different dates.');
     } else if (error.status === 504) {
-      throw new Error('The flight search request timed out. Please try again.');
+      throw new Error('The flight search request timed out. Please try again with different dates or airports.');
     } else if (error.status === 401) {
       throw new Error('Authentication error with flight search provider. Please contact support.');
     } else if (error.status === 429) {
