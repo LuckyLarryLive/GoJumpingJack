@@ -351,12 +351,13 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
    const handleFocus = () => {
     isInteracting.current = true; 
 
-    // Always clear the field when focused
-    setQuery('');
-    setSelectedAirport(null);
-    onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
-    setSuggestions([]); 
-    setIsDropdownOpen(false); 
+    // Only clear if there's no selected airport
+    if (!selectedAirport) {
+      setQuery('');
+      onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
+      setSuggestions([]); 
+      setIsDropdownOpen(false); 
+    }
   };
 
 
