@@ -49,56 +49,68 @@ export async function searchFlights(params: FlightSearchParams) {
   try {
     console.log('Duffel searchFlights: Starting search with params:', params);
     
+    // Simplify time range to reduce complexity
     const timeRange: TimeRange = {
-      from: '00:00',
-      to: '23:59',
+      from: '06:00',  // More reasonable time range
+      to: '22:00',    // More reasonable time range
     };
 
     console.log('Duffel searchFlights: Creating offer request...');
-    const offerRequest = await duffel.offerRequests.create({
-      slices: [
-        {
-          origin: params.origin,
-          destination: params.destination,
-          departure_date: params.departureDate,
-          arrival_time: timeRange,
-          departure_time: timeRange,
-        },
-        ...(params.returnDate
-          ? [
-              {
-                origin: params.destination,
-                destination: params.origin,
-                departure_date: params.returnDate,
-                arrival_time: timeRange,
-                departure_time: timeRange,
-              },
-            ]
-          : []),
-      ],
-      passengers: [
-        ...Array(params.passengers.adults).fill({
-          type: 'adult',
-        }),
-        ...Array(params.passengers.children || 0).fill({
-          type: 'child',
-        }),
-        ...Array(params.passengers.infants || 0).fill({
-          type: 'infant',
-        }),
-      ],
-      cabin_class: params.cabinClass,
-    });
+    const offerRequest = await Promise.race([
+      duffel.offerRequests.create({
+        slices: [
+          {
+            origin: params.origin,
+            destination: params.destination,
+            departure_date: params.departureDate,
+            arrival_time: timeRange,
+            departure_time: timeRange,
+          },
+          ...(params.returnDate
+            ? [
+                {
+                  origin: params.destination,
+                  destination: params.origin,
+                  departure_date: params.returnDate,
+                  arrival_time: timeRange,
+                  departure_time: timeRange,
+                },
+              ]
+            : []),
+        ],
+        passengers: [
+          ...Array(params.passengers.adults).fill({
+            type: 'adult',
+          }),
+          ...Array(params.passengers.children || 0).fill({
+            type: 'child',
+          }),
+          ...Array(params.passengers.infants || 0).fill({
+            type: 'infant',
+          }),
+        ],
+        cabin_class: params.cabinClass,
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Offer request creation timed out')), 25000)
+      )
+    ]) as any; // Type assertion for offerRequest
+    
     console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
 
     console.log('Duffel searchFlights: Fetching offers...');
-    const offers = await duffel.offers.list({
-      offer_request_id: offerRequest.data.id,
-      limit: 50,
-      sort: 'total_amount',
-    });
+    const offers = await Promise.race([
+      duffel.offers.list({
+        offer_request_id: offerRequest.data.id,
+        limit: 20, // Reduced limit to speed up response
+        sort: 'total_amount',
+      }),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Offers fetch timed out')), 25000)
+      )
+    ]) as any; // Type assertion for offers
+    
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
-
     return offers.data;
   } catch (error: any) {
     console.error('Duffel searchFlights: Error details:', {
@@ -106,11 +118,14 @@ export async function searchFlights(params: FlightSearchParams) {
       code: error.code,
       status: error.status,
       errors: error.errors,
-      meta: error.meta
+      meta: error.meta,
+      stack: error.stack
     });
     
     // Check for specific error types
-    if (error.status === 504) {
+    if (error.message?.includes('timed out')) {
+      throw new Error('The flight search request timed out. Please try again with a simpler search.');
+    } else if (error.status === 504) {
       throw new Error('The flight search request timed out. Please try again.');
     } else if (error.status === 401) {
       throw new Error('Authentication error with flight search provider. Please contact support.');
