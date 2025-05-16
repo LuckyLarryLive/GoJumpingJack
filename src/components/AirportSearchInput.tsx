@@ -87,13 +87,20 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   useEffect(() => {
     if (!isInteracting.current && currentValue !== undefined) {
       console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
-      setQuery(getCondensedDisplay(currentValue) || '');
-      // If syncing to an empty value, clear local selection
+      const condensedValue = getCondensedDisplay(currentValue);
+      setQuery(condensedValue || '');
+      
+      // Only update selectedAirport if the value has actually changed
       if (!currentValue) {
-        setSelectedAirport(null);
-      } else {
-        // Reset local if display value doesn't match current local selection format
-        if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
+        if (selectedAirport !== null) {
+          setSelectedAirport(null);
+        }
+      } else if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
+        // Try to find matching airport in suggestions
+        const matchingAirport = suggestions.find(a => getFormattedDisplay(a) === currentValue);
+        if (matchingAirport) {
+          setSelectedAirport(matchingAirport);
+        } else {
           setSelectedAirport(null);
         }
       }
@@ -101,7 +108,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay]);
+  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id]);
 
   // Effect to sync with initialDisplayValue from parent (for initial mount)
   useEffect(() => {
@@ -141,7 +148,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
     const fetchSuggestions = async () => {
       if (query === currentFormattedSelection && selectedAirport) {
-          return;
+        return;
       }
       setIsLoading(true);
       try {
@@ -149,7 +156,17 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         console.log('[AirportSearchInput] Fetch response:', response);
         console.log('[AirportSearchInput] Response status:', response.status);
 
-        if (!response.ok) throw new Error(`Network response error: ${response.statusText}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          console.error('[AirportSearchInput] API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          });
+          setSuggestions([]);
+          setIsDropdownOpen(false);
+          return;
+        }
 
         const data = await response.json();
         console.log('[AirportSearchInput] Raw API response:', data);
