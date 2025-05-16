@@ -47,6 +47,7 @@ export async function GET(request: Request) {
   const sortParam = searchParams.get('sort');
   const page = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(limitParam || '10');
+  const after = searchParams.get('after') || undefined; // Convert null to undefined
 
   if (!origin || !destination || !departureDate || !adultsString) {
     return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
@@ -111,14 +112,16 @@ export async function GET(request: Request) {
       departureDate,
       passengers,
       cabinClass,
+      after, // Pass the pagination cursor
     };
 
     if (returnDate) {
       flightSearchParams.returnDate = returnDate;
     }
 
-    const flightsRaw = await searchFlights(flightSearchParams);
-    console.log('Duffel API raw response:', flightsRaw);
+    const response = await searchFlights(flightSearchParams);
+    const flightsRaw = response.data;
+    const meta = response.meta; // Get pagination metadata from Duffel
 
     // Debug: Log the first offer's slice and segment for troubleshooting duration
     if (flightsRaw.length > 0) {
@@ -177,7 +180,8 @@ export async function GET(request: Request) {
     // Apply sorting
     let processedFlights = flights;
     if (sortParam === 'price') {
-      processedFlights = [...processedFlights].sort((a, b) => a.price - b.price);
+      // Already sorted by price from Duffel
+      processedFlights = [...processedFlights];
     } else if (sortParam === 'duration') {
       processedFlights = [...processedFlights].sort((a, b) => {
         const durationA = a.outbound_segments[0]?.duration ? 
@@ -219,13 +223,15 @@ export async function GET(request: Request) {
     const endIndex = startIndex + limit;
     const paginatedFlights = processedFlights.slice(startIndex, endIndex);
 
-    // Return the paginated flight data with total count
+    // Return the paginated flight data with total count and Duffel pagination info
     return NextResponse.json({ 
       data: paginatedFlights,
-      total: processedFlights.length,
+      total: meta?.total_count || processedFlights.length,
       page,
       limit,
-      totalPages: Math.ceil(processedFlights.length / limit)
+      totalPages: Math.ceil((meta?.total_count || processedFlights.length) / limit),
+      hasMore: !!meta?.after,
+      after: meta?.after, // Pass the next page cursor
     }, { status: 200 });
 
   } catch (error: any) {

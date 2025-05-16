@@ -28,6 +28,7 @@ export interface FlightSearchParams {
     infants?: number;
   };
   cabinClass: 'economy' | 'premium_economy' | 'business' | 'first';
+  after?: string;
 }
 
 // Duffel API types
@@ -92,7 +93,7 @@ export async function searchFlights(params: FlightSearchParams) {
         cabin_class: params.cabinClass,
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Offer request creation timed out')), 25000)
+        setTimeout(() => reject(new Error('Offer request creation timed out')), 15000)
       )
     ]) as any; // Type assertion for offerRequest
     
@@ -102,16 +103,20 @@ export async function searchFlights(params: FlightSearchParams) {
     const offers = await Promise.race([
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
-        limit: 50, // Get all offers for pagination
-        sort: 'total_amount',
+        limit: 100, // Increased limit to get more results for better sorting/filtering
+        sort: 'total_amount', // Ensure we get the cheapest flights first
+        after: params.after, // Support pagination through all results
       }),
       new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Offers fetch timed out')), 25000)
+        setTimeout(() => reject(new Error('Offers fetch timed out')), 15000)
       )
     ]) as any; // Type assertion for offers
     
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
-    return offers.data;
+    return {
+      data: offers.data,
+      meta: offers.meta, // Include pagination metadata
+    };
   } catch (error: any) {
     console.error('Duffel searchFlights: Error details:', {
       message: error.message,
