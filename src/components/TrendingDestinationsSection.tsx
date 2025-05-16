@@ -13,10 +13,10 @@ interface Destination {
 const TrendingDestinationsSection: React.FC = () => {
     // Sample data - replace with dynamic data fetching later if needed
     const destinations: Destination[] = [
-        { id: 1, name: 'Tokyo, Japan', image: '/placeholder-tokyo.jpg', description: 'Vibrant culture meets futuristic skyline.' },
-        { id: 2, name: 'Paris, France', image: '/placeholder-paris.jpg', description: 'The city of love, lights, and art.' },
-        { id: 3, name: 'Maui, Hawaii', image: '/placeholder-maui.jpg', description: 'Sun-kissed beaches and volcanic landscapes.' },
-        { id: 4, name: 'Rome, Italy', image: '/placeholder-rome.jpg', description: 'Ancient history and delicious pasta.' },
+        { id: 1, name: 'Tokyo, Japan', image: '/destinations/tokyo.jpg', description: 'Vibrant culture meets futuristic skyline.' },
+        { id: 2, name: 'Paris, France', image: '/destinations/paris.jpg', description: 'The city of love, lights, and art.' },
+        { id: 3, name: 'New York City, USA', image: '/destinations/newyork.jpg', description: 'The city that never sleeps.' },
+        { id: 4, name: 'Rome, Italy', image: '/destinations/rome.jpg', description: 'Ancient history and delicious pasta.' },
     ];
 
     return (

@@ -27,15 +27,32 @@ export async function GET(req: NextRequest) {
   try {
     console.log(`[API /api/search-airports] Attempting Supabase RPC for term: "${searchTerm}"`);
     const { data: airports, error } = await supabase
-      .rpc('search_airports_with_region', { search_query: searchTerm });
+      .rpc('search_airports_with_region', { 
+        search_query: searchTerm,
+        search_city: true,  // Enable city name search
+        search_airport: true,  // Enable airport name search
+        search_code: true,  // Enable IATA code search
+        fuzzy_match: true  // Enable fuzzy matching
+      });
 
     if (error) {
       console.error('[API /api/search-airports] Supabase RPC error:', JSON.stringify(error, null, 2));
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(`[API /api/search-airports] Supabase RPC successful. Found ${airports ? airports.length : 0} airports.`);
-    return NextResponse.json(airports || []);
+    // Sort results to prioritize exact matches
+    const sortedAirports = (airports || []).sort((a: any, b: any) => {
+      const aExactMatch = a.city_name?.toLowerCase() === searchTerm.toLowerCase() || 
+                         a.name?.toLowerCase() === searchTerm.toLowerCase();
+      const bExactMatch = b.city_name?.toLowerCase() === searchTerm.toLowerCase() || 
+                         b.name?.toLowerCase() === searchTerm.toLowerCase();
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      return 0;
+    });
+
+    console.log(`[API /api/search-airports] Supabase RPC successful. Found ${sortedAirports.length} airports.`);
+    return NextResponse.json(sortedAirports);
   } catch (err: any) {
     console.error('[API /api/search-airports] UNEXPECTED CATCH BLOCK ERROR:', err);
     console.error('[API /api/search-airports] Error stack:', err.stack);

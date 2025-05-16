@@ -182,8 +182,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       );
   }
 
-  // 5. Results Found - Render Flight Cards (RESTORED MAPPING)
-  // Sort flights by price ascending
+  // 5. Results Found - Render Flight Cards
   const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalPages = Math.ceil(totalResults / 10);
@@ -192,10 +191,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
       <div className="container mx-auto px-4">
         <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center md:text-left font-serif">
-            Top Flight Deals Found
+          {showPagination ? 'All Flight Deals' : 'Top Flight Deals Found'}
         </h2>
         <div className="space-y-4 max-w-4xl mx-auto">
-          {/* Map over the first 3 flights and render FlightCard */}
           {displayedFlights.map((flight, index) => (
             <FlightCard
               key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
@@ -204,13 +202,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           ))}
 
           {/* "See More Results" Button */}
-          {!showPagination && sortedFlights.length > 3 && (
-            <div className="text-center pt-4">
+          {!showPagination && flights.length > 3 && (
+            <div className="text-center pt-6">
               <button
                 onClick={handleSeeAllFlights}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors duration-200"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
-                See All {sortedFlights.length} Flights
+                See All {flights.length} Flights
+                <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
           )}

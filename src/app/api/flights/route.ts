@@ -56,8 +56,8 @@ export async function GET(request: Request) {
   const infantsQueryParam = searchParams.get('infants');
   if (infantsQueryParam !== null) {
     const parsedInfants = parseInt(infantsQueryParam, 10);
-    if (Number.isNaN(parsedInfants) || parsedInfants < 0) {
-      return NextResponse.json({ message: 'Invalid number of infants; must be a non-negative integer.' }, { status: 400 });
+    if (Number.isNaN(parsedInfants) || parsedInfants < 0 || parsedInfants > 9) {
+      return NextResponse.json({ message: 'Invalid number of infants; must be between 0 and 9.' }, { status: 400 });
     }
     infants = parsedInfants;
   }

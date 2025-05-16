@@ -254,17 +254,27 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         setIsMinimized(false);
     };
 
-    // --- Passenger Count Handlers ---
-    const handlePassengerChange = (type: 'adults' | 'children' | 'infants', value: number) => {
-        setPassengers(prev => {
-            const newPassengers = { ...prev, [type]: value };
-            // Ensure total doesn't exceed 9
-            const total = newPassengers.adults + newPassengers.children + newPassengers.infants;
-            if (total > 9) return prev;
-            // Ensure infants don't exceed adults
-            if (newPassengers.infants > newPassengers.adults) return prev;
-            return newPassengers;
-        });
+    // Add validation for passenger counts
+    const validatePassengerCounts = (newPassengers: typeof passengers) => {
+        const total = newPassengers.adults + newPassengers.children + newPassengers.infants;
+        if (total > DUFFEL_CONSTRAINTS.maxPassengers) {
+            return false;
+        }
+        if (newPassengers.infants > newPassengers.adults) {
+            return false;
+        }
+        if (newPassengers.infants > 9) {
+            return false;
+        }
+        return true;
+    };
+
+    const handlePassengerChange = (type: keyof typeof passengers, value: number) => {
+        const newPassengers = { ...passengers, [type]: value };
+        if (validatePassengerCounts(newPassengers)) {
+            setPassengers(newPassengers);
+            setAdults(newPassengers.adults);
+        }
     };
 
     // --- Render Logic ---
@@ -403,45 +413,41 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
                         {/* Passengers */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
-                            <div className="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label className="block text-xs text-gray-500">Adults</label>
-                                    <select
-                                        value={adults}
-                                        onChange={(e) => setAdults(parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
-                                    >
-                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                                            <option key={num} value={num}>{num}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Children</label>
-                                    <select
-                                        value={passengers.children}
-                                        onChange={(e) => handlePassengerChange('children', parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
-                                    >
-                                        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                                            <option key={num} value={num}>{num}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs text-gray-500">Infants</label>
-                                    <select
-                                        value={passengers.infants}
-                                        onChange={(e) => handlePassengerChange('infants', parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
-                                    >
-                                        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                                            <option key={num} value={num}>{num}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
+                            <label className="block text-sm font-medium text-gray-700">Adults</label>
+                            <select
+                                value={passengers.adults}
+                                onChange={(e) => handlePassengerChange('adults', parseInt(e.target.value))}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                {[...Array(9)].map((_, i) => (
+                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Children</label>
+                            <select
+                                value={passengers.children}
+                                onChange={(e) => handlePassengerChange('children', parseInt(e.target.value))}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                {[...Array(8)].map((_, i) => (
+                                    <option key={i} value={i}>{i}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Infants</label>
+                            <select
+                                value={passengers.infants}
+                                onChange={(e) => handlePassengerChange('infants', parseInt(e.target.value))}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            >
+                                {[...Array(Math.min(9, passengers.adults))].map((_, i) => (
+                                    <option key={i} value={i}>{i}</option>
+                                ))}
+                            </select>
+                            <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
                         </div>
 
                         {/* Advanced Options Toggle */}
