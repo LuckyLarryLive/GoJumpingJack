@@ -88,47 +88,56 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     if (!isInteracting.current && currentValue !== undefined) {
       console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
       const condensedValue = getCondensedDisplay(currentValue);
-      setQuery(condensedValue || '');
       
-      // Only update selectedAirport if the value has actually changed
-      if (!currentValue) {
-        if (selectedAirport !== null) {
-          setSelectedAirport(null);
+      // Only update if we're not in the middle of a search
+      if (!debouncedQuery || debouncedQuery.length < 3) {
+        setQuery(condensedValue || '');
+        
+        // Only update selectedAirport if the value has actually changed
+        if (!currentValue) {
+          if (selectedAirport !== null) {
+            setSelectedAirport(null);
+          }
+        } else if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
+          // Try to find matching airport in suggestions
+          const matchingAirport = suggestions.find(a => getFormattedDisplay(a) === currentValue);
+          if (matchingAirport) {
+            setSelectedAirport(matchingAirport);
+          } else {
+            setSelectedAirport(null);
+          }
         }
-      } else if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
-        // Try to find matching airport in suggestions
-        const matchingAirport = suggestions.find(a => getFormattedDisplay(a) === currentValue);
-        if (matchingAirport) {
-          setSelectedAirport(matchingAirport);
-        } else {
-          setSelectedAirport(null);
-        }
+        setIsDropdownOpen(false);
       }
-      setIsDropdownOpen(false);
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id]);
+  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id, debouncedQuery]);
 
   // Effect to sync with initialDisplayValue from parent (for initial mount)
   useEffect(() => {
     if (!isInteracting.current && initialDisplayValue !== undefined) {
       console.log(`[AirportSearchInput] Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
-      setQuery(getCondensedDisplay(initialDisplayValue) || '');
-      // If syncing to an empty value, clear local selection
-      if (!initialDisplayValue) {
-        setSelectedAirport(null);
-      } else {
-        // Reset local if display value doesn't match current local selection format
-        if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
+      const condensedValue = getCondensedDisplay(initialDisplayValue);
+      
+      // Only update if we're not in the middle of a search
+      if (!debouncedQuery || debouncedQuery.length < 3) {
+        setQuery(condensedValue || '');
+        // If syncing to an empty value, clear local selection
+        if (!initialDisplayValue) {
           setSelectedAirport(null);
+        } else {
+          // Reset local if display value doesn't match current local selection format
+          if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
+            setSelectedAirport(null);
+          }
         }
+        setIsDropdownOpen(false);
       }
-      setIsDropdownOpen(false);
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay]);
+  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, debouncedQuery]);
 
   // Fetch suggestions Effect
   useEffect(() => {
