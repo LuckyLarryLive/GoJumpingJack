@@ -29,6 +29,8 @@ export async function GET(request: Request) {
   const returnDate = searchParams.get('returnDate');
   const adultsString = searchParams.get('adults');
   const cabinClassParam = searchParams.get('cabinClass');
+  const limitParam = searchParams.get('limit');
+  const sortParam = searchParams.get('sort');
   // const currency = searchParams.get('currency') || 'USD'; // Currency is not part of FlightSearchParams in duffel.ts
 
   if (!origin || !destination || !departureDate || !adultsString) {
@@ -146,8 +148,19 @@ export async function GET(request: Request) {
       };
     });
 
+    // --- New: Sort and limit flights if requested ---
+    let processedFlights = flights;
+    if (sortParam === 'price') {
+      processedFlights = [...processedFlights].sort((a, b) => a.price - b.price);
+    }
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
+    if (limit && !isNaN(limit)) {
+      processedFlights = processedFlights.slice(0, limit);
+    }
+    // --- End new logic ---
+
     // Return the mapped flight data
-    return NextResponse.json({ data: flights }, { status: 200 });
+    return NextResponse.json({ data: processedFlights }, { status: 200 });
 
   } catch (error: any) {
     console.error('Duffel API error:', error); // Log any errors

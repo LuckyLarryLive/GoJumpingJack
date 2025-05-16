@@ -1,7 +1,7 @@
 // src/app/results/ResultsContent.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlightCard from '@/components/FlightCard';
 import type { Flight } from '@/types';
@@ -20,6 +20,8 @@ export default function ResultsContent() {
   const [cabinClassFilter, setCabinClassFilter] = useState<string>('');
   const [airlineFilter, setAirlineFilter] = useState<string>('');
   const pageSize = 10;
+  const [showLoadingVideo, setShowLoadingVideo] = useState(true);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Extract search params
   const originAirport = searchParamsHook.get('originAirport');
@@ -110,6 +112,26 @@ export default function ResultsContent() {
     setPage(1); // Reset to first page if search params change
   }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, currency]);
 
+  useEffect(() => {
+    if (isLoading) {
+      setShowLoadingVideo(true);
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = setTimeout(() => {
+        setShowLoadingVideo(false);
+      }, 4000);
+    } else {
+      // Only hide the video if 4s have passed
+      if (loadingTimeoutRef.current) {
+        setTimeout(() => setShowLoadingVideo(false), 0);
+      } else {
+        setShowLoadingVideo(false);
+      }
+    }
+    return () => {
+      if (loadingTimeoutRef.current) clearTimeout(loadingTimeoutRef.current);
+    };
+  }, [isLoading]);
+
   // --- Filtering and Sorting ---
   const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
   const minPrice = sortedFlights.length ? sortedFlights[0].price : 0;
@@ -130,13 +152,18 @@ export default function ResultsContent() {
 
   // --- Render Logic ---
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || showLoadingVideo) {
       return (
-        <div className="text-center py-10">
-          <div className="inline-flex items-center justify-center gap-2 text-gray-600">
-            <div className="h-6 w-6 animate-spin rounded-full border-4 border-t-blue-600 border-gray-300"></div>
-            <span>Loading flight results...</span>
-          </div>
+        <div className="flex flex-col items-center justify-center py-10">
+          <video
+            src="/Jack_Finding_Flights.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{ width: '320px', maxWidth: '90%', borderRadius: '1rem', boxShadow: '0 4px 24px rgba(0,0,0,0.12)' }}
+          />
+          <span className="mt-4 text-lg text-blue-700 font-semibold">Jack is finding the best flights for you...</span>
         </div>
       );
     }

@@ -38,6 +38,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
             destinationAirport: destination,
             departureDate: searchParams.departureDate,
             adults: searchParams.adults.toString(),
+            limit: '3',
+            sort: 'price',
           });
           if (searchParams.returnDate) {
             query.set('returnDate', searchParams.returnDate);
