@@ -31,7 +31,13 @@ interface FlightCardProps {
 const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const [showTimeline, setShowTimeline] = useState(false);
 
-  if (!flight || !flight.origin_airport || !flight.destination_airport || !flight.link) {
+  // Get origin and destination from first outbound segment
+  const originAirport = flight.outbound_segments[0]?.origin_airport;
+  const destinationAirport = flight.outbound_segments[0]?.destination_airport;
+  const departureAt = flight.outbound_segments[0]?.departure_at;
+  const returnAt = flight.return_segments?.[0]?.departure_at;
+
+  if (!flight || !originAirport || !destinationAirport || !flight.link || !departureAt) {
     console.warn("Rendering FlightCard with incomplete data:", flight);
     return null; // Return null if essential data (including link) is missing
   }
@@ -69,21 +75,25 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return labels[cabinClass] || cabinClass;
   };
 
-  // Robust summary duration logic
-  let summaryDuration = 'N/A';
-  if (flight.duration && flight.duration !== 'N/A') {
-    summaryDuration = flight.duration;
-  } else if (flight.departure_at && flight.return_at && flight.departure_at !== flight.return_at) {
-    // Only calculate if both are valid and not equal
-    const start = new Date(flight.departure_at);
-    const end = new Date(flight.return_at);
-    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
-      const durationMs = end.getTime() - start.getTime();
-      const hours = Math.floor(durationMs / (1000 * 60 * 60));
-      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      summaryDuration = `${hours}h ${minutes}m`;
-    }
-  }
+  // Calculate total duration from segments
+  const calculateTotalDuration = () => {
+    if (!flight.outbound_segments.length) return 'N/A';
+    
+    const firstSegment = flight.outbound_segments[0];
+    const lastSegment = flight.outbound_segments[flight.outbound_segments.length - 1];
+    
+    const start = new Date(firstSegment.departure_at);
+    const end = new Date(lastSegment.arrival_at);
+    
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
+    
+    const durationMs = end.getTime() - start.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
+
+  const summaryDuration = calculateTotalDuration();
 
   // Calculate flight path width based on duration
   const getFlightPathWidth = (departure: string, arrival: string) => {
@@ -95,10 +105,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return Math.min(Math.max(hours * 50, 100), 300);
   };
 
-  const departureTime = formatTime(flight.departure_at);
-  const returnTime = flight.return_at ? formatTime(flight.return_at) : '';
-  const departureDate = formatDate(flight.departure_at);
-  const flightPathWidth = getFlightPathWidth(flight.departure_at, flight.return_at || flight.departure_at);
+  const departureTime = formatTime(departureAt);
+  const returnTime = returnAt ? formatTime(returnAt) : '';
+  const departureDate = formatDate(departureAt);
+  const flightPathWidth = getFlightPathWidth(departureAt, returnAt || departureAt);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
@@ -108,10 +118,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex items-center gap-4 mb-4">
             <div className="flex-1">
               <div className="text-lg font-semibold text-gray-900">
-                {flight.origin_airport} → {flight.destination_airport}
+                {originAirport} → {destinationAirport}
               </div>
               <div className="text-sm text-gray-600">
-                {formatDate(flight.departure_at)}
+                {departureDate}
               </div>
             </div>
             <div className="text-right">
@@ -127,11 +137,11 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           {/* Quick Info */}
           <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
             <div>
-              <span className="font-medium">Departure:</span> {formatTime(flight.departure_at)}
+              <span className="font-medium">Departure:</span> {departureTime}
             </div>
-            {flight.return_at && (
+            {returnAt && (
               <div>
-                <span className="font-medium">Return:</span> {formatTime(flight.return_at)}
+                <span className="font-medium">Return:</span> {returnTime}
               </div>
             )}
             <div>
