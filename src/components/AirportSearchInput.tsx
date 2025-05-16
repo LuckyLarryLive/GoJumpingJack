@@ -89,9 +89,11 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
       const condensedValue = getCondensedDisplay(currentValue);
       
-      // Only update if we're not in the middle of a search
+      // Only update if we're not in the middle of a search and the value has actually changed
       if (!debouncedQuery || debouncedQuery.length < 3) {
-        setQuery(condensedValue || '');
+        if (query !== condensedValue) {
+          setQuery(condensedValue || '');
+        }
         
         // Only update selectedAirport if the value has actually changed
         if (!currentValue) {
@@ -112,7 +114,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id, debouncedQuery]);
+  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id, debouncedQuery, query]);
 
   // Effect to sync with initialDisplayValue from parent (for initial mount)
   useEffect(() => {
@@ -120,9 +122,11 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       console.log(`[AirportSearchInput] Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
       const condensedValue = getCondensedDisplay(initialDisplayValue);
       
-      // Only update if we're not in the middle of a search
+      // Only update if we're not in the middle of a search and the value has actually changed
       if (!debouncedQuery || debouncedQuery.length < 3) {
-        setQuery(condensedValue || '');
+        if (query !== condensedValue) {
+          setQuery(condensedValue || '');
+        }
         // If syncing to an empty value, clear local selection
         if (!initialDisplayValue) {
           setSelectedAirport(null);
@@ -137,7 +141,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
     // Reset interaction flag after sync attempt
     isInteracting.current = false;
-  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, debouncedQuery]);
+  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, debouncedQuery, query]);
 
   // Fetch suggestions Effect
   useEffect(() => {
@@ -351,8 +355,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
    const handleFocus = () => {
     isInteracting.current = true; 
 
-    // Only clear if there's no selected airport
-    if (!selectedAirport) {
+    // Only clear if there's no selected airport and no query
+    if (!selectedAirport && !query) {
       setQuery('');
       onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
       setSuggestions([]); 
@@ -478,21 +482,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         id={id}
         name={id}
         placeholder={placeholder}
-        value={isInteracting.current ? query : (currentValue || '')}
-        onChange={(e) => {
-          isInteracting.current = true;
-          const newValue = e.target.value;
-          setQuery(newValue);
-          
-          if (newValue.trim() === '') {
-            setSelectedAirport(null);
-            onAirportSelect(null, null, null, null, null, null); 
-            setSuggestions([]);
-            setIsDropdownOpen(false);
-          } else if (selectedAirport) {
-            setSelectedAirport(null);
-          }
-        }}
+        value={query}
+        onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onBlur={() => {

@@ -5,7 +5,6 @@ import React, { useState } from 'react'; // Import useState
 
 // --- Component Imports ---
 // Import all the components extracted into the components directory
-import HeroSection from '@/components/HeroSection';
 import SearchSection from '@/components/SearchSection';
 import FlightResults from '@/components/FlightResults';
 import TrendingDestinationsSection from '@/components/TrendingDestinationsSection';
@@ -49,9 +48,6 @@ export default function HomePage() {
   // The overall layout (Header, Footer, fonts, background) is handled by src/app/layout.tsx
   return (
       <> {/* Using a React Fragment as the outermost container */}
-          {/* Hero section for introduction */}
-          <HeroSection />
-
           {/* Search section - receives the submit handler and current search params */}
           {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
           <SearchSection
