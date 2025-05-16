@@ -106,13 +106,27 @@ export async function GET(request: Request) {
       passengers.infants = infants;
     }
 
+    // Map frontend sort parameter to Duffel sort parameter
+    let duffelSort: FlightSearchParams['sort'] = 'total_amount';
+    if (sortParam === 'price_asc') {
+      duffelSort = 'total_amount';
+    } else if (sortParam === 'price_desc') {
+      duffelSort = '-total_amount';
+    } else if (sortParam === 'duration_asc') {
+      duffelSort = 'total_duration';
+    } else if (sortParam === 'duration_desc') {
+      duffelSort = '-total_duration';
+    }
+
     const flightSearchParams: FlightSearchParams = {
       origin,
       destination,
       departureDate,
       passengers,
       cabinClass,
-      after, // Pass the pagination cursor
+      after,
+      sort: duffelSort,
+      limit: 15, // Fixed limit for initial results
     };
 
     if (returnDate) {
@@ -121,7 +135,7 @@ export async function GET(request: Request) {
 
     const response = await searchFlights(flightSearchParams);
     const flightsRaw = response.data;
-    const meta = response.meta; // Get pagination metadata from Duffel
+    const meta = response.meta;
 
     // Debug: Log the first offer's slice and segment for troubleshooting duration
     if (flightsRaw.length > 0) {
@@ -223,7 +237,7 @@ export async function GET(request: Request) {
     const endIndex = startIndex + limit;
     const paginatedFlights = processedFlights.slice(startIndex, endIndex);
 
-    // Return the paginated flight data with total count and Duffel pagination info
+    // Return the flight data with Duffel's pagination info
     return NextResponse.json({ 
       data: paginatedFlights,
       total: meta?.total_count || processedFlights.length,
@@ -232,6 +246,7 @@ export async function GET(request: Request) {
       totalPages: Math.ceil((meta?.total_count || processedFlights.length) / limit),
       hasMore: !!meta?.after,
       after: meta?.after, // Pass the next page cursor
+      before: meta?.before, // Pass the previous page cursor
     }, { status: 200 });
 
   } catch (error: any) {

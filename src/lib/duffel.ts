@@ -29,6 +29,8 @@ export interface FlightSearchParams {
   };
   cabinClass: 'economy' | 'premium_economy' | 'business' | 'first';
   after?: string;
+  sort?: 'total_amount' | 'total_duration' | '-total_amount' | '-total_duration';
+  limit?: number;
 }
 
 // Duffel API types
@@ -52,8 +54,8 @@ export async function searchFlights(params: FlightSearchParams) {
     
     // Simplify time range to reduce complexity
     const timeRange: TimeRange = {
-      from: '06:00',  // More reasonable time range
-      to: '22:00',    // More reasonable time range
+      from: '06:00',
+      to: '22:00',
     };
 
     // Create a timeout promise that rejects after 10 seconds
@@ -106,9 +108,9 @@ export async function searchFlights(params: FlightSearchParams) {
     const offers = await Promise.race([
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
-        limit: 50, // Reduced from 100 to improve response time
-        sort: 'total_amount',
-        after: params.after,
+        limit: params.limit || 15, // Default to 15 results per page
+        sort: (params.sort || 'total_amount') as any, // Type assertion to allow negative sort values
+        after: params.after, // Use cursor for pagination
       }),
       timeoutPromise
     ]) as any;
@@ -116,7 +118,7 @@ export async function searchFlights(params: FlightSearchParams) {
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
     return {
       data: offers.data,
-      meta: offers.meta,
+      meta: offers.meta, // Contains pagination cursors and total count
     };
   } catch (error: any) {
     console.error('Duffel searchFlights: Error details:', {
