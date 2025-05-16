@@ -83,65 +83,26 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     return displayValue;
   }, []);
 
-  // Effect to sync with currentValue from parent
+  // Sync with currentValue prop
   useEffect(() => {
-    if (!isInteracting.current && currentValue !== undefined) {
-      console.log(`[AirportSearchInput] Syncing input ${id} with currentValue:`, currentValue);
+    if (!isInteracting.current && currentValue) {
       const condensedValue = getCondensedDisplay(currentValue);
-      
-      // Only update if we're not in the middle of a search and the value has actually changed
-      if (!debouncedQuery || debouncedQuery.length < 3) {
-        if (query !== condensedValue) {
-          setQuery(condensedValue || '');
+      if (condensedValue !== query) {
+        setQuery(condensedValue);
+        // Only set selectedAirport if currentValue is an Airport object
+        if (typeof currentValue === 'object' && currentValue !== null) {
+          setSelectedAirport(currentValue as Airport);
         }
-        
-        // Only update selectedAirport if the value has actually changed
-        if (!currentValue) {
-          if (selectedAirport !== null) {
-            setSelectedAirport(null);
-          }
-        } else if (!selectedAirport || getFormattedDisplay(selectedAirport) !== currentValue) {
-          // Try to find matching airport in suggestions
-          const matchingAirport = suggestions.find(a => getFormattedDisplay(a) === currentValue);
-          if (matchingAirport) {
-            setSelectedAirport(matchingAirport);
-          } else {
-            setSelectedAirport(null);
-          }
-        }
-        setIsDropdownOpen(false);
       }
     }
-    // Reset interaction flag after sync attempt
-    isInteracting.current = false;
-  }, [currentValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, suggestions, id, debouncedQuery, query]);
+  }, [currentValue, id, suggestions]);
 
-  // Effect to sync with initialDisplayValue from parent (for initial mount)
+  // Sync with initialDisplayValue prop
   useEffect(() => {
-    if (!isInteracting.current && initialDisplayValue !== undefined) {
-      console.log(`[AirportSearchInput] Syncing input ${id} with initialDisplayValue:`, initialDisplayValue);
-      const condensedValue = getCondensedDisplay(initialDisplayValue);
-      
-      // Only update if we're not in the middle of a search and the value has actually changed
-      if (!debouncedQuery || debouncedQuery.length < 3) {
-        if (query !== condensedValue) {
-          setQuery(condensedValue || '');
-        }
-        // If syncing to an empty value, clear local selection
-        if (!initialDisplayValue) {
-          setSelectedAirport(null);
-        } else {
-          // Reset local if display value doesn't match current local selection format
-          if (!selectedAirport || getFormattedDisplay(selectedAirport) !== initialDisplayValue) {
-            setSelectedAirport(null);
-          }
-        }
-        setIsDropdownOpen(false);
-      }
+    if (!isInteracting.current && initialDisplayValue && !query) {
+      setQuery(initialDisplayValue);
     }
-    // Reset interaction flag after sync attempt
-    isInteracting.current = false;
-  }, [initialDisplayValue, selectedAirport, getFormattedDisplay, getCondensedDisplay, debouncedQuery, query]);
+  }, [initialDisplayValue, id, query]);
 
   // Fetch suggestions Effect
   useEffect(() => {
@@ -251,23 +212,13 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
 
   // Handle Input Change
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    isInteracting.current = true; // User is typing
-    const newValue = event.target.value;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
     setQuery(newValue);
-
-    // Only clear parent state if the input is completely empty (no spaces)
-    if (newValue.trim() === '') {
-      console.log(`[AirportSearchInput] Input ${id} cleared manually, clearing parent state.`);
-      setSelectedAirport(null); // Clear local selection
-      onAirportSelect(null, null, null, null, null, null); // Clear parent state with all nulls
-      setSuggestions([]); 
-      setIsDropdownOpen(false);
-    } else if (selectedAirport) {
-      // If user starts typing *over* a selected value, clear the selection state locally
-      setSelectedAirport(null);
-      console.log(`[AirportSearchInput] Input ${id} changed from selected value, clearing local selection.`);
-    }
+    isInteracting.current = true;
+    setSelectedAirport(null);
+    setSuggestions([]);
+    setIsDropdownOpen(false);
   };
 
   // Update handleSuggestionClick to handle city selections
