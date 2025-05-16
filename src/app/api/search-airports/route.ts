@@ -3,9 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   console.log('[API /api/search-airports] Function invoked.');
+  console.log('[API /api/search-airports] Incoming request URL:', req.url);
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  console.log('[API /api/search-airports] ENV SUPABASE_URL:', SUPABASE_URL);
+  console.log('[API /api/search-airports] ENV SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
 
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error('[API /api/search-airports] Server configuration error: Missing Supabase credentials.');
@@ -37,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       console.error('[API /api/search-airports] Supabase RPC error:', JSON.stringify(error, null, 2));
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: error.message, details: error }, { status: 500 });
     }
 
     // Sort results to prioritize exact matches
@@ -56,6 +59,6 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error('[API /api/search-airports] UNEXPECTED CATCH BLOCK ERROR:', err);
     console.error('[API /api/search-airports] Error stack:', err.stack);
-    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Internal Server Error', stack: err.stack }, { status: 500 });
   }
 }

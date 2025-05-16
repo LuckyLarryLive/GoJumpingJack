@@ -412,42 +412,32 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         </div>
 
                         {/* Passengers */}
-                        <div>
+                        <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-end">
+                          <div className="flex flex-col flex-1">
                             <label className="block text-sm font-medium text-gray-700">Adults</label>
-                            <select
-                                value={passengers.adults}
-                                onChange={(e) => handlePassengerChange('adults', parseInt(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                {[...Array(9)].map((_, i) => (
-                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('adults', Math.max(1, passengers.adults - 1))} disabled={passengers.adults <= 1}>-</button>
+                              <span className="w-8 text-center font-semibold">{passengers.adults}</span>
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('adults', Math.min(9, passengers.adults + 1))} disabled={passengers.adults >= 9}>+</button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col flex-1">
                             <label className="block text-sm font-medium text-gray-700">Children</label>
-                            <select
-                                value={passengers.children}
-                                onChange={(e) => handlePassengerChange('children', parseInt(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                {[...Array(8)].map((_, i) => (
-                                    <option key={i} value={i}>{i}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('children', Math.max(0, passengers.children - 1))} disabled={passengers.children <= 0}>-</button>
+                              <span className="w-8 text-center font-semibold">{passengers.children}</span>
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('children', Math.min(8, passengers.children + 1))} disabled={passengers.children >= 8}>+</button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col flex-1">
                             <label className="block text-sm font-medium text-gray-700">Infants</label>
-                            <select
-                                value={passengers.infants}
-                                onChange={(e) => handlePassengerChange('infants', parseInt(e.target.value))}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            >
-                                {[...Array(Math.min(9, passengers.adults))].map((_, i) => (
-                                    <option key={i} value={i}>{i}</option>
-                                ))}
-                            </select>
+                            <div className="flex items-center gap-2 mt-1">
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('infants', Math.max(0, passengers.infants - 1))} disabled={passengers.infants <= 0}>-</button>
+                              <span className="w-8 text-center font-semibold">{passengers.infants}</span>
+                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('infants', Math.min(passengers.adults, passengers.infants + 1))} disabled={passengers.infants >= passengers.adults}>+</button>
+                            </div>
                             <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
+                          </div>
                         </div>
 
                         {/* Advanced Options Toggle */}

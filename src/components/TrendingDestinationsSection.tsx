@@ -33,9 +33,7 @@ const TrendingDestinationsSection: React.FC = () => {
                         >
                             {/* Placeholder for Image - Replace with Next/Image for optimization */}
                             <div className="w-full h-48 bg-gray-300 flex items-center justify-center text-gray-500 relative overflow-hidden">
-                                {/* If using Next/Image: */}
-                                {/* <Image src={dest.image} alt={dest.name} layout="fill" objectFit="cover" className="group-hover:scale-105 transition-transform duration-300" /> */}
-                                <span className="z-10 relative p-2 bg-black bg-opacity-30 rounded">Image: {dest.name}</span> {/* Added background for visibility */}
+                                <img src={dest.image} alt={dest.name} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300" />
                             </div>
                             <div className="p-4 md:p-6 flex flex-col flex-grow"> {/* Added flex flex-col flex-grow */}
                                 <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-2 truncate">
