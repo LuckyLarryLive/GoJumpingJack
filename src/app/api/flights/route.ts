@@ -103,7 +103,7 @@ export async function GET(request: Request) {
     }
 
     const flightsRaw = await searchFlights(flightSearchParams);
-    console.log('Duffel API raw response:', flightsRaw); // Log the raw response
+    console.log('Duffel API raw response:', flightsRaw);
 
     // Debug: Log the first offer's slice and segment for troubleshooting duration
     if (flightsRaw.length > 0) {
@@ -159,19 +159,61 @@ export async function GET(request: Request) {
       };
     });
 
-    // --- New: Sort and limit flights if requested ---
+    // Apply sorting
     let processedFlights = flights;
     if (sortParam === 'price') {
       processedFlights = [...processedFlights].sort((a, b) => a.price - b.price);
+    } else if (sortParam === 'duration') {
+      processedFlights = [...processedFlights].sort((a, b) => {
+        const durationA = a.outbound_segments[0]?.duration ? 
+          parseInt(a.outbound_segments[0].duration.replace(/[^0-9]/g, '')) : 0;
+        const durationB = b.outbound_segments[0]?.duration ? 
+          parseInt(b.outbound_segments[0].duration.replace(/[^0-9]/g, '')) : 0;
+        return durationA - durationB;
+      });
+    } else if (sortParam === 'departure') {
+      processedFlights = [...processedFlights].sort((a, b) => 
+        new Date(a.outbound_segments[0]?.departure_at || 0).getTime() - 
+        new Date(b.outbound_segments[0]?.departure_at || 0).getTime()
+      );
     }
-    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
-    if (limit && !isNaN(limit)) {
-      processedFlights = processedFlights.slice(0, limit);
-    }
-    // --- End new logic ---
 
-    // Return the mapped flight data
-    return NextResponse.json({ data: processedFlights }, { status: 200 });
+    // Apply filters
+    const maxPrice = searchParams.get('maxPrice');
+    if (maxPrice) {
+      const maxPriceNum = parseFloat(maxPrice);
+      if (!isNaN(maxPriceNum)) {
+        processedFlights = processedFlights.filter(flight => flight.price <= maxPriceNum);
+      }
+    }
+
+    const stops = searchParams.get('stops');
+    if (stops) {
+      const stopNumbers = stops.split(',').map(s => parseInt(s));
+      processedFlights = processedFlights.filter(flight => stopNumbers.includes(flight.stops));
+    }
+
+    const airlines = searchParams.get('airlines');
+    if (airlines) {
+      const airlineList = airlines.split(',');
+      processedFlights = processedFlights.filter(flight => airlineList.includes(flight.airline));
+    }
+
+    // Apply pagination
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedFlights = processedFlights.slice(startIndex, endIndex);
+
+    // Return the paginated flight data with total count
+    return NextResponse.json({ 
+      data: paginatedFlights,
+      total: processedFlights.length,
+      page,
+      limit,
+      totalPages: Math.ceil(processedFlights.length / limit)
+    }, { status: 200 });
 
   } catch (error: any) {
     console.error('Duffel API error:', error); // Log any errors

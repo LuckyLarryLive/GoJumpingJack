@@ -4,92 +4,110 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import type { SearchParamsType, Flight, FlightApiResponse } from '@/types'; // Import shared types
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
+import { useRouter } from 'next/navigation';
+import { FaPlane, FaArrowRight, FaClock, FaMoneyBillWave } from 'react-icons/fa';
 
 // --- Component Props Interface ---
 interface FlightResultsProps {
-  searchParams: SearchParamsType | null;
+  searchParams?: SearchParamsType | null;
+  apiUrl?: string;
+  showPagination?: boolean;
+  onPageChange?: (page: number) => void;
+  currentPage?: number;
 }
 
 // --- Flight Results Component ---
-const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
+const FlightResults: React.FC<FlightResultsProps> = ({ 
+  searchParams, 
+  apiUrl,
+  showPagination = false, 
+  onPageChange, 
+  currentPage = 1 
+}) => {
   const [flights, setFlights] = useState<Flight[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [totalResults, setTotalResults] = useState(0);
+  const router = useRouter();
 
-  // --- Fetch Logic (Keep as is from Step 2) ---
+  // --- Fetch Logic ---
   useEffect(() => {
-    if (!searchParams) {
-      setFlights([]); setError(null); setIsLoading(false); return;
-    }
-
     const fetchFlights = async () => {
-      setIsLoading(true); setError(null); setFlights([]);
+      setIsLoading(true);
+      setError(null);
+      setFlights([]);
 
-      const originAirports = searchParams.originAirport.split(',');
-      const destinationAirports = searchParams.destinationAirport.split(',');
-
-      const allFlights: Flight[] = [];
-      const errors: string[] = [];
-
-      for (const origin of originAirports) {
-        for (const destination of destinationAirports) {
-          const query = new URLSearchParams({
-            originAirport: origin,
-            destinationAirport: destination,
-            departureDate: searchParams.departureDate,
-            adults: searchParams.adults.toString(),
-            limit: '3',
-            sort: 'price',
-          });
-          if (searchParams.returnDate) {
-            query.set('returnDate', searchParams.returnDate);
+      try {
+        // If apiUrl is provided, use it directly
+        if (apiUrl) {
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error(`Search failed: ${response.statusText}`);
           }
-          console.log(`FlightResults fetching: /api/flights?${query.toString()}`);
-          try {
-            const response = await fetch(`/api/flights?${query.toString()}`);
-            if (!response.ok) {
-              const errorText = await response.text();
-              errors.push(`Search failed for ${origin} to ${destination}: ${response.statusText} (Status: ${response.status})`);
-              continue;
+          const data = await response.json();
+          setFlights(data.data || []);
+          setTotalResults(data.total || 0);
+          return;
+        }
+
+        // Otherwise, use the searchParams logic
+        if (!searchParams) {
+          setFlights([]);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+
+        const originAirports = searchParams.originAirport.split(',');
+        const destinationAirports = searchParams.destinationAirport.split(',');
+
+        const allFlights: Flight[] = [];
+        const errors: string[] = [];
+
+        for (const origin of originAirports) {
+          for (const destination of destinationAirports) {
+            const query = new URLSearchParams({
+              originAirport: origin,
+              destinationAirport: destination,
+              departureDate: searchParams.departureDate,
+              adults: searchParams.adults.toString(),
+              limit: '3',
+              sort: 'price',
+            });
+            if (searchParams.returnDate) {
+              query.set('returnDate', searchParams.returnDate);
             }
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-              errors.push(`Received unexpected response format from server for ${origin} to ${destination}.`);
-              continue;
+
+            try {
+              const response = await fetch(`/api/flights?${query.toString()}`);
+              if (!response.ok) {
+                const errorText = await response.text();
+                errors.push(`Search failed for ${origin} to ${destination}: ${response.statusText}`);
+                continue;
+              }
+              const data = await response.json();
+              if (data && Array.isArray(data.data)) {
+                allFlights.push(...data.data);
+              }
+            } catch (err: any) {
+              errors.push(`Error for ${origin} to ${destination}: ${err.message}`);
             }
-            const apiResponse: FlightApiResponse = await response.json();
-            if (apiResponse && Array.isArray(apiResponse.data)) {
-              const validFlights = apiResponse.data.filter((f: any) =>
-                f && typeof f.origin_airport === 'string' && typeof f.destination_airport === 'string'
-                && typeof f.price === 'number' && typeof f.link === 'string'
-              ).map((flight: any) => ({
-                ...flight,
-                stops: flight.transfers || 0,
-                cabin_class: flight.cabin_class || 'economy',
-                currency: flight.currency || 'USD',
-                duration: flight.duration ? `${Math.floor(flight.duration / 60)}h ${flight.duration % 60}m` : 'N/A'
-              }));
-              allFlights.push(...validFlights);
-            } else {
-              errors.push(`Received invalid data structure from server for ${origin} to ${destination}.`);
-            }
-          } catch (err: any) {
-            errors.push(`An unexpected error occurred for ${origin} to ${destination}: ${err.message}`);
           }
         }
-      }
 
-      if (errors.length > 0) {
-        setError(errors.join('; '));
-      } else {
-        setError(null);
+        if (errors.length > 0) {
+          setError(errors.join('; '));
+        }
+        setFlights(allFlights);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
-      setFlights(allFlights);
-      setIsLoading(false);
     };
 
     fetchFlights();
-  }, [searchParams]);
+  }, [searchParams, apiUrl]);
 
   // --- ADD BACK: Helper function to build the results page link ---
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
@@ -105,6 +123,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
     }
     return `/results?${query.toString()}`;
   }, []);
+
+  const handleSeeAllFlights = () => {
+    if (!searchParams) return;
+    const params = new URLSearchParams();
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value) params.append(key, value.toString());
+    });
+    router.push(`/flights?${params.toString()}`);
+  };
 
   // --- RESTORED: Full Render Logic ---
 
@@ -158,6 +185,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
   // 5. Results Found - Render Flight Cards (RESTORED MAPPING)
   // Sort flights by price ascending
   const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
+  const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
+  const totalPages = Math.ceil(totalResults / 10);
+
   return (
     <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
       <div className="container mx-auto px-4">
@@ -166,7 +196,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
         </h2>
         <div className="space-y-4 max-w-4xl mx-auto">
           {/* Map over the first 3 flights and render FlightCard */}
-          {sortedFlights.slice(0, 3).map((flight, index) => (
+          {displayedFlights.map((flight, index) => (
             <FlightCard
               key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
               flight={flight}
@@ -174,14 +204,36 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
           ))}
 
           {/* "See More Results" Button */}
-          {sortedFlights.length > 3 && (
+          {!showPagination && sortedFlights.length > 3 && (
             <div className="text-center pt-4">
-              <Link
-                href={buildResultsLink(searchParams)}
-                className="inline-block px-6 py-3 bg-blue-600 text-white text-lg rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors duration-200"
+              <button
+                onClick={handleSeeAllFlights}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors duration-200"
               >
-                See All Results
-              </Link>
+                See All {sortedFlights.length} Flights
+              </button>
+            </div>
+          )}
+
+          {showPagination && totalPages > 1 && (
+            <div className="flex justify-center space-x-2 mt-6">
+              <button
+                onClick={() => onPageChange?.(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => onPageChange?.(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border rounded disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>
