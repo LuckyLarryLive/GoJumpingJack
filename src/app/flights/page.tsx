@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlightResults from '@/components/FlightResults';
 import { FaFilter, FaSort } from 'react-icons/fa';
 
-export default function AllFlightsPage() {
+// Create a client component for the main content
+function FlightsContent() {
   const searchParams = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('price');
@@ -22,22 +23,6 @@ export default function AllFlightsPage() {
   const returnDate = searchParams.get('returnDate');
   const adults = searchParams.get('adults');
   const cabinClass = searchParams.get('cabinClass');
-
-  // Construct the API URL with pagination
-  const apiUrl = `/api/flights?${new URLSearchParams({
-    origin: origin || '',
-    destination: destination || '',
-    departureDate: departureDate || '',
-    returnDate: returnDate || '',
-    adults: adults || '1',
-    cabinClass: cabinClass || 'economy',
-    page: currentPage.toString(),
-    limit: '10',
-    sort: sortBy,
-    maxPrice: filters.maxPrice,
-    stops: filters.stops.join(','),
-    airlines: filters.airlines.join(',')
-  }).toString()}`;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -129,5 +114,25 @@ export default function AllFlightsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component
+function Loading() {
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    </div>
+  );
+}
+
+// Main page component
+export default function AllFlightsPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <FlightsContent />
+    </Suspense>
   );
 } 
