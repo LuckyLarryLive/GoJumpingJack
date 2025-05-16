@@ -69,15 +69,21 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return labels[cabinClass] || cabinClass;
   };
 
-  // Calculate flight duration
-  const calculateDuration = (departure: string, arrival: string) => {
-    const start = new Date(departure);
-    const end = new Date(arrival);
-    const durationMs = end.getTime() - start.getTime();
-    const hours = Math.floor(durationMs / (1000 * 60 * 60));
-    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m`;
-  };
+  // Robust summary duration logic
+  let summaryDuration = 'N/A';
+  if (flight.duration && flight.duration !== 'N/A') {
+    summaryDuration = flight.duration;
+  } else if (flight.departure_at && flight.return_at && flight.departure_at !== flight.return_at) {
+    // Only calculate if both are valid and not equal
+    const start = new Date(flight.departure_at);
+    const end = new Date(flight.return_at);
+    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+      const durationMs = end.getTime() - start.getTime();
+      const hours = Math.floor(durationMs / (1000 * 60 * 60));
+      const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+      summaryDuration = `${hours}h ${minutes}m`;
+    }
+  }
 
   // Calculate flight path width based on duration
   const getFlightPathWidth = (departure: string, arrival: string) => {
@@ -92,7 +98,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const departureTime = formatTime(flight.departure_at);
   const returnTime = flight.return_at ? formatTime(flight.return_at) : '';
   const departureDate = formatDate(flight.departure_at);
-  const duration = calculateDuration(flight.departure_at, flight.return_at || flight.departure_at);
   const flightPathWidth = getFlightPathWidth(flight.departure_at, flight.return_at || flight.departure_at);
 
   return (
@@ -130,7 +135,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               </div>
             )}
             <div>
-              <span className="font-medium">Duration:</span> {flight.duration}
+              <span className="font-medium">Duration:</span> {summaryDuration}
             </div>
             <div>
               <span className="font-medium">Stops:</span> {flight.stops}

@@ -128,23 +128,28 @@ export async function GET(request: Request) {
     }
 
     const flights = flightsRaw.slice(0, 50).map((offer: any) => {
-      const slice = offer.slices && offer.slices[0];
-      const segment = slice && slice.segments && slice.segments[0];
-      const lastSegment = slice && slice.segments && slice.segments[slice.segments.length - 1];
-      // Use segment.duration or slice.duration
-      const duration = parseDuration(segment?.duration || slice?.duration);
+      // Helper to map segments
+      function mapSegments(segments: any[]) {
+        return segments.map((seg: any) => ({
+          origin_airport: seg.origin?.iata_code || '',
+          departure_at: seg.departing_at || '',
+          destination_airport: seg.destination?.iata_code || '',
+          arrival_at: seg.arriving_at || '',
+          duration: parseDuration(seg.duration),
+        }));
+      }
+      const slices = offer.slices || [];
+      const outboundSegments = slices[0]?.segments ? mapSegments(slices[0].segments) : [];
+      const returnSegments = slices[1]?.segments ? mapSegments(slices[1].segments) : [];
       return {
-        origin_airport: segment ? segment.origin.iata_code : offer.owner.iata_code || '',
-        destination_airport: lastSegment ? lastSegment.destination.iata_code : offer.owner.iata_code || '',
-        departure_at: segment ? segment.departing_at : '',
-        return_at: lastSegment ? lastSegment.arriving_at : undefined,
         airline: offer.owner?.name || offer.owner?.iata_code || 'Unknown',
         price: Number(offer.total_amount),
         link: offer.id ? `/book/${offer.id}` : '',
-        stops: slice && slice.segments ? slice.segments.length - 1 : 0,
+        stops: (slices[0]?.segments?.length || 1) - 1 + ((slices[1]?.segments?.length || 1) - 1),
         cabin_class: offer.cabin_class || flightSearchParams.cabinClass,
         currency: offer.total_currency || 'USD',
-        duration: duration,
+        outbound_segments: outboundSegments,
+        return_segments: returnSegments,
       };
     });
 

@@ -7,18 +7,23 @@ export interface Airport {
     region?: string;
 }
 
-export interface Flight { 
-    origin_airport: string; 
-    destination_airport: string; 
-    departure_at: string; 
-    return_at?: string; 
-    airline: string; 
-    price: number; 
-    link: string;
-    stops: number;
-    cabin_class: string;
-    currency: string;
-    duration: string;
+export interface FlightSegment {
+  origin_airport: string;
+  departure_at: string;
+  destination_airport: string;
+  arrival_at: string;
+  duration: string;
+}
+
+export interface Flight {
+  airline: string;
+  price: number;
+  link: string;
+  stops: number;
+  cabin_class: string;
+  currency: string;
+  outbound_segments: FlightSegment[];
+  return_segments: FlightSegment[];
 }
 
 export interface FlightApiResponse {

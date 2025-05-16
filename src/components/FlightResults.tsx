@@ -173,16 +173,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({ searchParams }) => {
             />
           ))}
 
-          {/* "See More Results" Link */}
+          {/* "See More Results" Button */}
           {sortedFlights.length > 3 && (
-             <div className="text-center pt-4">
-                 <Link
-                     href={buildResultsLink(searchParams)}
-                     className="text-blue-600 hover:text-blue-800 font-medium hover:underline transition-colors duration-200"
-                 >
-                     See all {sortedFlights.length} results →
-                 </Link>
-             </div>
+            <div className="text-center pt-4">
+              <Link
+                href={buildResultsLink(searchParams)}
+                className="inline-block px-6 py-3 bg-blue-600 text-white text-lg rounded-lg font-semibold shadow hover:bg-blue-700 transition-colors duration-200"
+              >
+                See All Results
+              </Link>
+            </div>
           )}
         </div>
       </div>
