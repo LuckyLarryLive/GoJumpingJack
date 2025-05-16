@@ -102,7 +102,7 @@ export async function searchFlights(params: FlightSearchParams) {
     const offers = await Promise.race([
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
-        limit: 20, // Reduced limit to speed up response
+        limit: 50, // Get all offers for pagination
         sort: 'total_amount',
       }),
       new Promise((_, reject) => 

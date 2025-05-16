@@ -71,7 +71,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               destinationAirport: destination,
               departureDate: searchParams.departureDate,
               adults: searchParams.adults.toString(),
-              limit: '3',
+              limit: showPagination ? '10' : '3', // Use 10 for pagination, 3 for initial view
               sort: 'price',
             });
             if (searchParams.returnDate) {
@@ -88,6 +88,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               const data = await response.json();
               if (data && Array.isArray(data.data)) {
                 allFlights.push(...data.data);
+                setTotalResults(data.total || 0);
               }
             } catch (err: any) {
               errors.push(`Error for ${origin} to ${destination}: ${err.message}`);
@@ -107,7 +108,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     };
 
     fetchFlights();
-  }, [searchParams, apiUrl]);
+  }, [searchParams, apiUrl, showPagination]);
 
   // --- ADD BACK: Helper function to build the results page link ---
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
@@ -202,13 +203,13 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           ))}
 
           {/* "See More Results" Button */}
-          {!showPagination && flights.length > 3 && (
+          {!showPagination && totalResults > 3 && (
             <div className="text-center pt-6">
               <button
                 onClick={handleSeeAllFlights}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
-                See All {flights.length} Flights
+                See All {totalResults} Flights
                 <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
@@ -216,6 +217,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             </div>
           )}
 
+          {/* Pagination Controls */}
           {showPagination && totalPages > 1 && (
             <div className="flex justify-center space-x-2 mt-6">
               <button

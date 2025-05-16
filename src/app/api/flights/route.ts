@@ -21,6 +21,20 @@ interface DuffelResponse {
   data: DuffelFlightData[];
 }
 
+// Add type definition for processed flight
+interface ProcessedFlight {
+  airline: string;
+  price: number;
+  link: string;
+  stops: number;
+  cabin_class: string;
+  currency: string;
+  outbound_segments: any[];
+  return_segments: any[];
+  origin_airport: string;
+  destination_airport: string;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const origin = searchParams.get('originAirport');
@@ -31,7 +45,8 @@ export async function GET(request: Request) {
   const cabinClassParam = searchParams.get('cabinClass');
   const limitParam = searchParams.get('limit');
   const sortParam = searchParams.get('sort');
-  // const currency = searchParams.get('currency') || 'USD'; // Currency is not part of FlightSearchParams in duffel.ts
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(limitParam || '10');
 
   if (!origin || !destination || !departureDate || !adultsString) {
     return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
@@ -94,7 +109,7 @@ export async function GET(request: Request) {
       origin,
       destination,
       departureDate,
-      passengers, // Use the constructed passengers object
+      passengers,
       cabinClass,
     };
 
@@ -127,7 +142,7 @@ export async function GET(request: Request) {
       return `${hours > 0 ? `${hours}h ` : ''}${minutes > 0 ? `${minutes}m` : ''}`.trim();
     }
 
-    const flights = flightsRaw.slice(0, 50).map((offer: any) => {
+    const flights = flightsRaw.map((offer: any) => {
       // Helper to map segments
       function mapSegments(segments: any[]) {
         return segments.map((seg: any) => ({
@@ -183,25 +198,23 @@ export async function GET(request: Request) {
     if (maxPrice) {
       const maxPriceNum = parseFloat(maxPrice);
       if (!isNaN(maxPriceNum)) {
-        processedFlights = processedFlights.filter(flight => flight.price <= maxPriceNum);
+        processedFlights = processedFlights.filter((flight: ProcessedFlight) => flight.price <= maxPriceNum);
       }
     }
 
     const stops = searchParams.get('stops');
     if (stops) {
       const stopNumbers = stops.split(',').map(s => parseInt(s));
-      processedFlights = processedFlights.filter(flight => stopNumbers.includes(flight.stops));
+      processedFlights = processedFlights.filter((flight: ProcessedFlight) => stopNumbers.includes(flight.stops));
     }
 
     const airlines = searchParams.get('airlines');
     if (airlines) {
       const airlineList = airlines.split(',');
-      processedFlights = processedFlights.filter(flight => airlineList.includes(flight.airline));
+      processedFlights = processedFlights.filter((flight: ProcessedFlight) => airlineList.includes(flight.airline));
     }
 
     // Apply pagination
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedFlights = processedFlights.slice(startIndex, endIndex);
@@ -216,22 +229,19 @@ export async function GET(request: Request) {
     }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Duffel API error:', error); // Log any errors
-    // It's better to parse Duffel errors more robustly.
-    // For now, logging the whole error and returning a generic message.
+    console.error('Duffel API error:', error);
     let errorMessage = 'Failed to fetch flight data.';
     let statusCode = 500;
     if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
-        errorMessage = error.errors.map((e: any) => e.message).join(', ');
-        // Attempt to get a status code from the first error, or use a general one
-        const duffelError = error.errors[0];
-        if (duffelError.meta && duffelError.meta.status) {
-            statusCode = duffelError.meta.status;
-        } else if (error.meta && error.meta.status) {
-            statusCode = error.meta.status; // Fallback to top-level meta status
-        }
+      errorMessage = error.errors.map((e: any) => e.message).join(', ');
+      const duffelError = error.errors[0];
+      if (duffelError.meta && duffelError.meta.status) {
+        statusCode = duffelError.meta.status;
+      } else if (error.meta && error.meta.status) {
+        statusCode = error.meta.status;
+      }
     } else if (error.message) {
-        errorMessage = error.message;
+      errorMessage = error.message;
     }
 
     return NextResponse.json({ message: errorMessage, details: error.errors || error }, { status: statusCode });
