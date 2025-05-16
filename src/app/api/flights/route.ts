@@ -103,6 +103,16 @@ export async function GET(request: Request) {
     const flightsRaw = await searchFlights(flightSearchParams);
     console.log('Duffel API raw response:', flightsRaw); // Log the raw response
 
+    // Debug: Log the first offer's slice and segment for troubleshooting duration
+    if (flightsRaw.length > 0) {
+      const debugSlice = flightsRaw[0]?.slices?.[0];
+      const debugSegment = debugSlice?.segments?.[0];
+      const debugLastSegment = debugSlice?.segments?.[debugSlice?.segments?.length - 1];
+      console.log('DEBUG Duffel slice:', debugSlice);
+      console.log('DEBUG Duffel segment:', debugSegment);
+      console.log('DEBUG Duffel lastSegment:', debugLastSegment);
+    }
+
     // Map Duffel offers to Flight type (limit to 50 for safety)
     const flights = flightsRaw.slice(0, 50).map((offer: any) => {
       const slice = offer.slices && offer.slices[0];
