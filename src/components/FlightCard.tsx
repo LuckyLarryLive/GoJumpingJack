@@ -1,7 +1,8 @@
 // src/components/FlightCard.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link'; // Link import might not be needed if only using <a> for external links
 import type { Flight } from '@/types';
+import FlightTimeline from './FlightTimeline';
 
 // --- Date Formatting Utility ---
 const formatDate = (dateString: string | undefined): string => {
@@ -28,6 +29,8 @@ interface FlightCardProps {
 }
 
 const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
+  const [showTimeline, setShowTimeline] = useState(false);
+
   if (!flight || !flight.origin_airport || !flight.destination_airport || !flight.link) {
     console.warn("Rendering FlightCard with incomplete data:", flight);
     return null; // Return null if essential data (including link) is missing
@@ -95,7 +98,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {/* Flight Details */}
+        {/* Flight Summary */}
         <div className="flex-1">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex-1">
@@ -103,7 +106,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                 {flight.origin_airport} → {flight.destination_airport}
               </div>
               <div className="text-sm text-gray-600">
-                {departureDate}
+                {formatDate(flight.departure_at)}
               </div>
             </div>
             <div className="text-right">
@@ -116,40 +119,40 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
             </div>
           </div>
 
-          {/* Flight Path */}
-          <div className="relative h-2 bg-gray-200 rounded-full mb-4">
-            <div className="absolute inset-0 flex items-center justify-between px-2">
-              <div className="text-xs text-gray-600">{departureTime}</div>
-              {flight.stops > 0 && (
-                <div className="text-xs text-gray-600">
-                  {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}
-                </div>
-              )}
-              <div className="text-xs text-gray-600">{returnTime}</div>
-            </div>
-            <div 
-              className="absolute h-full bg-blue-500 rounded-full"
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          {/* Additional Details */}
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+          {/* Quick Info */}
+          <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
             <div>
-              <span className="font-medium">Airline:</span> {flight.airline}
+              <span className="font-medium">Departure:</span> {formatTime(flight.departure_at)}
             </div>
-            {flight.duration && (
+            {flight.return_at && (
               <div>
-                <span className="font-medium">Duration:</span> {flight.duration}
+                <span className="font-medium">Return:</span> {formatTime(flight.return_at)}
               </div>
             )}
+            <div>
+              <span className="font-medium">Duration:</span> {flight.duration}
+            </div>
+            <div>
+              <span className="font-medium">Stops:</span> {flight.stops}
+            </div>
           </div>
+
+          {/* View Details Button */}
+          <button
+            onClick={() => setShowTimeline(!showTimeline)}
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+          >
+            {showTimeline ? 'Hide Details' : 'View Details'}
+            <span className="transform transition-transform duration-200">
+              {showTimeline ? '↑' : '↓'}
+            </span>
+          </button>
         </div>
 
         {/* Book Button */}
         <div className="w-full md:w-auto">
           <a
-            href={flight.link}
+            href={externalFlightUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full md:w-auto px-6 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
@@ -158,6 +161,13 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           </a>
         </div>
       </div>
+
+      {/* Timeline View */}
+      {showTimeline && (
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <FlightTimeline flight={flight} />
+        </div>
+      )}
     </div>
   );
 };
