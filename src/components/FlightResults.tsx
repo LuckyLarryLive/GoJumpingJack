@@ -1,8 +1,8 @@
 'use client'; // Required for useState, useEffect
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import type { SearchParamsType, Flight, FlightApiResponse } from '@/types'; // Import shared types
+import type { SearchParamsType, Flight } from '@/types'; // Import shared types
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
 import { useRouter } from 'next/navigation';
 import { FaPlane, FaArrowRight, FaClock, FaMoneyBillWave } from 'react-icons/fa';
@@ -28,89 +28,85 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [totalResults, setTotalResults] = useState(0);
+  const [offerRequestId, setOfferRequestId] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
+  const pollRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  // --- Fetch Logic ---
+  // --- Async Duffel Search Flow ---
   useEffect(() => {
-    const fetchFlights = async () => {
-      setIsLoading(true);
-      setError(null);
-      setFlights([]);
+    if (!searchParams) return;
+    setIsLoading(true);
+    setError(null);
+    setFlights([]);
+    setOfferRequestId(null);
+    setTotalResults(0);
+    setPolling(false);
+    if (pollRef.current) clearTimeout(pollRef.current);
 
+    // 1. Initiate search
+    const initiate = async () => {
       try {
-        // If apiUrl is provided, use it directly
-        if (apiUrl) {
-          const response = await fetch(apiUrl);
-          if (!response.ok) {
-            throw new Error(`Search failed: ${response.statusText}`);
-          }
-          const data = await response.json();
-          setFlights(data.data || []);
-          setTotalResults(data.total || 0);
-          return;
-        }
-
-        // Otherwise, use the searchParams logic
-        if (!searchParams) {
-          setFlights([]);
-          setError(null);
-          setIsLoading(false);
-          return;
-        }
-
-        const originAirports = searchParams.originAirport.split(',');
-        const destinationAirports = searchParams.destinationAirport.split(',');
-
-        const allFlights: Flight[] = [];
-        const errors: string[] = [];
-
-        for (const origin of originAirports) {
-          for (const destination of destinationAirports) {
-            const query = new URLSearchParams({
-              originAirport: origin,
-              destinationAirport: destination,
-              departureDate: searchParams.departureDate,
-              adults: searchParams.adults.toString(),
-              limit: showPagination ? '10' : '3', // Use 10 for pagination, 3 for initial view
-              sort: 'price',
-            });
-            if (searchParams.returnDate) {
-              query.set('returnDate', searchParams.returnDate);
-            }
-
-            try {
-              const response = await fetch(`/api/flights?${query.toString()}`);
-              if (!response.ok) {
-                const errorText = await response.text();
-                errors.push(`Search failed for ${origin} to ${destination}: ${response.statusText}`);
-                continue;
-              }
-              const data = await response.json();
-              if (data && Array.isArray(data.data)) {
-                allFlights.push(...data.data);
-                setTotalResults(data.total || 0);
-              }
-            } catch (err: any) {
-              errors.push(`Error for ${origin} to ${destination}: ${err.message}`);
-            }
-          }
-        }
-
-        if (errors.length > 0) {
-          setError(errors.join('; '));
-        }
-        setFlights(allFlights);
+        const res = await fetch('/api/flights/initiate-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            origin: searchParams.originAirport,
+            destination: searchParams.destinationAirport,
+            departureDate: searchParams.departureDate,
+            returnDate: searchParams.returnDate,
+            passengers: { adults: searchParams.adults },
+            cabinClass: searchParams.cabinClass || 'economy',
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
+        setOfferRequestId(data.offer_request_id);
+        setPolling(true);
       } catch (err: any) {
         setError(err.message);
-      } finally {
         setIsLoading(false);
       }
     };
+    initiate();
+    // Cleanup
+    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
+  }, [searchParams]);
 
-    fetchFlights();
-  }, [searchParams, apiUrl, showPagination]);
+  // 2. Poll for results
+  useEffect(() => {
+    if (!offerRequestId || !polling) return;
+    let stopped = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/flights/results?offer_request_id=${offerRequestId}`);
+        const data = await res.json();
+        if (data.status === 'pending') {
+          setIsLoading(true);
+          setFlights([]);
+          setTotalResults(0);
+          if (!stopped) pollRef.current = setTimeout(poll, 2000);
+        } else if (data.status === 'complete') {
+          setIsLoading(false);
+          setFlights(data.offers || []);
+          setTotalResults((data.meta && data.meta.total_count) || (data.offers ? data.offers.length : 0));
+          setPolling(false);
+        } else {
+          setError(data.message || 'Unknown error');
+          setIsLoading(false);
+          setPolling(false);
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setIsLoading(false);
+        setPolling(false);
+      }
+    };
+    poll();
+    return () => { stopped = true; if (pollRef.current) clearTimeout(pollRef.current); };
+  }, [offerRequestId, polling]);
 
-  // --- ADD BACK: Helper function to build the results page link ---
+  // --- Helper function to build the results page link ---
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
     if (!params) return '#';
     const query = new URLSearchParams({
@@ -134,9 +130,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     router.push(`/flights?${params.toString()}`);
   };
 
-  // --- RESTORED: Full Render Logic ---
-
-  // 1. Loading State
+  // --- Render Logic ---
   if (isLoading) {
       return (
         <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
@@ -150,7 +144,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       );
   }
 
-  // 2. Error State
   if (error) {
       return (
           <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
@@ -164,12 +157,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       );
   }
 
-  // 3. No Search Performed Yet
   if (!searchParams) {
       return null;
   }
 
-  // 4. No Results Found
   if (flights.length === 0) {
       return (
           <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
@@ -183,7 +174,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       );
   }
 
-  // 5. Results Found - Render Flight Cards
   const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalPages = Math.ceil(totalResults / 10);
