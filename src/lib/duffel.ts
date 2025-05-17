@@ -169,4 +169,53 @@ export async function createOrder(offerId: string, passengers: any[]) {
     console.error('Error creating order:', error);
     throw error;
   }
+}
+
+// Helper: Create Offer Request (async flow)
+export async function createOfferRequest(params: FlightSearchParams) {
+  // (Reuse the offerRequests.create logic, but return only the offer_request_id)
+  const timeRange: TimeRange = { from: '06:00', to: '22:00' };
+  const offerRequest = await duffel.offerRequests.create({
+    slices: [
+      {
+        origin: params.origin,
+        destination: params.destination,
+        departure_date: params.departureDate,
+        arrival_time: timeRange,
+        departure_time: timeRange,
+      },
+      ...(params.returnDate
+        ? [{
+            origin: params.destination,
+            destination: params.origin,
+            departure_date: params.returnDate,
+            arrival_time: timeRange,
+            departure_time: timeRange,
+          }]
+        : []),
+    ],
+    passengers: [
+      ...Array(params.passengers.adults).fill({ type: 'adult' }),
+      ...Array(params.passengers.children || 0).fill({ type: 'child' }),
+      ...Array(params.passengers.infants || 0).fill({ type: 'infant' }),
+    ],
+    cabin_class: params.cabinClass,
+  });
+  return offerRequest.data.id;
+}
+
+// Helper: List Offers for an Offer Request (async flow)
+export async function listOffers({ offerRequestId, sort = 'total_amount', limit = 15, after }: {
+  offerRequestId: string;
+  sort?: 'total_amount' | '-total_amount' | 'total_duration' | '-total_duration';
+  limit?: number;
+  after?: string;
+}) {
+  const offers = await duffel.offers.list({
+    offer_request_id: offerRequestId,
+    sort: sort as any,
+    limit,
+    after,
+  });
+  return offers;
 } 
