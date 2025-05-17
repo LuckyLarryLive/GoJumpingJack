@@ -5,9 +5,18 @@ export async function POST(request: Request) {
   console.log('[initiate-search] Received request for initiate-search');
   try {
     const params: FlightSearchParams = await request.json();
-    // Validate required fields (basic)
-    if (!params.origin || !params.destination || !params.departureDate || !params.passengers || !params.cabinClass) {
-      return NextResponse.json({ message: 'Missing required parameters' }, { status: 400 });
+    console.log('[initiate-search] Received params:', params);
+    if (
+      !params.origin ||
+      !params.destination ||
+      !params.departureDate ||
+      !params.passengers ||
+      typeof params.passengers.adults !== 'number' ||
+      isNaN(params.passengers.adults) ||
+      params.passengers.adults < 1 ||
+      !params.cabinClass
+    ) {
+      return NextResponse.json({ message: 'Missing or invalid required parameters' }, { status: 400 });
     }
     console.log('[initiate-search] Calling duffel.offerRequests.create()');
     const offerRequestId = await createOfferRequest(params);

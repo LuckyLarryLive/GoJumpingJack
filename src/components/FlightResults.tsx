@@ -47,17 +47,19 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     // 1. Initiate search
     const initiate = async () => {
       try {
+        const payload = {
+          origin: searchParams.originAirport,
+          destination: searchParams.destinationAirport,
+          departureDate: searchParams.departureDate,
+          returnDate: searchParams.returnDate,
+          passengers: { adults: Number(searchParams.adults) },
+          cabinClass: searchParams.cabinClass || 'economy',
+        };
+        console.log('[FlightResults] Initiating search with payload:', payload);
         const res = await fetch('/api/flights/initiate-search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            origin: searchParams.originAirport,
-            destination: searchParams.destinationAirport,
-            departureDate: searchParams.departureDate,
-            returnDate: searchParams.returnDate,
-            passengers: { adults: searchParams.adults },
-            cabinClass: searchParams.cabinClass || 'economy',
-          }),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
