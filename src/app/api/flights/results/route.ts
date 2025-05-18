@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     }
 
     console.log('[results] Received offer_request_id:', offerRequestId);
-    console.log('[results] Calling listOffers with:', { offerRequestId, sort, limit, after });
+    console.log('[results] About to call listOffers');
     let offersResponse;
     try {
       offersResponse = await listOffers({
@@ -25,6 +25,7 @@ export async function GET(request: Request) {
         limit,
         after,
       });
+      console.log('[results] listOffers call succeeded');
     } catch (duffelError: any) {
       console.error('[results] Duffel API error:', duffelError);
       return NextResponse.json({ message: duffelError.message || 'Duffel API error', details: duffelError }, { status: 502 });
