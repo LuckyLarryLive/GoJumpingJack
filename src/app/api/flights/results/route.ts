@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: duffelError.message || 'Duffel API error', details: duffelError }, { status: 502 });
     }
     console.log('[results] Duffel offers.list response:', offersResponse);
+    console.log('[results] Duffel offers.list response (detailed):', JSON.stringify(offersResponse, null, 2));
 
     // If offers are not ready, Duffel may return an empty array
     const offers = offersResponse.data || [];

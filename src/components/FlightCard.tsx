@@ -126,7 +126,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-blue-600">
-                {flight.currency} {flight.price.toLocaleString()}
+                {typeof flight.price === 'number' ? `${flight.currency} ${flight.price.toLocaleString()}` : 'N/A'}
               </div>
               <div className="text-sm text-gray-600">
                 {flight.cabin_class && getCabinClassLabel(flight.cabin_class)}

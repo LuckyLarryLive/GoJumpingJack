@@ -94,7 +94,7 @@ const FlightTimeline: React.FC<FlightTimelineProps> = ({ flight }) => {
           </div>
           <div className="flex flex-col items-center min-w-[120px]">
             <span className="text-sm font-medium text-blue-700">Price</span>
-            <p className="text-blue-900">{flight.currency} {flight.price.toLocaleString()}</p>
+            <p className="text-blue-900">{typeof flight.price === 'number' ? `${flight.currency} ${flight.price.toLocaleString()}` : 'N/A'}</p>
           </div>
         </div>
       </div>
