@@ -5,7 +5,8 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const offerRequestId = searchParams.get('offer_request_id');
-    const sort = searchParams.get('sort') as any;
+    const sortParam = searchParams.get('sort');
+    const sort = (sortParam && typeof sortParam === 'string' ? sortParam : undefined) as 'total_amount' | '-total_amount' | 'total_duration' | '-total_duration' | undefined;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 15;
     const after = searchParams.get('after') || undefined;
 
