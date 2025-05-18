@@ -11,7 +11,7 @@ if (!duffelToken) {
   throw new Error('Duffel API token is not defined in environment variables');
 }
 
-// Initialize the Duffel client
+// Initialize the Duffel client (Duffel-Version will be set via DUFFEL_VERSION env variable)
 const duffel = new Duffel({
   token: duffelToken,
 });
