@@ -211,11 +211,22 @@ export async function listOffers({ offerRequestId, sort = 'total_amount', limit 
   limit?: number;
   after?: string;
 }) {
-  const offers = await duffel.offers.list({
+  console.log('[listOffers] Called with:', { offerRequestId, sort, limit, after });
+  if (!offerRequestId || typeof offerRequestId !== 'string') {
+    throw new Error('Missing or invalid offerRequestId');
+  }
+  if (limit !== undefined && typeof limit !== 'number') {
+    throw new Error('Invalid limit parameter');
+  }
+  // Only include sort if it's a valid string
+  const params: any = {
     offer_request_id: offerRequestId,
-    sort: sort as any,
     limit,
     after,
-  });
-  return offers;
+  };
+  if (sort && typeof sort === 'string') {
+    params.sort = sort;
+  }
+  console.log('[listOffers] Final params to duffel.offers.list:', params);
+  return duffel.offers.list(params);
 } 
