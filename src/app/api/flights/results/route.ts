@@ -10,15 +10,25 @@ export async function GET(request: Request) {
     const after = searchParams.get('after') || undefined;
 
     if (!offerRequestId) {
+      console.error('[results] Missing offer_request_id');
       return NextResponse.json({ message: 'Missing offer_request_id' }, { status: 400 });
     }
 
-    const offersResponse = await listOffers({
-      offerRequestId,
-      sort,
-      limit,
-      after,
-    });
+    console.log('[results] Received offer_request_id:', offerRequestId);
+    console.log('[results] Calling listOffers with:', { offerRequestId, sort, limit, after });
+    let offersResponse;
+    try {
+      offersResponse = await listOffers({
+        offerRequestId,
+        sort,
+        limit,
+        after,
+      });
+    } catch (duffelError: any) {
+      console.error('[results] Duffel API error:', duffelError);
+      return NextResponse.json({ message: duffelError.message || 'Duffel API error', details: duffelError }, { status: 502 });
+    }
+    console.log('[results] Duffel offers.list response:', offersResponse);
 
     // If offers are not ready, Duffel may return an empty array
     const offers = offersResponse.data || [];
@@ -30,7 +40,7 @@ export async function GET(request: Request) {
     // Otherwise, return offers and pagination info
     return NextResponse.json({ status: 'complete', offers, meta }, { status: 200 });
   } catch (error: any) {
-    console.error('results error:', error);
+    console.error('[results] Error:', error);
     return NextResponse.json({ message: error.message || 'Failed to fetch results' }, { status: 500 });
   }
 } 
