@@ -64,46 +64,52 @@ export async function searchFlights(params: FlightSearchParams) {
     );
 
     console.log('Duffel searchFlights: Creating offer request...');
-    const offerRequest = await Promise.race([
-      duffel.offerRequests.create({
-        slices: [
-          {
-            origin: params.origin,
-            destination: params.destination,
-            departure_date: params.departureDate,
-            arrival_time: timeRange,
-            departure_time: timeRange,
-          },
-          ...(params.returnDate
-            ? [
-                {
-                  origin: params.destination,
-                  destination: params.origin,
-                  departure_date: params.returnDate,
-                  arrival_time: timeRange,
-                  departure_time: timeRange,
-                },
-              ]
-            : []),
-        ],
-        passengers: [
-          ...Array(params.passengers.adults).fill({
-            type: 'adult',
-          }),
-          ...Array(params.passengers.children || 0).fill({
-            type: 'child',
-          }),
-          ...Array(params.passengers.infants || 0).fill({
-            type: 'infant',
-          }),
-        ],
-        cabin_class: params.cabinClass,
-      }),
-      timeoutPromise
-    ]) as any;
+    let offerRequest;
+    try {
+      offerRequest = await Promise.race([
+        duffel.offerRequests.create({
+          slices: [
+            {
+              origin: params.origin,
+              destination: params.destination,
+              departure_date: params.departureDate,
+              arrival_time: timeRange,
+              departure_time: timeRange,
+            },
+            ...(params.returnDate
+              ? [
+                  {
+                    origin: params.destination,
+                    destination: params.origin,
+                    departure_date: params.returnDate,
+                    arrival_time: timeRange,
+                    departure_time: timeRange,
+                  },
+                ]
+              : []),
+          ],
+          passengers: [
+            ...Array(params.passengers.adults).fill({
+              type: 'adult',
+            }),
+            ...Array(params.passengers.children || 0).fill({
+              type: 'child',
+            }),
+            ...Array(params.passengers.infants || 0).fill({
+              type: 'infant',
+            }),
+          ],
+          cabin_class: params.cabinClass,
+        }),
+        timeoutPromise
+      ]) as any;
+      console.log('Duffel searchFlights: Offer request full response:', JSON.stringify(offerRequest, null, 2));
+      console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
+    } catch (offerRequestError) {
+      console.error('Duffel searchFlights: Error creating offer request:', offerRequestError);
+      throw offerRequestError;
+    }
     
-    console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
-
     console.log('Duffel searchFlights: Fetching offers...');
     const offers = await Promise.race([
       duffel.offers.list({
@@ -201,6 +207,7 @@ export async function createOfferRequest(params: FlightSearchParams) {
     ],
     cabin_class: params.cabinClass,
   });
+  console.log('Duffel createOfferRequest: Offer request full response:', JSON.stringify(offerRequest, null, 2));
   return offerRequest.data.id;
 }
 
@@ -228,5 +235,13 @@ export async function listOffers({ offerRequestId, sort = 'total_amount', limit 
     params.sort = sort;
   }
   console.log('[listOffers] Final params to duffel.offers.list:', params);
-  return duffel.offers.list(params);
+  try {
+    return await duffel.offers.list(params);
+  } catch (error) {
+    console.error('[listOffers] Error from duffel.offers.list:', error);
+    if (error && error.stack) {
+      console.error('[listOffers] Error stack:', error.stack);
+    }
+    throw error;
+  }
 } 
