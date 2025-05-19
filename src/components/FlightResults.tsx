@@ -232,14 +232,20 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         // Log segments if they exist
         if (slice.segments && slice.segments.length > 0) {
           slice.segments.forEach((segment: any, segIdx: number) => {
-            console.log(`\nSegment ${segIdx} Details:`, {
+            // Log the complete segment object
+            console.log(`\nComplete Segment ${segIdx}:`, JSON.stringify(segment, null, 2));
+            
+            // Log specific fields we're interested in
+            console.log(`\nSegment ${segIdx} Key Fields:`, {
               origin: segment.origin,
               destination: segment.destination,
-              departure: segment.departure,
-              arrival: segment.arrival,
+              departure: segment.departing_at || segment.departure,  // Try both possible field names
+              arrival: segment.arriving_at || segment.arrival,       // Try both possible field names
               duration: segment.duration,
               operating_carrier: segment.operating_carrier,
-              marketing_carrier: segment.marketing_carrier
+              marketing_carrier: segment.marketing_carrier,
+              aircraft: segment.aircraft,
+              flight_number: segment.flight_number
             });
           });
         } else {
@@ -255,6 +261,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     const outboundSegments = offer.slices?.[0]?.segments || [];
     const returnSegments = offer.slices?.[1]?.segments || [];
     
+    // Helper function to create a segment with proper field names
+    const createSegment = (segment: any, slice: any) => ({
+      origin_airport: segment.origin?.iata_code || slice.origin?.iata_code,
+      destination_airport: segment.destination?.iata_code || slice.destination?.iata_code,
+      departure_at: segment.departing_at || segment.departure || 'TBD',
+      arrival_at: segment.arriving_at || segment.arrival || 'TBD',
+      duration: segment.duration || slice.duration,
+    });
+
     // Log what we're using for the flight card
     console.log('Data being used for FlightCard:', {
       airline: offer.owner?.name || 'Unknown',
@@ -272,20 +287,12 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
       cabin_class: offer.cabin_class || 'economy',
       currency: offer.total_currency || 'USD',
-      outbound_segments: outboundSegments.map((seg: any) => ({
-        origin_airport: seg.origin?.iata_code,
-        departure_at: seg.departure,
-        destination_airport: seg.destination?.iata_code,
-        arrival_at: seg.arrival,
-        duration: seg.duration,
-      })),
-      return_segments: returnSegments.map((seg: any) => ({
-        origin_airport: seg.origin?.iata_code,
-        departure_at: seg.departure,
-        destination_airport: seg.destination?.iata_code,
-        arrival_at: seg.arrival,
-        duration: seg.duration,
-      })),
+      outbound_segments: outboundSegments.map((seg: any) => 
+        createSegment(seg, offer.slices[0])
+      ),
+      return_segments: returnSegments.map((seg: any) => 
+        createSegment(seg, offer.slices[1])
+      ),
     };
   }
 
