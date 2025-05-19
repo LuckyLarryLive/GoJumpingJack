@@ -237,9 +237,9 @@ export async function listOffers({ offerRequestId, sort = 'total_amount', limit 
   console.log('[listOffers] Final params to duffel.offers.list:', params);
   try {
     return await duffel.offers.list(params);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[listOffers] Error from duffel.offers.list:', error);
-    if (error && error.stack) {
+    if (error instanceof Error) {
       console.error('[listOffers] Error stack:', error.stack);
     }
     throw error;
