@@ -75,6 +75,35 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return () => { if (pollRef.current) clearTimeout(pollRef.current); };
   }, [searchParams]);
 
+  // Helper: Transform Duffel offer to Flight shape
+  function duffelOfferToFlight(offer: any): Flight {
+    // Defensive: check for slices and segments
+    const outboundSegments = offer.slices?.[0]?.segments || [];
+    const returnSegments = offer.slices?.[1]?.segments || [];
+    return {
+      airline: offer.owner?.name || 'Unknown',
+      price: Number(offer.total_amount),
+      link: offer.id, // You may want to build a booking link here
+      stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
+      cabin_class: offer.cabin_class || 'economy',
+      currency: offer.total_currency || 'USD',
+      outbound_segments: outboundSegments.map((seg: any) => ({
+        origin_airport: seg.origin?.iata_code,
+        departure_at: seg.departure,
+        destination_airport: seg.destination?.iata_code,
+        arrival_at: seg.arrival,
+        duration: seg.duration,
+      })),
+      return_segments: returnSegments.map((seg: any) => ({
+        origin_airport: seg.origin?.iata_code,
+        departure_at: seg.departure,
+        destination_airport: seg.destination?.iata_code,
+        arrival_at: seg.arrival,
+        duration: seg.duration,
+      })),
+    };
+  }
+
   // 2. Poll for results
   useEffect(() => {
     if (!offerRequestId || !polling) return;
@@ -90,8 +119,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           if (!stopped) pollRef.current = setTimeout(poll, 2000);
         } else if (data.status === 'complete') {
           setIsLoading(false);
-          setFlights(data.offers || []);
-          setTotalResults((data.meta && data.meta.total_count) || (data.offers ? data.offers.length : 0));
+          // Transform Duffel offers to Flight shape
+          const mappedFlights = Array.isArray(data.offers) ? data.offers.map(duffelOfferToFlight) : [];
+          setFlights(mappedFlights);
+          setTotalResults((data.meta && data.meta.total_count) || (mappedFlights ? mappedFlights.length : 0));
           setPolling(false);
         } else {
           setError(data.message || 'Unknown error');
