@@ -25,8 +25,8 @@ export default function HomePage() {
     cabinClass: 'economy',
   };
   // State to hold the current search parameters, passed between SearchSection and FlightResults
-  // It's set to defaultSearchParams initially, so top 3 flights are shown by default.
-  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(defaultSearchParams);
+  // It's null initially, meaning no search has been performed yet.
+  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
 
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.
