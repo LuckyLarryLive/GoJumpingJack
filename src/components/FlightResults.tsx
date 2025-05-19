@@ -182,6 +182,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Helper: Transform Duffel offer to Flight shape
   function duffelOfferToFlight(offer: any): Flight {
+    // Log the raw offer for debugging
+    console.log('Raw Duffel offer:', offer);
     // Defensive: check for slices and segments
     const outboundSegments = offer.slices?.[0]?.segments || [];
     const returnSegments = offer.slices?.[1]?.segments || [];
