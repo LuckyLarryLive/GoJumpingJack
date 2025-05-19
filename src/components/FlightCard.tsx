@@ -31,16 +31,26 @@ interface FlightCardProps {
 const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const [showTimeline, setShowTimeline] = useState(false);
 
+  // Defensive: Ensure outbound_segments is an array with at least one element and required properties
+  if (
+    !flight ||
+    !Array.isArray(flight.outbound_segments) ||
+    flight.outbound_segments.length === 0 ||
+    !flight.outbound_segments[0] ||
+    !flight.outbound_segments[0].origin_airport ||
+    !flight.outbound_segments[0].destination_airport ||
+    !flight.link ||
+    !flight.outbound_segments[0].departure_at
+  ) {
+    console.warn("Rendering FlightCard with incomplete data:", flight);
+    return null; // Return null if essential data is missing
+  }
+
   // Get origin and destination from first outbound segment
   const originAirport = flight.outbound_segments[0]?.origin_airport;
   const destinationAirport = flight.outbound_segments[0]?.destination_airport;
   const departureAt = flight.outbound_segments[0]?.departure_at;
   const returnAt = flight.return_segments?.[0]?.departure_at;
-
-  if (!flight || !originAirport || !destinationAirport || !flight.link || !departureAt) {
-    console.warn("Rendering FlightCard with incomplete data:", flight);
-    return null; // Return null if essential data (including link) is missing
-  }
 
   // Get base URL from environment variable
   // Provide an empty string fallback, although it should be set
