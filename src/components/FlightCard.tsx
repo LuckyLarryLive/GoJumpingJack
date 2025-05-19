@@ -77,16 +77,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
 
   // Calculate total duration from segments
   const calculateTotalDuration = () => {
-    if (!flight.outbound_segments.length) return 'N/A';
-    
+    if (!Array.isArray(flight.outbound_segments) || !flight.outbound_segments.length) return 'N/A';
     const firstSegment = flight.outbound_segments[0];
     const lastSegment = flight.outbound_segments[flight.outbound_segments.length - 1];
-    
-    const start = new Date(firstSegment.departure_at);
-    const end = new Date(lastSegment.arrival_at);
-    
+    const start = new Date(firstSegment?.departure_at);
+    const end = new Date(lastSegment?.arrival_at);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'N/A';
-    
     const durationMs = end.getTime() - start.getTime();
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));

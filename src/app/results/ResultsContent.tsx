@@ -53,10 +53,10 @@ export default function ResultsContent() {
   }, [originAirport, destinationAirport, departureDate, returnDate, adults, cabinClass, initiateSearch]);
 
   // Filtering and sorting (client-side for now)
-  const sortedFlights = [...offers].sort((a, b) => a.price - b.price);
+  const sortedFlights = Array.isArray(offers) ? [...offers].sort((a, b) => a.price - b.price) : [];
   const minPrice = sortedFlights.length ? sortedFlights[0].price : 0;
   const maxPrice = sortedFlights.length ? sortedFlights[sortedFlights.length - 1].price : 0;
-  const filteredFlights = sortedFlights.filter(flight => {
+  const filteredFlights = Array.isArray(sortedFlights) ? sortedFlights.filter(flight => {
     let pass = true;
     if (priceFilter) {
       pass = pass && flight.price >= priceFilter[0] && flight.price <= priceFilter[1];
@@ -68,13 +68,13 @@ export default function ResultsContent() {
       pass = pass && flight.airline === airlineFilter;
     }
     return pass;
-  });
+  }) : [];
 
   // Pagination logic
   const startIdx = (page - 1) * pageSize;
   const endIdx = startIdx + pageSize;
-  const pageFlights = filteredFlights.slice(startIdx, endIdx);
-  const totalPages = Math.ceil(filteredFlights.length / pageSize);
+  const pageFlights = Array.isArray(filteredFlights) ? filteredFlights.slice(startIdx, endIdx) : [];
+  const totalPages = filteredFlights && filteredFlights.length ? Math.ceil(filteredFlights.length / pageSize) : 1;
 
   // Render logic
   const renderContent = () => {
@@ -145,7 +145,7 @@ export default function ResultsContent() {
               className="p-1 border border-gray-300 rounded"
             >
               <option value="">All</option>
-              {unique(sortedFlights.map(f => f.cabin_class)).map(cabin => (
+              {Array.isArray(sortedFlights) && unique(sortedFlights.map(f => f.cabin_class)).map(cabin => (
                 <option key={cabin} value={cabin}>{cabin.charAt(0).toUpperCase() + cabin.slice(1).replace('_', ' ')}</option>
               ))}
             </select>
@@ -159,16 +159,16 @@ export default function ResultsContent() {
               className="p-1 border border-gray-300 rounded"
             >
               <option value="">All</option>
-              {unique(sortedFlights.map(f => f.airline)).map(airline => (
+              {Array.isArray(sortedFlights) && unique(sortedFlights.map(f => f.airline)).map(airline => (
                 <option key={airline} value={airline}>{airline}</option>
               ))}
             </select>
           </div>
         </div>
         <div className="space-y-4">
-          {pageFlights.map((flight, index) => (
+          {Array.isArray(pageFlights) && pageFlights.length > 0 ? pageFlights.map((flight, index) => (
             <FlightCard key={`${flight.link || 'flight-result'}-${startIdx + index}`} flight={flight} />
-          ))}
+          )) : <div className="text-center text-gray-600 py-10">No flights to display.</div>}
         </div>
         {/* Pagination Controls */}
         {totalPages > 1 && (
