@@ -210,15 +210,65 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Helper: Transform Duffel offer to Flight shape
   function duffelOfferToFlight(offer: any): Flight {
-    // Log the raw offer for debugging
-    console.log('Raw Duffel offer:', offer);
+    // Detailed logging of the offer structure
+    console.log('=== Detailed Offer Analysis ===');
+    console.log('Offer ID:', offer.id);
+    console.log('Airline:', offer.owner?.name);
+    console.log('Price:', offer.total_amount, offer.total_currency);
+    console.log('Cabin Class:', offer.cabin_class);
+    
+    // Log slices structure
+    console.log('Slices:', offer.slices);
+    if (offer.slices && offer.slices.length > 0) {
+      offer.slices.forEach((slice: any, idx: number) => {
+        console.log(`\nSlice ${idx} Details:`, {
+          origin: slice.origin,
+          destination: slice.destination,
+          segments: slice.segments,
+          fare_brand_name: slice.fare_brand_name,
+          duration: slice.duration
+        });
+        
+        // Log segments if they exist
+        if (slice.segments && slice.segments.length > 0) {
+          slice.segments.forEach((segment: any, segIdx: number) => {
+            console.log(`\nSegment ${segIdx} Details:`, {
+              origin: segment.origin,
+              destination: segment.destination,
+              departure: segment.departure,
+              arrival: segment.arrival,
+              duration: segment.duration,
+              operating_carrier: segment.operating_carrier,
+              marketing_carrier: segment.marketing_carrier
+            });
+          });
+        } else {
+          console.log('No segments found in this slice');
+        }
+      });
+    } else {
+      console.log('No slices found in this offer');
+    }
+    console.log('=== End Offer Analysis ===\n');
+
     // Defensive: check for slices and segments
     const outboundSegments = offer.slices?.[0]?.segments || [];
     const returnSegments = offer.slices?.[1]?.segments || [];
+    
+    // Log what we're using for the flight card
+    console.log('Data being used for FlightCard:', {
+      airline: offer.owner?.name || 'Unknown',
+      price: Number(offer.total_amount),
+      stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
+      cabin_class: offer.cabin_class || 'economy',
+      outbound_segments_count: outboundSegments.length,
+      return_segments_count: returnSegments.length
+    });
+
     return {
       airline: offer.owner?.name || 'Unknown',
       price: Number(offer.total_amount),
-      link: offer.id, // You may want to build a booking link here
+      link: offer.id,
       stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
       cabin_class: offer.cabin_class || 'economy',
       currency: offer.total_currency || 'USD',
