@@ -116,19 +116,23 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         destinationAirport: params.destinationAirport,
         departureDate: params.departureDate,
         adults: params.adults.toString(),
+        cabinClass: params.cabinClass || 'economy',
     });
     if (params.returnDate) {
         query.set('returnDate', params.returnDate);
     }
-    return `/results?${query.toString()}`;
+    return `/flights?${query.toString()}`;
   }, []);
 
   const handleSeeAllFlights = () => {
     if (!searchParams) return;
     const params = new URLSearchParams();
-    Object.entries(searchParams).forEach(([key, value]) => {
-      if (value) params.append(key, value.toString());
-    });
+    if (searchParams.originAirport) params.append('originAirport', searchParams.originAirport);
+    if (searchParams.destinationAirport) params.append('destinationAirport', searchParams.destinationAirport);
+    if (searchParams.departureDate) params.append('departureDate', searchParams.departureDate);
+    if (searchParams.returnDate) params.append('returnDate', searchParams.returnDate);
+    if (searchParams.adults) params.append('adults', searchParams.adults.toString());
+    if (searchParams.cabinClass) params.append('cabinClass', searchParams.cabinClass);
     router.push(`/flights?${params.toString()}`);
   };
 
@@ -176,7 +180,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       );
   }
 
-  const sortedFlights = [...flights].sort((a, b) => a.price - b.price);
+  const sortedFlights = Array.isArray(flights) ? [...flights].sort((a, b) => a.price - b.price) : [];
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalPages = Math.ceil(totalResults / 10);
 
@@ -187,12 +191,14 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           {showPagination ? 'All Flight Deals' : 'Top Flight Deals Found'}
         </h2>
         <div className="space-y-4 max-w-4xl mx-auto">
-          {displayedFlights.map((flight, index) => (
+          {Array.isArray(displayedFlights) && displayedFlights.length > 0 ? displayedFlights.map((flight, index) => (
             <FlightCard
               key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
               flight={flight}
             />
-          ))}
+          )) : (
+            <div className="text-center text-gray-600 py-10">No flights to display.</div>
+          )}
 
           {/* "See More Results" Button */}
           {!showPagination && totalResults > 3 && (
