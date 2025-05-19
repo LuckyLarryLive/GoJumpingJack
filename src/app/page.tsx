@@ -16,9 +16,17 @@ import type { SearchParamsType } from '@/types';
 
 // --- Main Page Component ---
 export default function HomePage() {
+  // Set default search params for initial load (show top 3 flights for a default route)
+  const defaultSearchParams: SearchParamsType = {
+    originAirport: 'LHR',
+    destinationAirport: 'HND',
+    departureDate: '2025-05-20',
+    adults: 1,
+    cabinClass: 'economy',
+  };
   // State to hold the current search parameters, passed between SearchSection and FlightResults
-  // It's null initially, meaning no search has been performed yet.
-  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
+  // It's set to defaultSearchParams initially, so top 3 flights are shown by default.
+  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(defaultSearchParams);
 
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.

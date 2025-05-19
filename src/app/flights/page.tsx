@@ -17,8 +17,8 @@ function FlightsContent() {
   });
 
   // Extract search parameters
-  const origin = searchParams.get('origin');
-  const destination = searchParams.get('destination');
+  const origin = searchParams.get('originAirport');
+  const destination = searchParams.get('destinationAirport');
   const departureDate = searchParams.get('departureDate');
   const returnDate = searchParams.get('returnDate');
   const adults = searchParams.get('adults');
