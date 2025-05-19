@@ -225,15 +225,13 @@ export async function listOffers({ offerRequestId, sort = 'total_amount', limit 
   if (limit !== undefined && typeof limit !== 'number') {
     throw new Error('Invalid limit parameter');
   }
-  // Only include sort if it's a valid string
+  // Only include defined properties
   const params: any = {
     offer_request_id: offerRequestId,
     limit,
-    after,
   };
-  if (sort && typeof sort === 'string') {
-    params.sort = sort;
-  }
+  if (after !== undefined) params.after = after;
+  if (sort && typeof sort === 'string') params.sort = sort;
   console.log('[listOffers] Final params to duffel.offers.list:', params);
   try {
     return await duffel.offers.list(params);
