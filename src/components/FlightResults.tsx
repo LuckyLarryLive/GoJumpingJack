@@ -65,6 +65,17 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     setFlights([]);
     setTotalResults(0);
 
+    async function fetchOfferDetails(offerId: string) {
+      try {
+        const res = await fetch(`/api/flights/offer-details?offer_id=${offerId}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data;
+      } catch {
+        return null;
+      }
+    }
+
     async function doSearch(params: any): Promise<Flight[]> {
       try {
         const payload = {
@@ -93,13 +104,30 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             await new Promise(r => setTimeout(r, 1500));
             pollTries++;
           } else if (pollData.status === 'complete') {
-            offers = Array.isArray(pollData.offers) ? pollData.offers.map(duffelOfferToFlight) : [];
+            offers = Array.isArray(pollData.offers) ? pollData.offers : [];
             polling = false;
           } else {
             polling = false;
           }
         }
-        return filterValidFlights(offers);
+        // Fetch offer details for offers with empty or missing slices
+        let detailsFetchCount = 0;
+        let stillIncompleteCount = 0;
+        const detailedOffers = await Promise.all(offers.map(async (offer) => {
+          if (!offer.slices || offer.slices.length === 0) {
+            detailsFetchCount++;
+            const details = await fetchOfferDetails(offer.id);
+            if (details && details.slices && details.slices.length > 0) {
+              return { ...offer, slices: details.slices };
+            } else {
+              stillIncompleteCount++;
+              return offer;
+            }
+          }
+          return offer;
+        }));
+        console.log(`[FlightResults] Offers needing details fetch: ${detailsFetchCount}, still incomplete after fetch: ${stillIncompleteCount}`);
+        return filterValidFlights(detailedOffers.map(duffelOfferToFlight));
       } catch (err: any) {
         return [];
       }
