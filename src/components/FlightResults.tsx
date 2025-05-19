@@ -33,29 +33,48 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
-  // --- Async Duffel Search Flow ---
+  // Helper: Filter valid flights (not partial, has outbound segments)
+  function filterValidFlights(flights: any[]): Flight[] {
+    return flights.filter(flight =>
+      !flight.partial &&
+      Array.isArray(flight.outbound_segments) && flight.outbound_segments.length > 0
+    );
+  }
+
+  // Helper: Adjust date by days
+  function adjustDate(dateStr: string, days: number): string {
+    const date = new Date(dateStr);
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+  }
+
+  // Helper: Get all cabin classes
+  const CABIN_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
+
+  // Helper: Try city search (if not already city)
+  function isAirportCode(code: string) {
+    return code && code.length === 3 && code.toUpperCase() === code;
+  }
+
+  // Main async search with fallbacks
   useEffect(() => {
     if (!searchParams) return;
+    let cancelled = false;
     setIsLoading(true);
     setError(null);
     setFlights([]);
-    setOfferRequestId(null);
     setTotalResults(0);
-    setPolling(false);
-    if (pollRef.current) clearTimeout(pollRef.current);
 
-    // 1. Initiate search
-    const initiate = async () => {
+    async function doSearch(params: any): Promise<Flight[]> {
       try {
         const payload = {
-          origin: searchParams.originAirport,
-          destination: searchParams.destinationAirport,
-          departureDate: searchParams.departureDate,
-          returnDate: searchParams.returnDate,
-          passengers: { adults: Number(searchParams.adults) },
-          cabinClass: searchParams.cabinClass || 'economy',
+          origin: params.originAirport,
+          destination: params.destinationAirport,
+          departureDate: params.departureDate,
+          returnDate: params.returnDate,
+          passengers: { adults: Number(params.adults) },
+          cabinClass: params.cabinClass || 'economy',
         };
-        console.log('[FlightResults] Initiating search with payload:', payload);
         const res = await fetch('/api/flights/initiate-search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -63,16 +82,102 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
-        setOfferRequestId(data.offer_request_id);
-        setPolling(true);
+        // Poll for results
+        let offers: any[] = [];
+        let pollTries = 0;
+        let polling = true;
+        while (polling && pollTries < 10) {
+          const pollRes = await fetch(`/api/flights/results?offer_request_id=${data.offer_request_id}`);
+          const pollData = await pollRes.json();
+          if (pollData.status === 'pending') {
+            await new Promise(r => setTimeout(r, 1500));
+            pollTries++;
+          } else if (pollData.status === 'complete') {
+            offers = Array.isArray(pollData.offers) ? pollData.offers.map(duffelOfferToFlight) : [];
+            polling = false;
+          } else {
+            polling = false;
+          }
+        }
+        return filterValidFlights(offers);
       } catch (err: any) {
-        setError(err.message);
-        setIsLoading(false);
+        return [];
       }
-    };
-    initiate();
-    // Cleanup
-    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
+    }
+
+    async function searchWithFallbacks() {
+      // 1. Try original search
+      let params = { ...searchParams };
+      let flights = await doSearch(params);
+      if (cancelled) return;
+      if (flights.length > 0) {
+        setFlights(flights);
+        setTotalResults(flights.length);
+        setIsLoading(false);
+        return;
+      }
+      // 2. Try previous day
+      if (typeof params.departureDate === 'string' && params.departureDate) {
+        const prevDay = adjustDate(params.departureDate, -1);
+        flights = await doSearch({ ...params, departureDate: prevDay });
+        if (cancelled) return;
+        if (flights.length > 0) {
+          setFlights(flights);
+          setTotalResults(flights.length);
+          setIsLoading(false);
+          setError('No flights found for your exact date. Showing results for the previous day.');
+          return;
+        }
+      }
+      // 3. Try all cabin classes
+      for (const cabin of CABIN_CLASSES) {
+        flights = await doSearch({ ...params, cabinClass: cabin });
+        if (cancelled) return;
+        if (flights.length > 0) {
+          setFlights(flights);
+          setTotalResults(flights.length);
+          setIsLoading(false);
+          setError('No flights found for your selected cabin class. Showing results for all cabin classes.');
+          return;
+        }
+      }
+      // 4. Try next day
+      if (typeof params.departureDate === 'string' && params.departureDate) {
+        const nextDay = adjustDate(params.departureDate, 1);
+        flights = await doSearch({ ...params, departureDate: nextDay });
+        if (cancelled) return;
+        if (flights.length > 0) {
+          setFlights(flights);
+          setTotalResults(flights.length);
+          setIsLoading(false);
+          setError('No flights found for your exact date. Showing results for the next day.');
+          return;
+        }
+      }
+      // 5. Try city search if original was by airport
+      if ((typeof params.originAirport === 'string' && isAirportCode(params.originAirport)) || (typeof params.destinationAirport === 'string' && isAirportCode(params.destinationAirport))) {
+        const cityParams = { ...params };
+        if (typeof params.originAirport === 'string' && isAirportCode(params.originAirport)) cityParams.originAirport = '';
+        if (typeof params.destinationAirport === 'string' && isAirportCode(params.destinationAirport)) cityParams.destinationAirport = '';
+        flights = await doSearch(cityParams);
+        if (cancelled) return;
+        if (flights.length > 0) {
+          setFlights(flights);
+          setTotalResults(flights.length);
+          setIsLoading(false);
+          setError('No flights found for your selected airports. Showing results for the city.');
+          return;
+        }
+      }
+      // If all fail
+      setFlights([]);
+      setTotalResults(0);
+      setIsLoading(false);
+      setError('No flights found for your search or similar options. Please try different dates or airports.');
+    }
+
+    searchWithFallbacks();
+    return () => { cancelled = true; };
   }, [searchParams]);
 
   // Helper: Transform Duffel offer to Flight shape
@@ -103,41 +208,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       })),
     };
   }
-
-  // 2. Poll for results
-  useEffect(() => {
-    if (!offerRequestId || !polling) return;
-    let stopped = false;
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/flights/results?offer_request_id=${offerRequestId}`);
-        const data = await res.json();
-        if (data.status === 'pending') {
-          setIsLoading(true);
-          setFlights([]);
-          setTotalResults(0);
-          if (!stopped) pollRef.current = setTimeout(poll, 2000);
-        } else if (data.status === 'complete') {
-          setIsLoading(false);
-          // Transform Duffel offers to Flight shape
-          const mappedFlights = Array.isArray(data.offers) ? data.offers.map(duffelOfferToFlight) : [];
-          setFlights(mappedFlights);
-          setTotalResults((data.meta && data.meta.total_count) || (mappedFlights ? mappedFlights.length : 0));
-          setPolling(false);
-        } else {
-          setError(data.message || 'Unknown error');
-          setIsLoading(false);
-          setPolling(false);
-        }
-      } catch (err: any) {
-        setError(err.message);
-        setIsLoading(false);
-        setPolling(false);
-      }
-    };
-    poll();
-    return () => { stopped = true; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [offerRequestId, polling]);
 
   // --- Helper function to build the results page link ---
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
