@@ -6,6 +6,7 @@ import type { SearchParamsType, Flight } from '@/types'; // Import shared types
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
 import { useRouter } from 'next/navigation';
 import { FaPlane, FaArrowRight, FaClock, FaMoneyBillWave } from 'react-icons/fa';
+import { useDuffelFlightSearch, FlightSearchParams } from '@/hooks/useDuffelFlightSearch';
 
 // --- Component Props Interface ---
 interface FlightResultsProps {
@@ -24,14 +25,18 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   onPageChange, 
   currentPage = 1 
 }) => {
-  const [flights, setFlights] = useState<Flight[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [totalResults, setTotalResults] = useState(0);
-  const [offerRequestId, setOfferRequestId] = useState<string | null>(null);
-  const [polling, setPolling] = useState(false);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+  // Remove all local state/fetch logic for flights, isLoading, error, etc.
+  // Use the Duffel async hook instead
+  const {
+    initiateSearch,
+    offers,
+    meta,
+    status,
+    error,
+    fetchPage,
+    jobId,
+  } = useDuffelFlightSearch();
 
   // Helper: Filter valid flights (not partial, has outbound segments)
   function filterValidFlights(flights: any[]): Flight[] {
@@ -59,160 +64,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   // Main async search with fallbacks
   useEffect(() => {
     if (!searchParams) return;
-    let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-    setFlights([]);
-    setTotalResults(0);
-
-    async function fetchOfferDetails(offerId: string) {
-      try {
-        const res = await fetch(`/api/flights/offer-details?offer_id=${offerId}`);
-        if (!res.ok) return null;
-        const data = await res.json();
-        return data;
-      } catch {
-        return null;
-      }
-    }
-
-    // Initiate search and poll for results on the frontend
-    async function doSearch(params: any): Promise<Flight[]> {
-      try {
-        const payload = {
-          origin: params.originAirport,
-          destination: params.destinationAirport,
-          departureDate: params.departureDate,
-          returnDate: params.returnDate,
-          passengers: { adults: Number(params.adults) },
-          cabinClass: params.cabinClass || 'economy',
-        };
-        // 1. Initiate search, get offer_request_id
-        const res = await fetch('/api/flights/initiate-search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
-        const offerRequestId = data.offer_request_id;
-        if (!offerRequestId) throw new Error('No offer_request_id returned');
-        // 2. Poll for results
-        let offers: any[] = [];
-        let pollTries = 0;
-        let polling = true;
-        let meta = {};
-        while (polling && pollTries < 10) {
-          const pollRes = await fetch(`/api/flights/results?offer_request_id=${offerRequestId}`);
-          const pollData = await pollRes.json();
-          if (pollData.status === 'pending') {
-            await new Promise(r => setTimeout(r, 1500));
-            pollTries++;
-          } else if (pollData.status === 'complete') {
-            offers = Array.isArray(pollData.offers) ? pollData.offers : [];
-            meta = pollData.meta || {};
-            polling = false;
-          } else {
-            polling = false;
-          }
-        }
-        // Fetch offer details for offers with empty or missing slices
-        let detailsFetchCount = 0;
-        let stillIncompleteCount = 0;
-        const detailedOffers = await Promise.all(offers.map(async (offer) => {
-          if (!offer.slices || offer.slices.length === 0) {
-            detailsFetchCount++;
-            const details = await fetchOfferDetails(offer.id);
-            if (details && details.slices && details.slices.length > 0) {
-              return { ...offer, slices: details.slices };
-            } else {
-              stillIncompleteCount++;
-              return offer;
-            }
-          }
-          return offer;
-        }));
-        console.log(`[FlightResults] Offers needing details fetch: ${detailsFetchCount}, still incomplete after fetch: ${stillIncompleteCount}`);
-        return filterValidFlights(detailedOffers.map(duffelOfferToFlight));
-      } catch (err: any) {
-        return [];
-      }
-    }
-
-    async function searchWithFallbacks() {
-      // 1. Try original search
-      let params = { ...searchParams };
-      let flights = await doSearch(params);
-      if (cancelled) return;
-      if (flights.length > 0) {
-        setFlights(flights);
-        setTotalResults(flights.length);
-        setIsLoading(false);
-        return;
-      }
-      // 2. Try previous day
-      if (typeof params.departureDate === 'string' && params.departureDate) {
-        const prevDay = adjustDate(params.departureDate, -1);
-        flights = await doSearch({ ...params, departureDate: prevDay });
-        if (cancelled) return;
-        if (flights.length > 0) {
-          setFlights(flights);
-          setTotalResults(flights.length);
-          setIsLoading(false);
-          setError('No flights found for your exact date. Showing results for the previous day.');
-          return;
-        }
-      }
-      // 3. Try all cabin classes
-      for (const cabin of CABIN_CLASSES) {
-        flights = await doSearch({ ...params, cabinClass: cabin });
-        if (cancelled) return;
-        if (flights.length > 0) {
-          setFlights(flights);
-          setTotalResults(flights.length);
-          setIsLoading(false);
-          setError('No flights found for your selected cabin class. Showing results for all cabin classes.');
-          return;
-        }
-      }
-      // 4. Try next day
-      if (typeof params.departureDate === 'string' && params.departureDate) {
-        const nextDay = adjustDate(params.departureDate, 1);
-        flights = await doSearch({ ...params, departureDate: nextDay });
-        if (cancelled) return;
-        if (flights.length > 0) {
-          setFlights(flights);
-          setTotalResults(flights.length);
-          setIsLoading(false);
-          setError('No flights found for your exact date. Showing results for the next day.');
-          return;
-        }
-      }
-      // 5. Try city search if original was by airport
-      if ((typeof params.originAirport === 'string' && isAirportCode(params.originAirport)) || (typeof params.destinationAirport === 'string' && isAirportCode(params.destinationAirport))) {
-        const cityParams = { ...params };
-        if (typeof params.originAirport === 'string' && isAirportCode(params.originAirport)) cityParams.originAirport = '';
-        if (typeof params.destinationAirport === 'string' && isAirportCode(params.destinationAirport)) cityParams.destinationAirport = '';
-        flights = await doSearch(cityParams);
-        if (cancelled) return;
-        if (flights.length > 0) {
-          setFlights(flights);
-          setTotalResults(flights.length);
-          setIsLoading(false);
-          setError('No flights found for your selected airports. Showing results for the city.');
-          return;
-        }
-      }
-      // If all fail
-      setFlights([]);
-      setTotalResults(0);
-      setIsLoading(false);
-      setError('No flights found for your search or similar options. Please try different dates or airports.');
-    }
-
-    searchWithFallbacks();
-    return () => { cancelled = true; };
-  }, [searchParams]);
+    const params: FlightSearchParams = {
+      origin: searchParams.originAirport,
+      destination: searchParams.destinationAirport,
+      departureDate: searchParams.departureDate,
+      returnDate: searchParams.returnDate,
+      passengers: { adults: Number(searchParams.adults) },
+      cabinClass: searchParams.cabinClass || 'economy',
+    };
+    initiateSearch(params);
+  }, [searchParams, initiateSearch]);
 
   // Helper: Get the most common or lowest cabin class from all segments
   function deriveCabinClass(slices: any[]): string {
@@ -358,53 +219,52 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     router.push(`/flights?${params.toString()}`);
   };
 
-  // --- Render Logic ---
-  if (isLoading) {
-      return (
-        <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
-            <div className="container mx-auto px-4 text-center">
-                <div className="inline-flex items-center justify-center gap-2 text-gray-600">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-t-blue-600 border-gray-300"></div>
-                    <span>Loading flight deals...</span>
-                </div>
-            </div>
-        </section>
-      );
-  }
-
-  if (error) {
-      return (
-          <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
-              <div className="container mx-auto px-4">
-                  <div className="text-center text-red-700 bg-red-100 p-4 rounded border border-red-300 max-w-md mx-auto">
-                      <p className="font-semibold text-lg mb-1">Oops! Couldn't Load Flights</p>
-                      <p className="text-sm">{error}</p>
-                  </div>
-              </div>
-          </section>
-      );
-  }
-
-  if (!searchParams) {
-      return null;
-  }
-
-  if (flights.length === 0) {
-      return (
-          <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
-              <div className="container mx-auto px-4">
-                  <div className="text-center text-gray-600 py-10 bg-gray-50 rounded-lg max-w-lg mx-auto">
-                      <p className="text-xl mb-2 font-medium">No flights found matching your criteria.</p>
-                      <p className="text-sm">Consider adjusting your dates or airports in the search above.</p>
-                  </div>
-              </div>
-          </section>
-      );
-  }
-
-  const sortedFlights = Array.isArray(flights) ? [...flights].sort((a, b) => a.price - b.price) : [];
+  // Filtering, sorting, and pagination logic (client-side)
+  const sortedFlights = Array.isArray(offers) ? [...offers].sort((a, b) => a.price - b.price) : [];
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
+  const totalResults = sortedFlights.length;
   const totalPages = Math.ceil(totalResults / 10);
+
+  // Render logic (reuse existing error/loading/empty states)
+  if (status === 'searching' || status === 'pending' || status === 'processing') {
+    return (
+      <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
+        <div className="container mx-auto px-4 text-center">
+          <div className="inline-flex items-center justify-center gap-2 text-gray-600">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-t-blue-600 border-gray-300"></div>
+            <span>Loading flight deals...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  if (error) {
+    return (
+      <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-red-700 bg-red-100 p-4 rounded border border-red-300 max-w-md mx-auto">
+            <p className="font-semibold text-lg mb-1">Oops! Couldn't Load Flights</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+  if (!searchParams) {
+    return null;
+  }
+  if (offers.length === 0) {
+    return (
+      <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-gray-600 py-10 bg-gray-50 rounded-lg max-w-lg mx-auto">
+            <p className="text-xl mb-2 font-medium">No flights found matching your criteria.</p>
+            <p className="text-sm">Consider adjusting your dates or airports in the search above.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">

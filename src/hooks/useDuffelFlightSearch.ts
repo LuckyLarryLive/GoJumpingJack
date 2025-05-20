@@ -1,3 +1,5 @@
+// NOTE: This hook now uses the Supabase Edge Function for Duffel search jobs.
+// The endpoint is set via NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL.
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
@@ -20,6 +22,7 @@ export function useDuffelFlightSearch() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+  const duffelInitiateUrl = process.env.NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL!;
 
   // Initiate search
   const initiateSearch = useCallback(async (params: FlightSearchParams) => {
@@ -33,7 +36,7 @@ export function useDuffelFlightSearch() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
 
-      const res = await fetch('/api/flights/initiate-search', {
+      const res = await fetch(duffelInitiateUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +54,7 @@ export function useDuffelFlightSearch() {
       setError(err.message);
       setStatus('error');
     }
-  }, [supabase]);
+  }, [supabase, duffelInitiateUrl]);
 
   // Subscribe to job updates
   useEffect(() => {
@@ -110,7 +113,7 @@ export function useDuffelFlightSearch() {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) throw sessionError;
 
-        const res = await fetch('/api/flights/initiate-search', {
+        const res = await fetch(duffelInitiateUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -134,7 +137,7 @@ export function useDuffelFlightSearch() {
         setStatus('error');
       }
     },
-    [jobId, supabase]
+    [jobId, supabase, duffelInitiateUrl]
   );
 
   return {
