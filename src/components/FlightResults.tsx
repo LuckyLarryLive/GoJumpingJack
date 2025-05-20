@@ -76,6 +76,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       }
     }
 
+    // Initiate search and poll for results on the frontend
     async function doSearch(params: any): Promise<Flight[]> {
       try {
         const payload = {
@@ -86,6 +87,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           passengers: { adults: Number(params.adults) },
           cabinClass: params.cabinClass || 'economy',
         };
+        // 1. Initiate search, get offer_request_id
         const res = await fetch('/api/flights/initiate-search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -93,18 +95,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
-        // Poll for results
+        const offerRequestId = data.offer_request_id;
+        if (!offerRequestId) throw new Error('No offer_request_id returned');
+        // 2. Poll for results
         let offers: any[] = [];
         let pollTries = 0;
         let polling = true;
+        let meta = {};
         while (polling && pollTries < 10) {
-          const pollRes = await fetch(`/api/flights/results?offer_request_id=${data.offer_request_id}`);
+          const pollRes = await fetch(`/api/flights/results?offer_request_id=${offerRequestId}`);
           const pollData = await pollRes.json();
           if (pollData.status === 'pending') {
             await new Promise(r => setTimeout(r, 1500));
             pollTries++;
           } else if (pollData.status === 'complete') {
             offers = Array.isArray(pollData.offers) ? pollData.offers : [];
+            meta = pollData.meta || {};
             polling = false;
           } else {
             polling = false;
