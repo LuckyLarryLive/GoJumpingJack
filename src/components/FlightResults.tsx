@@ -263,11 +263,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     
     // Helper function to create a segment with proper field names
     const createSegment = (segment: any, slice: any) => ({
-      origin_airport: segment.origin?.iata_code || slice.origin?.iata_code,
-      destination_airport: segment.destination?.iata_code || slice.destination?.iata_code,
-      departure_at: segment.departing_at || segment.departure || 'TBD',
-      arrival_at: segment.arriving_at || segment.arrival || 'TBD',
-      duration: segment.duration || slice.duration,
+      origin_airport: segment.origin?.iata_code || '',
+      destination_airport: segment.destination?.iata_code || '',
+      departure_at: segment.departing_at || '',
+      arrival_at: segment.arriving_at || '',
+      duration: segment.duration || '',
+      airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
+      flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+      aircraft: segment.aircraft || '',
+      cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
     });
 
     // Log what we're using for the flight card
@@ -277,7 +281,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
       cabin_class: offer.cabin_class || 'economy',
       outbound_segments_count: outboundSegments.length,
-      return_segments_count: returnSegments.length
+      return_segments_count: returnSegments.length,
+      outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
+      return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1]))
     });
 
     return {
