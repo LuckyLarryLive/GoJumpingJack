@@ -1,7 +1,7 @@
 // NOTE: This hook now uses the Supabase Edge Function for Duffel search jobs.
 // The endpoint is set via NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL.
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabaseClient';
 
 export interface FlightSearchParams {
   origin: string;
@@ -18,10 +18,6 @@ export function useDuffelFlightSearch() {
   const [meta, setMeta] = useState<any>(null);
   const [status, setStatus] = useState<'idle' | 'searching' | 'pending' | 'processing' | 'complete' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const duffelInitiateUrl = process.env.NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL!;
 
   // Initiate search
@@ -54,7 +50,7 @@ export function useDuffelFlightSearch() {
       setError(err.message);
       setStatus('error');
     }
-  }, [supabase, duffelInitiateUrl]);
+  }, [duffelInitiateUrl]);
 
   // Subscribe to job updates
   useEffect(() => {
@@ -93,7 +89,7 @@ export function useDuffelFlightSearch() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [jobId, supabase]);
+  }, [jobId]);
 
   // Manual pagination/sort
   const fetchPage = useCallback(
@@ -137,7 +133,7 @@ export function useDuffelFlightSearch() {
         setStatus('error');
       }
     },
-    [jobId, supabase, duffelInitiateUrl]
+    [jobId, duffelInitiateUrl]
   );
 
   return {
