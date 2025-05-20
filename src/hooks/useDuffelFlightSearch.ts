@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 export interface FlightSearchParams {
   origin: string;
@@ -10,12 +11,15 @@ export interface FlightSearchParams {
 }
 
 export function useDuffelFlightSearch() {
-  const [offerRequestId, setOfferRequestId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const [offers, setOffers] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>(null);
-  const [status, setStatus] = useState<'idle' | 'searching' | 'pending' | 'complete' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'searching' | 'pending' | 'processing' | 'complete' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   // Initiate search
   const initiateSearch = useCallback(async (params: FlightSearchParams) => {
@@ -23,73 +27,114 @@ export function useDuffelFlightSearch() {
     setError(null);
     setOffers([]);
     setMeta(null);
-    setOfferRequestId(null);
+    setJobId(null);
+
     try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+
       const res = await fetch('/api/flights/initiate-search', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ searchParams: params }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to initiate search');
-      setOfferRequestId(data.offer_request_id);
+      if (!res.ok) throw new Error(data.error || 'Failed to initiate search');
+
+      setJobId(data.job_id);
       setStatus('pending');
     } catch (err: any) {
       setError(err.message);
       setStatus('error');
     }
-  }, []);
+  }, [supabase]);
 
-  // Poll for results
-  const pollResults = useCallback(
-    async (id: string, opts: { sort?: string; limit?: number; after?: string } = {}) => {
-      try {
-        const params = new URLSearchParams({ offer_request_id: id });
-        if (opts.sort) params.append('sort', opts.sort);
-        if (opts.limit) params.append('limit', String(opts.limit));
-        if (opts.after) params.append('after', opts.after);
-        const res = await fetch(`/api/flights/results?${params.toString()}`);
-        const data = await res.json();
-        if (data.status === 'pending') {
-          setStatus('pending');
-          setOffers([]);
-          setMeta(data.meta);
-        } else if (data.status === 'complete') {
-          setStatus('complete');
-          setOffers(data.offers);
-          setMeta(data.meta);
-        } else {
-          setStatus('error');
-          setError(data.message || 'Unknown error');
-        }
-      } catch (err: any) {
-        setStatus('error');
-        setError(err.message);
-      }
-    },
-    []
-  );
-
-  // Polling effect
+  // Subscribe to job updates
   useEffect(() => {
-    if (!offerRequestId || status === 'complete' || status === 'error') {
-      if (pollRef.current) clearTimeout(pollRef.current);
-      return;
-    }
-    pollResults(offerRequestId);
-    pollRef.current = setTimeout(() => pollResults(offerRequestId), 2500);
+    if (!jobId) return;
+
+    const channel = supabase
+      .channel(`duffel_job_${jobId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'duffel_jobs',
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          const job = payload.new;
+          switch (job.status) {
+            case 'processing':
+              setStatus('processing');
+              break;
+            case 'completed':
+              setStatus('complete');
+              setOffers(job.results_data.data);
+              setMeta(job.results_data.meta);
+              break;
+            case 'failed':
+              setStatus('error');
+              setError(job.error_message);
+              break;
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      if (pollRef.current) clearTimeout(pollRef.current);
+      supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line
-  }, [offerRequestId, status]);
+  }, [jobId, supabase]);
 
   // Manual pagination/sort
   const fetchPage = useCallback(
-    (opts: { sort?: string; limit?: number; after?: string }) => {
-      if (offerRequestId) pollResults(offerRequestId, opts);
+    async (opts: { sort?: string; limit?: number; after?: string }) => {
+      if (!jobId) return;
+
+      try {
+        const { data: job, error: jobError } = await supabase
+          .from('duffel_jobs')
+          .select('*')
+          .eq('id', jobId)
+          .single();
+
+        if (jobError) throw jobError;
+
+        // Create a new job for the paginated results
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const res = await fetch('/api/flights/initiate-search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            searchParams: {
+              ...job.search_params,
+              ...opts,
+            },
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch page');
+
+        setJobId(data.job_id);
+        setStatus('pending');
+      } catch (err: any) {
+        setError(err.message);
+        setStatus('error');
+      }
     },
-    [offerRequestId, pollResults]
+    [jobId, supabase]
   );
 
   return {
@@ -99,6 +144,6 @@ export function useDuffelFlightSearch() {
     status,
     error,
     fetchPage,
-    offerRequestId,
+    jobId,
   };
 } 
