@@ -1,12 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { QStash } from 'https://esm.sh/@upstash/qstash@2.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// This function is now PUBLIC: no authentication required
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -20,20 +20,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get the user's session
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      throw new Error('No authorization header')
-    }
-
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    )
-
-    if (userError || !user) {
-      throw new Error('Invalid user session')
-    }
-
     // Parse request body
     const { searchParams } = await req.json()
 
@@ -42,11 +28,11 @@ serve(async (req) => {
       throw new Error('Missing required search parameters')
     }
 
-    // Create job record
+    // Create job record (user_id is null for guests)
     const { data: job, error: jobError } = await supabaseClient
       .from('duffel_jobs')
       .insert({
-        user_id: user.id,
+        user_id: null,
         status: 'pending',
         search_params: searchParams,
       })
@@ -57,21 +43,31 @@ serve(async (req) => {
       throw new Error(`Failed to create job: ${jobError.message}`)
     }
 
-    // Initialize QStash client
-    const qstash = new QStash({
-      token: Deno.env.get('QSTASH_TOKEN') ?? '',
-    })
+    // Publish message to QStash using direct fetch
+    const QSTASH_URL = Deno.env.get('QSTASH_URL') ?? 'https://qstash.upstash.io/v2/publish';
+    const QSTASH_TOKEN = Deno.env.get('QSTASH_TOKEN') ?? '';
+    const FUNCTION_URL = Deno.env.get('FUNCTION_URL') ?? '';
+    const QSTASH_CURRENT_SIGNING_KEY = Deno.env.get('QSTASH_CURRENT_SIGNING_KEY') ?? '';
 
-    // Publish message to QStash
-    await qstash.publishJSON({
-      url: `${Deno.env.get('SUPABASE_FUNCTION_URL')}/process-duffel-job`,
-      body: {
-        job_id: job.id,
-      },
+    const qstashRes = await fetch(QSTASH_URL, {
+      method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('QSTASH_CURRENT_SIGNING_KEY')}`,
+        'Authorization': `Bearer ${QSTASH_TOKEN}`,
+        'Content-Type': 'application/json',
       },
-    })
+      body: JSON.stringify({
+        url: `${FUNCTION_URL}/process-duffel-job`,
+        body: { job_id: job.id },
+        headers: {
+          'Authorization': `Bearer ${QSTASH_CURRENT_SIGNING_KEY}`,
+        },
+      }),
+    });
+
+    if (!qstashRes.ok) {
+      const errorText = await qstashRes.text();
+      throw new Error(`Failed to publish to QStash: ${errorText}`);
+    }
 
     return new Response(
       JSON.stringify({

@@ -1,5 +1,5 @@
 // NOTE: This hook now uses the Supabase Edge Function for Duffel search jobs.
-// The endpoint is set via NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL.
+// The endpoint is set via NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL and is PUBLIC (no auth required).
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -20,7 +20,7 @@ export function useDuffelFlightSearch() {
   const [error, setError] = useState<string | null>(null);
   const duffelInitiateUrl = process.env.NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL!;
 
-  // Initiate search
+  // Initiate search (no auth header, public endpoint)
   const initiateSearch = useCallback(async (params: FlightSearchParams) => {
     setStatus('searching');
     setError(null);
@@ -29,14 +29,10 @@ export function useDuffelFlightSearch() {
     setJobId(null);
 
     try {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-
       const res = await fetch(duffelInitiateUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({ searchParams: params }),
       });
@@ -91,7 +87,7 @@ export function useDuffelFlightSearch() {
     };
   }, [jobId]);
 
-  // Manual pagination/sort
+  // Manual pagination/sort (no auth header, public endpoint)
   const fetchPage = useCallback(
     async (opts: { sort?: string; limit?: number; after?: string }) => {
       if (!jobId) return;
@@ -105,15 +101,10 @@ export function useDuffelFlightSearch() {
 
         if (jobError) throw jobError;
 
-        // Create a new job for the paginated results
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-
         const res = await fetch(duffelInitiateUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             searchParams: {
