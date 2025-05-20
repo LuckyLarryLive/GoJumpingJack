@@ -208,6 +208,27 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return () => { cancelled = true; };
   }, [searchParams]);
 
+  // Helper: Get the most common or lowest cabin class from all segments
+  function deriveCabinClass(slices: any[]): string {
+    const allCabins: string[] = [];
+    slices.forEach(slice => {
+      if (Array.isArray(slice.segments)) {
+        slice.segments.forEach((segment: any) => {
+          if (Array.isArray(segment.passengers) && segment.passengers[0]?.cabin_class) {
+            allCabins.push(segment.passengers[0].cabin_class);
+          }
+        });
+      }
+    });
+    if (allCabins.length === 0) return 'unknown';
+    const uniqueCabins = Array.from(new Set(allCabins));
+    if (uniqueCabins.length === 1) return uniqueCabins[0];
+    // Optionally, sort by class hierarchy if you want the lowest
+    const hierarchy = ['economy', 'premium_economy', 'business', 'first'];
+    const sorted = uniqueCabins.sort((a, b) => hierarchy.indexOf(a) - hierarchy.indexOf(b));
+    return 'mixed (' + sorted.join(', ') + ')';
+  }
+
   // Helper: Transform Duffel offer to Flight shape
   function duffelOfferToFlight(offer: any): Flight {
     // Detailed logging of the offer structure
@@ -260,7 +281,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     // Defensive: check for slices and segments
     const outboundSegments = offer.slices?.[0]?.segments || [];
     const returnSegments = offer.slices?.[1]?.segments || [];
-    
+    const flightCabinClass = deriveCabinClass(offer.slices || []);
+
     // Helper function to create a segment with proper field names
     const createSegment = (segment: any, slice: any) => ({
       origin_airport: segment.origin?.iata_code || '',
@@ -279,7 +301,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       airline: offer.owner?.name || 'Unknown',
       price: Number(offer.total_amount),
       stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
-      cabin_class: offer.cabin_class || 'economy',
+      cabin_class: flightCabinClass,
       outbound_segments_count: outboundSegments.length,
       return_segments_count: returnSegments.length,
       outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
@@ -291,7 +313,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       price: Number(offer.total_amount),
       link: offer.id,
       stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
-      cabin_class: offer.cabin_class || 'economy',
+      cabin_class: flightCabinClass,
       currency: offer.total_currency || 'USD',
       outbound_segments: outboundSegments.map((seg: any) => 
         createSegment(seg, offer.slices[0])
