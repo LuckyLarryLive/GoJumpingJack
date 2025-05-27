@@ -36,23 +36,21 @@ const corsHeaders = {
 function cleanEnvVar(value: string | undefined): string {
   if (!value) return '';
   
-  // First try to parse as JSON to handle escaped characters
-  let cleaned = value;
-  try {
-    // If the value is wrapped in quotes, parse it
-    if (value.startsWith('"') && value.endsWith('"')) {
-      cleaned = JSON.parse(value);
-    }
-  } catch (e) {
-    console.log('[DEBUG] JSON parse failed, using raw value:', e);
-  }
-
-  // Then clean any remaining issues
-  return cleaned
+  // First remove any surrounding quotes and escaped quotes
+  let cleaned = value
+    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
+    .replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
+    .replace(/\\n/g, '')  // Remove escaped newlines
     .replace(/\s+/g, '')  // Remove all whitespace
     .replace(/[\r\n]+/g, '')  // Remove all newlines
-    .replace(/\\n/g, '')  // Remove escaped newlines
     .trim();  // Final trim
+
+  // If the result is still wrapped in quotes, remove them
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+    cleaned = cleaned.slice(1, -1);
+  }
+
+  return cleaned;
 }
 
 // This function is now PUBLIC: no authentication required
@@ -100,6 +98,8 @@ serve(async (req: Request) => {
     console.log('[DEBUG] QSTASH_TOKEN length:', rawQstashToken?.length)
     console.log('[DEBUG] QSTASH_TOKEN starts with quote:', rawQstashToken?.startsWith('"'))
     console.log('[DEBUG] QSTASH_TOKEN ends with quote:', rawQstashToken?.endsWith('"'))
+    console.log('[DEBUG] QSTASH_TOKEN contains escaped quotes:', rawQstashToken?.includes('\\"'))
+    console.log('[DEBUG] QSTASH_TOKEN contains escaped newline:', rawQstashToken?.includes('\\n'))
     
     // Clean QSTASH_TOKEN immediately after retrieval
     const QSTASH_TOKEN = cleanEnvVar(rawQstashToken)
@@ -108,6 +108,8 @@ serve(async (req: Request) => {
     console.log('[DEBUG] QSTASH_TOKEN cleaned length:', QSTASH_TOKEN.length)
     console.log('[DEBUG] QSTASH_TOKEN cleaned starts with quote:', QSTASH_TOKEN.startsWith('"'))
     console.log('[DEBUG] QSTASH_TOKEN cleaned ends with quote:', QSTASH_TOKEN.endsWith('"'))
+    console.log('[DEBUG] QSTASH_TOKEN cleaned contains escaped quotes:', QSTASH_TOKEN.includes('\\"'))
+    console.log('[DEBUG] QSTASH_TOKEN cleaned contains escaped newline:', QSTASH_TOKEN.includes('\\n'))
 
     // Debug logging for QSTASH_URL
     const rawQstashUrl = Deno.env.get('QSTASH_URL')
