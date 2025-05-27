@@ -35,9 +35,20 @@ const corsHeaders = {
 // Utility function to thoroughly clean environment variables
 function cleanEnvVar(value: string | undefined): string {
   if (!value) return '';
-  return value
-    .replace(/\\"/g, '')  // Remove escaped quotes
-    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
+  
+  // First try to parse as JSON to handle escaped characters
+  let cleaned = value;
+  try {
+    // If the value is wrapped in quotes, parse it
+    if (value.startsWith('"') && value.endsWith('"')) {
+      cleaned = JSON.parse(value);
+    }
+  } catch (e) {
+    console.log('[DEBUG] JSON parse failed, using raw value:', e);
+  }
+
+  // Then clean any remaining issues
+  return cleaned
     .replace(/\s+/g, '')  // Remove all whitespace
     .replace(/[\r\n]+/g, '')  // Remove all newlines
     .replace(/\\n/g, '')  // Remove escaped newlines
@@ -87,12 +98,16 @@ serve(async (req: Request) => {
     console.log('[DEBUG] QSTASH_TOKEN raw value:', JSON.stringify(rawQstashToken))
     console.log('[DEBUG] QSTASH_TOKEN char codes:', rawQstashToken ? Array.from(rawQstashToken).map(c => `${c}:${c.charCodeAt(0)}`).join(' ') : 'undefined')
     console.log('[DEBUG] QSTASH_TOKEN length:', rawQstashToken?.length)
+    console.log('[DEBUG] QSTASH_TOKEN starts with quote:', rawQstashToken?.startsWith('"'))
+    console.log('[DEBUG] QSTASH_TOKEN ends with quote:', rawQstashToken?.endsWith('"'))
     
     // Clean QSTASH_TOKEN immediately after retrieval
     const QSTASH_TOKEN = cleanEnvVar(rawQstashToken)
     console.log('[DEBUG] QSTASH_TOKEN after cleaning:', JSON.stringify(QSTASH_TOKEN))
     console.log('[DEBUG] QSTASH_TOKEN cleaned char codes:', Array.from(QSTASH_TOKEN).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
     console.log('[DEBUG] QSTASH_TOKEN cleaned length:', QSTASH_TOKEN.length)
+    console.log('[DEBUG] QSTASH_TOKEN cleaned starts with quote:', QSTASH_TOKEN.startsWith('"'))
+    console.log('[DEBUG] QSTASH_TOKEN cleaned ends with quote:', QSTASH_TOKEN.endsWith('"'))
 
     // Debug logging for QSTASH_URL
     const rawQstashUrl = Deno.env.get('QSTASH_URL')
