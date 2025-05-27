@@ -176,30 +176,22 @@ serve(async (req: Request) => {
     console.log('[initiate-duffel-search] Job created:', job)
 
     // --- QStash URL Construction Debugging ---
-    // 1. Retrieve FUNCTION_URL
+    // 1. Retrieve and clean FUNCTION_URL
     const rawFunctionUrl = Deno.env.get('FUNCTION_URL');
-    console.log('[initiate-duffel-search] FUNCTION_URL (raw):', JSON.stringify(rawFunctionUrl));
-
-    // 2. Clean the URL: trim whitespace and remove surrounding quotes
     let cleanedFunctionUrl = rawFunctionUrl ? rawFunctionUrl.trim() : '';
     cleanedFunctionUrl = cleanedFunctionUrl.replace(/^['"]+|['"]+$/g, '');
-    console.log('[initiate-duffel-search] FUNCTION_URL (cleaned):', JSON.stringify(cleanedFunctionUrl));
 
-    // 3. Ensure URL has https:// scheme
+    // 2. Ensure URL has https:// scheme
     if (!cleanedFunctionUrl.startsWith('http://') && !cleanedFunctionUrl.startsWith('https://')) {
       cleanedFunctionUrl = `https://${cleanedFunctionUrl}`;
     }
-    console.log('[initiate-duffel-search] FUNCTION_URL (with scheme):', JSON.stringify(cleanedFunctionUrl));
+    console.log('[DEBUG] FUNCTION_URL (final):', JSON.stringify(cleanedFunctionUrl));
 
-    // 4. Construct Target URL
+    // 3. Construct Target URL
     const targetQstashUrl = `${cleanedFunctionUrl}/process-duffel-job`;
-    console.log('[initiate-duffel-search] QStash target URL:', JSON.stringify(targetQstashUrl));
+    console.log('[DEBUG] QStash target URL:', JSON.stringify(targetQstashUrl));
 
-    // 5. Log Character Codes
-    const charCodes = Array.from(targetQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' ');
-    console.log('[initiate-duffel-search] QStash target URL char codes:', charCodes);
-
-    // 6. Use Cleaned and Logged URL in Payload
+    // 4. Use Cleaned URL in Payload
     const qstashPayload = {
       url: targetQstashUrl,
       body: { job_id: job.id },
@@ -208,25 +200,13 @@ serve(async (req: Request) => {
       },
     };
 
-    // 7. Log Final QStash Payload
-    console.log('[initiate-duffel-search] QStash payload (FINAL DEBUG):', JSON.stringify(qstashPayload));
-
-    // Construct and log curl command for debugging
-    const curlCommand = `curl -X POST \\
-      -H "Authorization: Bearer ${cleanedQstashToken}" \\
-      -H "Content-Type: application/json" \\
-      -d '${JSON.stringify(qstashPayload)}' \\
-      "${QSTASH_URL}"`
-    console.log('[DEBUG] Equivalent curl command:', curlCommand)
+    // 5. Log Final QStash Payload
+    console.log('[DEBUG] QStash payload:', JSON.stringify(qstashPayload));
 
     let qstashRes
     try {
       console.log('[DEBUG] Making QStash request to:', QSTASH_URL)
       console.log('[DEBUG] With payload:', JSON.stringify(qstashPayload))
-      console.log('[DEBUG] With headers:', JSON.stringify({
-        'Authorization': `Bearer ${cleanedQstashToken}`,
-        'Content-Type': 'application/json',
-      }))
 
       qstashRes = await fetch(QSTASH_URL, {
         method: 'POST',
@@ -239,7 +219,7 @@ serve(async (req: Request) => {
 
       if (!qstashRes.ok) {
         const errorText = await qstashRes.text()
-        console.error('[initiate-duffel-search] QStash error:', errorText)
+        console.error('[ERROR] QStash error:', errorText)
         return new Response(JSON.stringify({ error: `Failed to publish to QStash: ${errorText}` }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 502,
