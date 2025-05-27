@@ -191,30 +191,25 @@ serve(async (req: Request) => {
     const targetQstashUrl = `${cleanedFunctionUrl}/process-duffel-job`;
     console.log('[DEBUG] QStash target URL:', JSON.stringify(targetQstashUrl));
 
-    // 4. Use Cleaned URL in Payload
-    const qstashPayload = {
-      url: targetQstashUrl,
-      body: { job_id: job.id },
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    };
+    // 4. Construct QStash Publish URL with target in path
+    const qstashPublishUrl = `https://qstash.upstash.io/v2/publish/${targetQstashUrl}`;
+    console.log('[DEBUG] QStash publish URL:', JSON.stringify(qstashPublishUrl));
 
-    // 5. Log Final QStash Payload
-    console.log('[DEBUG] QStash payload:', JSON.stringify(qstashPayload));
+    // 5. Prepare simplified forward body
+    const qstashForwardBody = JSON.stringify({ job_id: job.id });
+    console.log('[DEBUG] QStash forward body:', qstashForwardBody);
 
     let qstashRes
     try {
-      console.log('[DEBUG] Making QStash request to:', QSTASH_URL)
-      console.log('[DEBUG] With payload:', JSON.stringify(qstashPayload))
+      console.log('[DEBUG] Making QStash request to:', qstashPublishUrl)
 
-      qstashRes = await fetch(QSTASH_URL, {
+      qstashRes = await fetch(qstashPublishUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cleanedQstashToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(qstashPayload),
+        body: qstashForwardBody,
       })
 
       if (!qstashRes.ok) {
