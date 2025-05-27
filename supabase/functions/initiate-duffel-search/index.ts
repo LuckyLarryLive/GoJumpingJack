@@ -91,56 +91,33 @@ serve(async (req: Request) => {
 
     // Publish message to QStash using direct fetch
     const QSTASH_URL = 'https://qstash.upstash.io/v2/publish'
+    
+    // Direct token cleaning with precise logging
     const rawQstashToken = Deno.env.get('QSTASH_TOKEN') ?? ''
+    console.log(`[DEBUG] QSTASH_TOKEN RAW (length ${rawQstashToken.length}): '${rawQstashToken}'`)
+    console.log(`[DEBUG] QSTASH_TOKEN RAW (JSON.stringified): ${JSON.stringify(rawQstashToken)}`)
+    console.log('[DEBUG] QSTASH_TOKEN RAW char codes:', Array.from(rawQstashToken).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
+
+    // Direct trim of the token
+    const cleanedQstashToken = rawQstashToken.trim()
+    console.log(`[DEBUG] QSTASH_TOKEN CLEANED (length ${cleanedQstashToken.length}): '${cleanedQstashToken}'`)
+    console.log(`[DEBUG] QSTASH_TOKEN CLEANED (JSON.stringified): ${JSON.stringify(cleanedQstashToken)}`)
+    console.log('[DEBUG] QSTASH_TOKEN CLEANED char codes:', Array.from(cleanedQstashToken).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
+
     const FUNCTION_URL = cleanEnvVar(Deno.env.get('FUNCTION_URL'))
     const QSTASH_CURRENT_SIGNING_KEY = cleanEnvVar(Deno.env.get('QSTASH_CURRENT_SIGNING_KEY'))
 
-    // Debug logging for QSTASH_TOKEN
-    console.log('[DEBUG] QSTASH_TOKEN raw value:', JSON.stringify(rawQstashToken))
-    console.log('[DEBUG] QSTASH_TOKEN char codes:', rawQstashToken ? Array.from(rawQstashToken).map(c => `${c}:${c.charCodeAt(0)}`).join(' ') : 'undefined')
-    console.log('[DEBUG] QSTASH_TOKEN length:', rawQstashToken?.length)
-    console.log('[DEBUG] QSTASH_TOKEN starts with quote:', rawQstashToken?.startsWith('"'))
-    console.log('[DEBUG] QSTASH_TOKEN ends with quote:', rawQstashToken?.endsWith('"'))
-    console.log('[DEBUG] QSTASH_TOKEN contains escaped quotes:', rawQstashToken?.includes('\\"'))
-    console.log('[DEBUG] QSTASH_TOKEN contains escaped newline:', rawQstashToken?.includes('\\n'))
-    
-    // Clean QSTASH_TOKEN immediately after retrieval
-    const QSTASH_TOKEN = cleanEnvVar(rawQstashToken)
-    console.log('[DEBUG] QSTASH_TOKEN after cleaning:', JSON.stringify(QSTASH_TOKEN))
-    console.log('[DEBUG] QSTASH_TOKEN cleaned char codes:', Array.from(QSTASH_TOKEN).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
-    console.log('[DEBUG] QSTASH_TOKEN cleaned length:', QSTASH_TOKEN.length)
-    console.log('[DEBUG] QSTASH_TOKEN cleaned starts with quote:', QSTASH_TOKEN.startsWith('"'))
-    console.log('[DEBUG] QSTASH_TOKEN cleaned ends with quote:', QSTASH_TOKEN.endsWith('"'))
-    console.log('[DEBUG] QSTASH_TOKEN cleaned contains escaped quotes:', QSTASH_TOKEN.includes('\\"'))
-    console.log('[DEBUG] QSTASH_TOKEN cleaned contains escaped newline:', QSTASH_TOKEN.includes('\\n'))
-
-    // Debug logging for QSTASH_URL
-    const rawQstashUrl = Deno.env.get('QSTASH_URL')
-    console.log('[DEBUG] QSTASH_URL raw value:', JSON.stringify(rawQstashUrl))
-    console.log('[DEBUG] QSTASH_URL char codes:', rawQstashUrl ? Array.from(rawQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' ') : 'undefined')
-    console.log('[DEBUG] QSTASH_URL length:', rawQstashUrl?.length)
-    
-    // Clean QSTASH_URL using the same utility function
-    const cleanedQstashUrl = cleanEnvVar(rawQstashUrl) || 'https://qstash.upstash.io/v2/publish'
-    console.log('[DEBUG] QSTASH_URL after cleaning:', JSON.stringify(cleanedQstashUrl))
-    console.log('[DEBUG] QSTASH_URL cleaned char codes:', Array.from(cleanedQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
-    console.log('[DEBUG] QSTASH_URL cleaned length:', cleanedQstashUrl.length)
-
-    // TEMPORARY DEBUG: Log full QSTASH_TOKEN
-    // WARNING: This is for debugging only and MUST be reverted to partial logging after testing
-    console.log('[DEBUG][TEMPORARY_FULL_TOKEN_LOG] QSTASH_TOKEN from env (MUST REVERT):', QSTASH_TOKEN)
-
     // Debug logging
     console.log('QStash configuration:', {
-      qstashUrl: cleanedQstashUrl,
+      qstashUrl: QSTASH_URL,
       functionUrl: FUNCTION_URL,
-      hasToken: !!QSTASH_TOKEN,
+      hasToken: !!cleanedQstashToken,
       hasSigningKey: !!QSTASH_CURRENT_SIGNING_KEY
     })
 
-    if (!QSTASH_TOKEN || !FUNCTION_URL || !QSTASH_CURRENT_SIGNING_KEY) {
+    if (!cleanedQstashToken || !FUNCTION_URL || !QSTASH_CURRENT_SIGNING_KEY) {
       console.error('[initiate-duffel-search] Missing QStash env vars', {
-        hasToken: !!QSTASH_TOKEN,
+        hasToken: !!cleanedQstashToken,
         hasFunctionUrl: !!FUNCTION_URL,
         hasSigningKey: !!QSTASH_CURRENT_SIGNING_KEY
       })
@@ -151,7 +128,7 @@ serve(async (req: Request) => {
     }
 
     // Extra debug: Log the QStash token (first 6 and last 4 chars for security)
-    console.log('[initiate-duffel-search] QStash token (partial):', QSTASH_TOKEN ? QSTASH_TOKEN.slice(0,6) + '...' + QSTASH_TOKEN.slice(-4) : 'undefined');
+    console.log('[initiate-duffel-search] QStash token (partial):', cleanedQstashToken ? cleanedQstashToken.slice(0,6) + '...' + cleanedQstashToken.slice(-4) : 'undefined');
 
     // Debug log FUNCTION_URL and QStash payload
     console.log('[initiate-duffel-search] FUNCTION_URL:', FUNCTION_URL);
@@ -231,18 +208,18 @@ serve(async (req: Request) => {
 
     // Construct and log curl command for debugging
     const curlCommand = `curl -X POST \\
-      -H "Authorization: Bearer ${QSTASH_TOKEN}" \\
+      -H "Authorization: Bearer ${cleanedQstashToken}" \\
       -H "Content-Type: application/json" \\
       -d '${JSON.stringify(qstashPayload)}' \\
-      "${cleanedQstashUrl}"`
+      "${QSTASH_URL}"`
     console.log('[DEBUG] Equivalent curl command:', curlCommand)
 
     let qstashRes
     try {
-      qstashRes = await fetch(cleanedQstashUrl, {  // Use cleaned URL here
+      qstashRes = await fetch(QSTASH_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${QSTASH_TOKEN}`,  // Use cleaned token here
+          'Authorization': `Bearer ${cleanedQstashToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(qstashPayload),
