@@ -32,6 +32,16 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+// Utility function to thoroughly clean environment variables
+function cleanEnvVar(value: string | undefined): string {
+  if (!value) return '';
+  return value
+    .replace(/\s+/g, '')  // Remove all whitespace
+    .replace(/[\r\n]+/g, '')  // Remove all newlines
+    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
+    .trim();  // Final trim
+}
+
 // This function is now PUBLIC: no authentication required
 serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -40,6 +50,12 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Log critical environment variables
+    const qstashUrl = Deno.env.get('QSTASH_URL')
+    const qstashToken = Deno.env.get('QSTASH_TOKEN')
+    console.log('[DEBUG] QSTASH_URL from env:', qstashUrl)
+    console.log('[DEBUG] QSTASH_TOKEN (partial) from env:', qstashToken ? `${qstashToken.slice(0,6)}...${qstashToken.slice(-4)}` : 'undefined')
+
     console.log('[initiate-duffel-search] Request:', {
       method: req.method,
       headers: Object.fromEntries(req.headers.entries()),
@@ -61,13 +77,40 @@ serve(async (req: Request) => {
 
     // Publish message to QStash using direct fetch
     const QSTASH_URL = 'https://qstash.upstash.io/v2/publish'
-    const QSTASH_TOKEN = Deno.env.get('QSTASH_TOKEN') ?? ''
-    const FUNCTION_URL = (Deno.env.get('FUNCTION_URL') ?? '').replace(/^"|"$/g, '') // Strip any surrounding quotes
-    const QSTASH_CURRENT_SIGNING_KEY = Deno.env.get('QSTASH_CURRENT_SIGNING_KEY') ?? ''
+    const rawQstashToken = Deno.env.get('QSTASH_TOKEN') ?? ''
+    const FUNCTION_URL = cleanEnvVar(Deno.env.get('FUNCTION_URL'))
+    const QSTASH_CURRENT_SIGNING_KEY = cleanEnvVar(Deno.env.get('QSTASH_CURRENT_SIGNING_KEY'))
+
+    // Debug logging for QSTASH_TOKEN
+    console.log('[DEBUG] QSTASH_TOKEN raw value:', JSON.stringify(rawQstashToken))
+    console.log('[DEBUG] QSTASH_TOKEN char codes:', rawQstashToken ? Array.from(rawQstashToken).map(c => `${c}:${c.charCodeAt(0)}`).join(' ') : 'undefined')
+    console.log('[DEBUG] QSTASH_TOKEN length:', rawQstashToken?.length)
+    
+    // Clean QSTASH_TOKEN immediately after retrieval
+    const QSTASH_TOKEN = cleanEnvVar(rawQstashToken)
+    console.log('[DEBUG] QSTASH_TOKEN after cleaning:', JSON.stringify(QSTASH_TOKEN))
+    console.log('[DEBUG] QSTASH_TOKEN cleaned char codes:', Array.from(QSTASH_TOKEN).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
+    console.log('[DEBUG] QSTASH_TOKEN cleaned length:', QSTASH_TOKEN.length)
+
+    // Debug logging for QSTASH_URL
+    const rawQstashUrl = Deno.env.get('QSTASH_URL')
+    console.log('[DEBUG] QSTASH_URL raw value:', JSON.stringify(rawQstashUrl))
+    console.log('[DEBUG] QSTASH_URL char codes:', rawQstashUrl ? Array.from(rawQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' ') : 'undefined')
+    console.log('[DEBUG] QSTASH_URL length:', rawQstashUrl?.length)
+    
+    // Clean QSTASH_URL using the same utility function
+    const cleanedQstashUrl = cleanEnvVar(rawQstashUrl) || 'https://qstash.upstash.io/v2/publish'
+    console.log('[DEBUG] QSTASH_URL after cleaning:', JSON.stringify(cleanedQstashUrl))
+    console.log('[DEBUG] QSTASH_URL cleaned char codes:', Array.from(cleanedQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' '))
+    console.log('[DEBUG] QSTASH_URL cleaned length:', cleanedQstashUrl.length)
+
+    // TEMPORARY DEBUG: Log full QSTASH_TOKEN
+    // WARNING: This is for debugging only and MUST be reverted to partial logging after testing
+    console.log('[DEBUG][TEMPORARY_FULL_TOKEN_LOG] QSTASH_TOKEN from env (MUST REVERT):', QSTASH_TOKEN)
 
     // Debug logging
     console.log('QStash configuration:', {
-      qstashUrl: QSTASH_URL,
+      qstashUrl: cleanedQstashUrl,
       functionUrl: FUNCTION_URL,
       hasToken: !!QSTASH_TOKEN,
       hasSigningKey: !!QSTASH_CURRENT_SIGNING_KEY
@@ -87,6 +130,9 @@ serve(async (req: Request) => {
 
     // Extra debug: Log the QStash token (first 6 and last 4 chars for security)
     console.log('[initiate-duffel-search] QStash token (partial):', QSTASH_TOKEN ? QSTASH_TOKEN.slice(0,6) + '...' + QSTASH_TOKEN.slice(-4) : 'undefined');
+
+    // Debug log FUNCTION_URL and QStash payload
+    console.log('[initiate-duffel-search] FUNCTION_URL:', FUNCTION_URL);
 
     // Parse and validate request body
     let body: RequestBody;
@@ -130,21 +176,51 @@ serve(async (req: Request) => {
 
     console.log('[initiate-duffel-search] Job created:', job)
 
-    // Publish message to QStash using direct fetch
+    // --- QStash URL Construction Debugging ---
+    // 1. Retrieve FUNCTION_URL
+    const rawFunctionUrl = Deno.env.get('FUNCTION_URL');
+    console.log('[initiate-duffel-search] FUNCTION_URL (raw):', JSON.stringify(rawFunctionUrl));
+
+    // 2. Clean the URL: trim whitespace and remove surrounding quotes
+    let cleanedFunctionUrl = rawFunctionUrl ? rawFunctionUrl.trim() : '';
+    cleanedFunctionUrl = cleanedFunctionUrl.replace(/^['"]+|['"]+$/g, '');
+    console.log('[initiate-duffel-search] FUNCTION_URL (cleaned):', JSON.stringify(cleanedFunctionUrl));
+
+    // 3. Construct Target URL
+    const targetQstashUrl = `${cleanedFunctionUrl}/process-duffel-job`;
+    console.log('[initiate-duffel-search] QStash target URL:', JSON.stringify(targetQstashUrl));
+
+    // 4. Log Character Codes
+    const charCodes = Array.from(targetQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' ');
+    console.log('[initiate-duffel-search] QStash target URL char codes:', charCodes);
+
+    // 5. Use Cleaned and Logged URL in Payload
     const qstashPayload = {
-      url: `${FUNCTION_URL}/process-duffel-job`,
+      url: targetQstashUrl,
       body: { job_id: job.id },
       headers: {
-        'Authorization': `Bearer ${QSTASH_CURRENT_SIGNING_KEY}`,
+        'Content-Type': 'application/json',
+        // Temporarily commenting out the Authorization header for testing
+        // 'Authorization': `Bearer ${QSTASH_CURRENT_SIGNING_KEY}`,
       },
-    }
+    };
+    // 6. Log Final QStash Payload
+    console.log('[initiate-duffel-search] QStash payload (FINAL DEBUG):', JSON.stringify(qstashPayload));
+
+    // Construct and log curl command for debugging
+    const curlCommand = `curl -X POST \\
+      -H "Authorization: Bearer ${QSTASH_TOKEN}" \\
+      -H "Content-Type: application/json" \\
+      -d '${JSON.stringify(qstashPayload)}' \\
+      "${cleanedQstashUrl}"`
+    console.log('[DEBUG] Equivalent curl command:', curlCommand)
 
     let qstashRes
     try {
-      qstashRes = await fetch(QSTASH_URL, {
+      qstashRes = await fetch(cleanedQstashUrl, {  // Use cleaned URL here
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${QSTASH_TOKEN}`,
+          'Authorization': `Bearer ${QSTASH_TOKEN}`,  // Use cleaned token here
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(qstashPayload),
