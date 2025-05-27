@@ -36,20 +36,23 @@ const corsHeaders = {
 function cleanEnvVar(value: string | undefined): string {
   if (!value) return '';
   
-  // First remove any surrounding quotes and escaped quotes
-  let cleaned = value
-    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
-    .replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
-    .replace(/\\n/g, '')  // Remove escaped newlines
-    .replace(/\s+/g, '')  // Remove all whitespace
-    .replace(/[\r\n]+/g, '')  // Remove all newlines
-    .trim();  // Final trim
-
-  // If the result is still wrapped in quotes, remove them
-  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
-    cleaned = cleaned.slice(1, -1);
-  }
-
+  // Convert to array of characters to inspect each one
+  const chars = Array.from(value);
+  console.log('[DEBUG] cleanEnvVar input chars:', chars.map(c => `${c}:${c.charCodeAt(0)}`).join(' '));
+  
+  // Filter out unwanted characters
+  const cleanedChars = chars.filter(c => {
+    const code = c.charCodeAt(0);
+    // Keep only printable ASCII characters (32-126) except quotes and backslashes
+    return code >= 32 && code <= 126 && c !== '"' && c !== "'" && c !== '\\';
+  });
+  
+  console.log('[DEBUG] cleanEnvVar filtered chars:', cleanedChars.map(c => `${c}:${c.charCodeAt(0)}`).join(' '));
+  
+  // Join back to string
+  const cleaned = cleanedChars.join('');
+  console.log('[DEBUG] cleanEnvVar result:', JSON.stringify(cleaned));
+  
   return cleaned;
 }
 
