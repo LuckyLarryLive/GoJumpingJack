@@ -185,25 +185,30 @@ serve(async (req: Request) => {
     cleanedFunctionUrl = cleanedFunctionUrl.replace(/^['"]+|['"]+$/g, '');
     console.log('[initiate-duffel-search] FUNCTION_URL (cleaned):', JSON.stringify(cleanedFunctionUrl));
 
-    // 3. Construct Target URL
+    // 3. Ensure URL has https:// scheme
+    if (!cleanedFunctionUrl.startsWith('http://') && !cleanedFunctionUrl.startsWith('https://')) {
+      cleanedFunctionUrl = `https://${cleanedFunctionUrl}`;
+    }
+    console.log('[initiate-duffel-search] FUNCTION_URL (with scheme):', JSON.stringify(cleanedFunctionUrl));
+
+    // 4. Construct Target URL
     const targetQstashUrl = `${cleanedFunctionUrl}/process-duffel-job`;
     console.log('[initiate-duffel-search] QStash target URL:', JSON.stringify(targetQstashUrl));
 
-    // 4. Log Character Codes
+    // 5. Log Character Codes
     const charCodes = Array.from(targetQstashUrl).map(c => `${c}:${c.charCodeAt(0)}`).join(' ');
     console.log('[initiate-duffel-search] QStash target URL char codes:', charCodes);
 
-    // 5. Use Cleaned and Logged URL in Payload
+    // 6. Use Cleaned and Logged URL in Payload
     const qstashPayload = {
       url: targetQstashUrl,
       body: { job_id: job.id },
       headers: {
         'Content-Type': 'application/json',
-        // Temporarily commenting out the Authorization header for testing
-        // 'Authorization': `Bearer ${QSTASH_CURRENT_SIGNING_KEY}`,
       },
     };
-    // 6. Log Final QStash Payload
+
+    // 7. Log Final QStash Payload
     console.log('[initiate-duffel-search] QStash payload (FINAL DEBUG):', JSON.stringify(qstashPayload));
 
     // Construct and log curl command for debugging
@@ -216,6 +221,13 @@ serve(async (req: Request) => {
 
     let qstashRes
     try {
+      console.log('[DEBUG] Making QStash request to:', QSTASH_URL)
+      console.log('[DEBUG] With payload:', JSON.stringify(qstashPayload))
+      console.log('[DEBUG] With headers:', JSON.stringify({
+        'Authorization': `Bearer ${cleanedQstashToken}`,
+        'Content-Type': 'application/json',
+      }))
+
       qstashRes = await fetch(QSTASH_URL, {
         method: 'POST',
         headers: {
@@ -224,6 +236,26 @@ serve(async (req: Request) => {
         },
         body: JSON.stringify(qstashPayload),
       })
+
+      if (!qstashRes.ok) {
+        const errorText = await qstashRes.text()
+        console.error('[initiate-duffel-search] QStash error:', errorText)
+        return new Response(JSON.stringify({ error: `Failed to publish to QStash: ${errorText}` }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 502,
+        })
+      }
+
+      return new Response(
+        JSON.stringify({
+          job_id: job.id,
+          status: 'pending',
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 202,
+        }
+      )
     } catch (err) {
       console.error('[initiate-duffel-search] QStash fetch error:', err)
       return new Response(JSON.stringify({ error: 'Failed to reach QStash' }), {
@@ -231,26 +263,6 @@ serve(async (req: Request) => {
         status: 502,
       })
     }
-
-    if (!qstashRes.ok) {
-      const errorText = await qstashRes.text()
-      console.error('[initiate-duffel-search] QStash error:', errorText)
-      return new Response(JSON.stringify({ error: `Failed to publish to QStash: ${errorText}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 502,
-      })
-    }
-
-    return new Response(
-      JSON.stringify({
-        job_id: job.id,
-        status: 'pending',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 202,
-      }
-    )
   } catch (error: unknown) {
     console.error('[initiate-duffel-search] Function error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
