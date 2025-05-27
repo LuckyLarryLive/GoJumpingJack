@@ -36,9 +36,11 @@ const corsHeaders = {
 function cleanEnvVar(value: string | undefined): string {
   if (!value) return '';
   return value
+    .replace(/\\"/g, '')  // Remove escaped quotes
+    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
     .replace(/\s+/g, '')  // Remove all whitespace
     .replace(/[\r\n]+/g, '')  // Remove all newlines
-    .replace(/^["']|["']$/g, '')  // Remove surrounding quotes
+    .replace(/\\n/g, '')  // Remove escaped newlines
     .trim();  // Final trim
 }
 
