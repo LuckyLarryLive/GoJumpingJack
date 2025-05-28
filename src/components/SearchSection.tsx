@@ -58,6 +58,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const [destinationCityNameForApi, setDestinationCityNameForApi] = useState<string | null>(null);
     const [destinationCountryCodeForApi, setDestinationCountryCodeForApi] = useState<string | null>(null);
     const [destinationRegionForApi, setDestinationRegionForApi] = useState<string | null>(null);
+    const [originSelectionType, setOriginSelectionType] = useState<'airport' | 'city' | null>(null);
+    const [originCityNameForApi, setOriginCityNameForApi] = useState<string | null>(null);
+    const [originCountryCodeForApi, setOriginCountryCodeForApi] = useState<string | null>(null);
+    const [originRegionForApi, setOriginRegionForApi] = useState<string | null>(null);
 
     // Calculate today's date for min attribute on date inputs
     const today = new Date().toISOString().split('T')[0];
@@ -85,6 +89,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             setCabinClass(initialSearchParams.cabinClass || 'economy');
             setCurrency(initialSearchParams.currency || 'USD');
             setMaxConnections(initialSearchParams.maxConnections || 0);
+            setOriginSelectionType(initialSearchParams.fromSelectionType || null);
+            setOriginCityNameForApi(initialSearchParams.fromCityNameForApi || null);
+            setOriginCountryCodeForApi(initialSearchParams.fromCountryCodeForApi || null);
+            setOriginRegionForApi(initialSearchParams.fromRegionForApi || null);
         }
     }, [initialSearchParams]);
 
@@ -179,6 +187,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         console.log('[SearchSection] From airport selected:', { airportCode, displayValue, selectionType, cityNameForApi, countryCodeForApi, regionForApi });
         setOriginAirportCode(airportCode || '');
         setOriginDisplayValue(displayValue || '');
+        setOriginSelectionType(selectionType);
+        setOriginCityNameForApi(cityNameForApi);
+        setOriginCountryCodeForApi(countryCodeForApi);
+        setOriginRegionForApi(regionForApi || null);
     }, []);
 
     // --- Handler for To Airport Selection ---
@@ -241,6 +253,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         maxConnections,
                         fromDisplayValue: originDisplayValue,
                         toDisplayValue: destinationDisplayValue,
+                        fromCityNameForApi: originCityNameForApi || undefined,
+                        fromCountryCodeForApi: originCountryCodeForApi || undefined,
+                        fromRegionForApi: originRegionForApi || undefined,
+                        fromSelectionType: originSelectionType || undefined,
                         toCityNameForApi: destinationCityNameForApi || undefined,
                         toCountryCodeForApi: destinationCountryCodeForApi || undefined,
                         toRegionForApi: destinationRegionForApi || undefined,
@@ -266,6 +282,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                 maxConnections,
                 fromDisplayValue: originDisplayValue,
                 toDisplayValue: destinationDisplayValue,
+                fromCityNameForApi: originCityNameForApi || undefined,
+                fromCountryCodeForApi: originCountryCodeForApi || undefined,
+                fromRegionForApi: originRegionForApi || undefined,
+                fromSelectionType: originSelectionType || undefined,
                 toCityNameForApi: destinationCityNameForApi || undefined,
                 toCountryCodeForApi: destinationCountryCodeForApi || undefined,
                 toRegionForApi: destinationRegionForApi || undefined,

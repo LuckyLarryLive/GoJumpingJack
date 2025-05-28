@@ -43,6 +43,10 @@ export interface SearchParamsType {
     maxConnections?: number;
     fromDisplayValue?: string;
     toDisplayValue?: string;
+    fromCityNameForApi?: string;
+    fromCountryCodeForApi?: string;
+    fromRegionForApi?: string;
+    fromSelectionType?: 'airport' | 'city' | null;
     toCityNameForApi?: string;
     toCountryCodeForApi?: string;
     toRegionForApi?: string;

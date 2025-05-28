@@ -88,13 +88,15 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return airport ? airport.city : code;
   };
 
-  // Helper function to get segment duration
+  // Helper function to get segment duration in hours/minutes using UTC
   const getSegmentDuration = (departure: string, arrival: string) => {
     const start = new Date(departure);
     const end = new Date(arrival);
-    const durationMs = end.getTime() - start.getTime();
-    const hours = Math.floor(durationMs / (1000 * 60 * 60));
-    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    let durationMs = end.getTime() - start.getTime();
+    if (durationMs < 0) durationMs = 0;
+    const totalMinutes = Math.floor(durationMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
   };
 
@@ -139,6 +141,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const departureDate = formatDate(departureAt);
   const flightPathWidth = getFlightPathWidth(departureAt, returnAt || departureAt);
 
+  // Find the origin and destination airport codes for the main card
+  const mainOriginCode = flight.outbound_segments[0]?.origin_airport;
+  const mainDestinationCode = flight.outbound_segments[flight.outbound_segments.length - 1]?.destination_airport;
+  const mainOriginName = getAirportName(mainOriginCode);
+  const mainDestinationName = getAirportName(mainDestinationCode);
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
       <div className="p-4">
@@ -146,9 +154,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-lg font-semibold">
-                  {getAirportName(originAirport)} <span className="text-gray-400">→</span> {getAirportName(destinationAirport)}
-                </div>
+                <div className="font-bold">{mainOriginName} → {mainDestinationName}</div>
                 <div className="text-sm text-gray-500">
                   {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
                 </div>
@@ -192,6 +198,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               {/* Outbound Flight */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
+                <div className="text-xs text-center text-gray-500 mb-2">{getSegmentDuration(departureAt, returnAt || departureAt)}</div>
                 {flight.outbound_segments.map((segment, index) => (
                   <div key={index} className="flex flex-col items-center mb-2">
                     <div className="flex items-center justify-center w-full">
@@ -220,6 +227,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               {flight.return_segments && flight.return_segments.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
+                  <div className="text-xs text-center text-gray-500 mb-2">{getSegmentDuration(returnAt || departureAt, returnAt || departureAt)}</div>
                   {flight.return_segments.map((segment, index) => (
                     <div key={index} className="flex flex-col items-center mb-2">
                       <div className="flex items-center justify-center w-full">

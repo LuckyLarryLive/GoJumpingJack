@@ -40,19 +40,11 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   // Fetch loading phrases from Supabase on mount
   useEffect(() => {
     async function fetchPhrases() {
-      const { data, error } = await supabase.from('loading_phrases').select('phrases');
-      if (error) {
+      const { data, error } = await supabase.from('loading_phrases').select('phrase');
+      if (error || !data) {
         setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
-      } else if (data && data.length > 0) {
-        // data is an array of objects with a 'phrases' column (which may be a string or array)
-        // If it's a single row with an array, flatten it
-        if (Array.isArray(data[0].phrases)) {
-          setPhrases(data[0].phrases);
-        } else if (typeof data[0].phrases === 'string') {
-          setPhrases([data[0].phrases]);
-        } else {
-          setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
-        }
+      } else {
+        setPhrases(data.map((row: any) => row.phrase));
       }
     }
     fetchPhrases();
@@ -241,11 +233,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   // Helper to summarize origins/destinations for display
   function getSummaryString() {
     if (!searchParams || searchParams.length === 0) return '';
-    const origins = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.originAirport)));
-    const destinations = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.destinationAirport)));
+    const first = searchParams[0];
+    let originLabel = '';
+    if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+      originLabel = first.fromCityNameForApi;
+    } else {
+      originLabel = first.originAirport;
+    }
+    let destinationLabel = '';
+    if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+      destinationLabel = first.toCityNameForApi;
+    } else {
+      destinationLabel = first.destinationAirport;
+    }
     const departureDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.departureDate)));
     const returnDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean)));
-    return `Flights from ${origins.join(', ')} to ${destinations.join(', ')}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
+    return `Flights from ${originLabel} to ${destinationLabel}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
   }
 
   useEffect(() => {
@@ -272,62 +275,77 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
     (async () => {
       try {
-        for (const params of searchParams) {
-          if (isCancelled) break;
-          
-          const flightParams = toFlightSearchParams(params);
-          // Call initiateSearch and get jobId
-          const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
-            body: { searchParams: flightParams }
-          });
-          
-          if (error) {
-            console.error('Error initiating search:', error);
-            completedJobs++;
-            if (completedJobs === totalJobs) {
-              clearTimeout(safetyTimeout);
-              setLoading(false);
-              if (allOffersMap.size === 0) {
-                setError('Failed to search for flights. Please try again.');
+        await Promise.all(
+          searchParams.map(async (params) => {
+            try {
+              if (isCancelled) return;
+              
+              const flightParams = toFlightSearchParams(params);
+              // Call initiateSearch and get jobId
+              const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
+                body: { searchParams: flightParams }
+              });
+              
+              if (error) {
+                console.error('Error initiating search:', error);
+                completedJobs++;
+                if (completedJobs === totalJobs) {
+                  clearTimeout(safetyTimeout);
+                  setLoading(false);
+                  if (allOffersMap.size === 0) {
+                    setError('Failed to search for flights. Please try again.');
+                  }
+                }
+                return;
               }
-            }
-            continue;
-          }
-          
-          if (!data?.job_id) {
-            console.error('No job ID returned from search');
-            completedJobs++;
-            if (completedJobs === totalJobs) {
-              clearTimeout(safetyTimeout);
-              setLoading(false);
-              if (allOffersMap.size === 0) {
-                setError('Failed to start flight search. Please try again.');
+              
+              if (!data?.job_id) {
+                console.error('No job ID returned from search');
+                completedJobs++;
+                if (completedJobs === totalJobs) {
+                  clearTimeout(safetyTimeout);
+                  setLoading(false);
+                  if (allOffersMap.size === 0) {
+                    setError('Failed to start flight search. Please try again.');
+                  }
+                }
+                return;
               }
-            }
-            continue;
-          }
 
-          const jobId = data.job_id;
-          // Subscribe to this job's results
-          const unsubscribe = subscribeToJob(jobId, (offers) => {
-            if (isCancelled) return;
-            for (const offer of offers) {
-              const transformedFlight = duffelOfferToFlight(offer);
-              if (transformedFlight) {
-                allOffersMap.set(offer.id, transformedFlight);
+              const jobId = data.job_id;
+              // Subscribe to this job's results
+              const unsubscribe = subscribeToJob(jobId, (offers) => {
+                if (isCancelled) return;
+                for (const offer of offers) {
+                  const transformedFlight = duffelOfferToFlight(offer);
+                  if (transformedFlight) {
+                    allOffersMap.set(offer.id, transformedFlight);
+                  }
+                }
+                setAllOffers(Array.from(allOffersMap.values()));
+                completedJobs++;
+                if (completedJobs === totalJobs) {
+                  clearTimeout(safetyTimeout);
+                  setLoading(false);
+                }
+              });
+              unsubscribers.push(unsubscribe);
+            } catch (err: any) {
+              if (err?.response?.status === 400) {
+                console.error('400 Bad Request:', err);
+                setError('There was a problem with your search. Please check your airport selections and try again.');
+              } else {
+                console.error('Error fetching flight results:', err);
+              }
+              completedJobs++;
+              if (completedJobs >= totalJobs && !isCancelled) {
+                setLoading(false);
               }
             }
-            setAllOffers(Array.from(allOffersMap.values()));
-            completedJobs++;
-            if (completedJobs === totalJobs) {
-              clearTimeout(safetyTimeout);
-              setLoading(false);
-            }
-          });
-          unsubscribers.push(unsubscribe);
-        }
+          })
+        );
       } catch (err) {
-        console.error('Error in search process:', err);
+        console.error('Unexpected error in fetchAll:', err);
         setError('An unexpected error occurred. Please try again.');
         setLoading(false);
       }
