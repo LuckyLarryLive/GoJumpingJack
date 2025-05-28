@@ -48,6 +48,8 @@ export function useDuffelFlightSearch() {
   useEffect(() => {
     if (!jobId) return;
 
+    console.log('[useDuffelFlightSearch] Setting up subscription for job:', jobId);
+
     const channel = supabase
       .channel(`duffel_job_${jobId}`)
       .on(
@@ -59,6 +61,8 @@ export function useDuffelFlightSearch() {
           filter: `id=eq.${jobId}`,
         },
         (payload) => {
+          console.log('[useDuffelFlightSearch] Raw payload received:', payload);
+          
           const job = payload.new;
           console.log('[useDuffelFlightSearch] Received job update:', {
             jobId: job.id,
@@ -76,11 +80,36 @@ export function useDuffelFlightSearch() {
 
           switch (job.status) {
             case 'processing':
+              console.log('[useDuffelFlightSearch] Job is processing');
               setStatus('processing');
               break;
             case 'completed':
+              console.log('[useDuffelFlightSearch] Job completed, processing results');
               setStatus('complete');
-              if (job.results_data?.data) {
+              
+              // Check if results_data exists and is an object
+              if (!job.results_data || typeof job.results_data !== 'object') {
+                console.error('[useDuffelFlightSearch] Invalid results_data:', {
+                  type: typeof job.results_data,
+                  value: job.results_data
+                });
+                setError('Invalid results data received');
+                setStatus('error');
+                return;
+              }
+
+              // Check if data array exists
+              if (!Array.isArray(job.results_data.data)) {
+                console.error('[useDuffelFlightSearch] Invalid data array:', {
+                  type: typeof job.results_data.data,
+                  value: job.results_data.data
+                });
+                setError('Invalid offers data received');
+                setStatus('error');
+                return;
+              }
+
+              if (job.results_data.data.length > 0) {
                 console.log('[useDuffelFlightSearch] Setting offers:', {
                   count: job.results_data.data.length,
                   firstOffer: job.results_data.data[0] ? {
@@ -92,17 +121,13 @@ export function useDuffelFlightSearch() {
                 });
                 setOffers(job.results_data.data);
               } else {
-                console.error('[useDuffelFlightSearch] No offers data in completed job:', {
-                  jobId: job.id,
-                  status: job.status,
-                  hasResultsData: !!job.results_data,
-                  resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
-                  rawResultsData: job.results_data
-                });
+                console.warn('[useDuffelFlightSearch] No offers found in results');
                 setError('No flight offers found');
                 setStatus('error');
               }
-              if (job.results_data?.meta) {
+
+              // Process meta data
+              if (job.results_data.meta && typeof job.results_data.meta === 'object') {
                 console.log('[useDuffelFlightSearch] Setting meta:', {
                   metaKeys: Object.keys(job.results_data.meta),
                   metaData: job.results_data.meta
@@ -113,15 +138,22 @@ export function useDuffelFlightSearch() {
               }
               break;
             case 'failed':
+              console.log('[useDuffelFlightSearch] Job failed:', job.error_message);
               setStatus('error');
               setError(job.error_message || 'Search failed');
+              break;
+            default:
+              console.warn('[useDuffelFlightSearch] Unknown job status:', job.status);
               break;
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[useDuffelFlightSearch] Subscription status:', status);
+      });
 
     return () => {
+      console.log('[useDuffelFlightSearch] Cleaning up subscription for job:', jobId);
       supabase.removeChannel(channel);
     };
   }, [jobId]);
