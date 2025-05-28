@@ -101,6 +101,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     let isCancelled = false;
     let unsubscribers: (() => void)[] = [];
     const allOffersMap = new Map();
+    let completedJobs = 0;
+    const totalJobs = searchParams.length;
+
+    // Add a safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+      if (isCancelled) return;
+      setLoading(false);
+      console.warn('Search timed out after 30 seconds');
+    }, 30000);
 
     (async () => {
       for (const params of searchParams) {
@@ -109,7 +118,14 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
           body: { searchParams: flightParams }
         });
-        if (error || !data?.job_id) continue;
+        if (error || !data?.job_id) {
+          completedJobs++;
+          if (completedJobs === totalJobs) {
+            clearTimeout(safetyTimeout);
+            setLoading(false);
+          }
+          continue;
+        }
         const jobId = data.job_id;
         // Subscribe to this job's results
         const unsubscribe = subscribeToJob(jobId, (offers) => {
@@ -118,14 +134,19 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             allOffersMap.set(offer.id, offer);
           }
           setAllOffers(Array.from(allOffersMap.values()));
+          completedJobs++;
+          if (completedJobs === totalJobs) {
+            clearTimeout(safetyTimeout);
+            setLoading(false);
+          }
         });
         unsubscribers.push(unsubscribe);
       }
-      setLoading(false);
     })();
 
     return () => {
       isCancelled = true;
+      clearTimeout(safetyTimeout);
       unsubscribers.forEach((unsub) => unsub());
     };
   }, [searchParams]);
