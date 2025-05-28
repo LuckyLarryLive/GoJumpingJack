@@ -18,6 +18,8 @@ interface FlightResultsProps {
   currentPage?: number;
 }
 
+const JACK_VIDEO_PATH = '/Jack_Finding_Flights.mp4';
+
 // --- Flight Results Component ---
 const FlightResults: React.FC<FlightResultsProps> = ({ 
   searchParams, 
@@ -30,6 +32,36 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [allOffers, setAllOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // --- Loading phrases state ---
+  const [phrases, setPhrases] = useState<string[]>([]);
+  const [phraseIndex, setPhraseIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Fetch loading phrases from Supabase on mount
+  useEffect(() => {
+    async function fetchPhrases() {
+      const { data, error } = await supabase.from('loading_phrases').select('phrases');
+      if (error) {
+        setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
+      } else if (data && data.length > 0) {
+        // data is an array of objects with a 'phrases' column (which may be a string or array)
+        // If it's a single row with an array, flatten it
+        if (Array.isArray(data[0].phrases)) {
+          setPhrases(data[0].phrases);
+        } else if (typeof data[0].phrases === 'string') {
+          setPhrases([data[0].phrases]);
+        } else {
+          setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
+        }
+      }
+    }
+    fetchPhrases();
+  }, []);
+
+  // Handler for when the video loops
+  const handleVideoLoop = () => {
+    setPhraseIndex((prev) => (phrases.length > 0 ? (prev + 1) % phrases.length : 0));
+  };
 
   // Helper: Filter valid flights (not partial, has outbound segments)
   function filterValidFlights(flights: any[]): Flight[] {
@@ -93,64 +125,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return () => supabase.removeChannel(channel);
   }
 
-  useEffect(() => {
-    if (!searchParams || searchParams.length === 0) return;
-    setLoading(true);
-    setError(null);
-    setAllOffers([]);
-    let isCancelled = false;
-    let unsubscribers: (() => void)[] = [];
-    const allOffersMap = new Map();
-    let completedJobs = 0;
-    const totalJobs = searchParams.length;
-
-    // Add a safety timeout to prevent infinite loading
-    const safetyTimeout = setTimeout(() => {
-      if (isCancelled) return;
-      setLoading(false);
-      console.warn('Search timed out after 30 seconds');
-    }, 30000);
-
-    (async () => {
-      for (const params of searchParams) {
-        const flightParams = toFlightSearchParams(params);
-        // Call initiateSearch and get jobId
-        const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
-          body: { searchParams: flightParams }
-        });
-        if (error || !data?.job_id) {
-          completedJobs++;
-          if (completedJobs === totalJobs) {
-            clearTimeout(safetyTimeout);
-            setLoading(false);
-          }
-          continue;
-        }
-        const jobId = data.job_id;
-        // Subscribe to this job's results
-        const unsubscribe = subscribeToJob(jobId, (offers) => {
-          if (isCancelled) return;
-          for (const offer of offers) {
-            allOffersMap.set(offer.id, offer);
-          }
-          setAllOffers(Array.from(allOffersMap.values()));
-          completedJobs++;
-          if (completedJobs === totalJobs) {
-            clearTimeout(safetyTimeout);
-            setLoading(false);
-          }
-        });
-        unsubscribers.push(unsubscribe);
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(safetyTimeout);
-      unsubscribers.forEach((unsub) => unsub());
-    };
-  }, [searchParams]);
-
   // Helper: Get the most common or lowest cabin class from all segments
   function deriveCabinClass(slices: any[]): string {
     const allCabins: string[] = [];
@@ -173,98 +147,45 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   }
 
   // Helper: Transform Duffel offer to Flight shape
-  function duffelOfferToFlight(offer: any): Flight {
-    // Detailed logging of the offer structure
-    console.log('=== Detailed Offer Analysis ===');
-    console.log('Offer ID:', offer.id);
-    console.log('Airline:', offer.owner?.name);
-    console.log('Price:', offer.total_amount, offer.total_currency);
-    console.log('Cabin Class:', offer.cabin_class);
-    
-    // Log slices structure
-    console.log('Slices:', offer.slices);
-    if (offer.slices && offer.slices.length > 0) {
-      offer.slices.forEach((slice: any, idx: number) => {
-        console.log(`\nSlice ${idx} Details:`, {
-          origin: slice.origin,
-          destination: slice.destination,
-          segments: slice.segments,
-          fare_brand_name: slice.fare_brand_name,
-          duration: slice.duration
-        });
-        
-        // Log segments if they exist
-        if (slice.segments && slice.segments.length > 0) {
-          slice.segments.forEach((segment: any, segIdx: number) => {
-            // Log the complete segment object
-            console.log(`\nComplete Segment ${segIdx}:`, JSON.stringify(segment, null, 2));
-            
-            // Log specific fields we're interested in
-            console.log(`\nSegment ${segIdx} Key Fields:`, {
-              origin: segment.origin,
-              destination: segment.destination,
-              departure: segment.departing_at || segment.departure,  // Try both possible field names
-              arrival: segment.arriving_at || segment.arrival,       // Try both possible field names
-              duration: segment.duration,
-              operating_carrier: segment.operating_carrier,
-              marketing_carrier: segment.marketing_carrier,
-              aircraft: segment.aircraft,
-              flight_number: segment.flight_number
-            });
-          });
-        } else {
-          console.log('No segments found in this slice');
-        }
+  function duffelOfferToFlight(offer: any): Flight | null {
+    try {
+      // Defensive: check for required fields
+      if (!offer?.slices?.[0]?.segments?.[0]) {
+        console.warn('Skipping offer with missing segments:', offer);
+        return null;
+      }
+
+      const outboundSegments = offer.slices[0].segments || [];
+      const returnSegments = offer.slices[1]?.segments || [];
+      const flightCabinClass = deriveCabinClass(offer.slices || []);
+
+      // Helper function to create a segment with proper field names
+      const createSegment = (segment: any, slice: any) => ({
+        origin_airport: segment.origin?.iata_code || '',
+        destination_airport: segment.destination?.iata_code || '',
+        departure_at: segment.departing_at || '',
+        arrival_at: segment.arriving_at || '',
+        duration: segment.duration || '',
+        airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
+        flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+        aircraft: segment.aircraft || '',
+        cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
       });
-    } else {
-      console.log('No slices found in this offer');
+
+      return {
+        airline: offer.owner?.name || 'Unknown',
+        price: Number(offer.total_amount),
+        link: offer.id,
+        stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
+        cabin_class: flightCabinClass,
+        currency: offer.total_currency || 'USD',
+        outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
+        return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1]))
+      };
+    } catch (err) {
+      console.error('Error transforming Duffel offer:', err);
+      return null;
     }
-    console.log('=== End Offer Analysis ===\n');
-
-    // Defensive: check for slices and segments
-    const outboundSegments = offer.slices?.[0]?.segments || [];
-    const returnSegments = offer.slices?.[1]?.segments || [];
-    const flightCabinClass = deriveCabinClass(offer.slices || []);
-
-    // Helper function to create a segment with proper field names
-    const createSegment = (segment: any, slice: any) => ({
-      origin_airport: segment.origin?.iata_code || '',
-      destination_airport: segment.destination?.iata_code || '',
-      departure_at: segment.departing_at || '',
-      arrival_at: segment.arriving_at || '',
-      duration: segment.duration || '',
-      airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
-      flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
-      aircraft: segment.aircraft || '',
-      cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
-    });
-
-    // Log what we're using for the flight card
-    console.log('Data being used for FlightCard:', {
-      airline: offer.owner?.name || 'Unknown',
-      price: Number(offer.total_amount),
-      stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
-      cabin_class: flightCabinClass,
-      outbound_segments_count: outboundSegments.length,
-      return_segments_count: returnSegments.length,
-      outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
-      return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1]))
-    });
-
-    return {
-      airline: offer.owner?.name || 'Unknown',
-      price: Number(offer.total_amount),
-      link: offer.id,
-      stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
-      cabin_class: flightCabinClass,
-      currency: offer.total_currency || 'USD',
-      outbound_segments: outboundSegments.map((seg: any) => 
-        createSegment(seg, offer.slices[0])
-      ),
-      return_segments: returnSegments.map((seg: any) => 
-        createSegment(seg, offer.slices[1])
-      ),
-    };
   }
 
   // --- Helper function to build the results page link ---
@@ -287,12 +208,27 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     if (!searchParams || searchParams.length === 0) return;
     const params = new URLSearchParams();
     const first = searchParams[0];
-    if (first.originAirport) params.append('originAirport', first.originAirport);
-    if (first.destinationAirport) params.append('destinationAirport', first.destinationAirport);
-    if (first.departureDate) params.append('departureDate', first.departureDate);
-    if (first.returnDate) params.append('returnDate', first.returnDate);
-    if (first.adults) params.append('adults', first.adults.toString());
-    if (first.cabinClass) params.append('cabinClass', first.cabinClass);
+    
+    // Use the full airport codes string for city searches
+    if (first.originAirport) {
+      params.append('originAirport', first.originAirport);
+    }
+    if (first.destinationAirport) {
+      params.append('destinationAirport', first.destinationAirport);
+    }
+    if (first.departureDate) {
+      params.append('departureDate', first.departureDate);
+    }
+    if (first.returnDate) {
+      params.append('returnDate', first.returnDate);
+    }
+    if (first.adults) {
+      params.append('adults', first.adults.toString());
+    }
+    if (first.cabinClass) {
+      params.append('cabinClass', first.cabinClass);
+    }
+    
     router.push(`/flights?${params.toString()}`);
   };
 
@@ -312,14 +248,119 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return `Flights from ${origins.join(', ')} to ${destinations.join(', ')}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
   }
 
+  useEffect(() => {
+    if (!searchParams || searchParams.length === 0) return;
+    setLoading(true);
+    setError(null);
+    setAllOffers([]);
+    let isCancelled = false;
+    let unsubscribers: (() => void)[] = [];
+    const allOffersMap = new Map();
+    let completedJobs = 0;
+    const totalJobs = searchParams.length;
+
+    // Increase timeout to 60 seconds for multiple airport searches
+    const safetyTimeout = setTimeout(() => {
+      if (isCancelled) return;
+      setLoading(false);
+      if (allOffersMap.size === 0) {
+        setError('Search timed out. Please try again with fewer airports or different dates.');
+      } else {
+        console.warn('Search partially completed - some results may be missing');
+      }
+    }, 60000);
+
+    (async () => {
+      try {
+        for (const params of searchParams) {
+          if (isCancelled) break;
+          
+          const flightParams = toFlightSearchParams(params);
+          // Call initiateSearch and get jobId
+          const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
+            body: { searchParams: flightParams }
+          });
+          
+          if (error) {
+            console.error('Error initiating search:', error);
+            completedJobs++;
+            if (completedJobs === totalJobs) {
+              clearTimeout(safetyTimeout);
+              setLoading(false);
+              if (allOffersMap.size === 0) {
+                setError('Failed to search for flights. Please try again.');
+              }
+            }
+            continue;
+          }
+          
+          if (!data?.job_id) {
+            console.error('No job ID returned from search');
+            completedJobs++;
+            if (completedJobs === totalJobs) {
+              clearTimeout(safetyTimeout);
+              setLoading(false);
+              if (allOffersMap.size === 0) {
+                setError('Failed to start flight search. Please try again.');
+              }
+            }
+            continue;
+          }
+
+          const jobId = data.job_id;
+          // Subscribe to this job's results
+          const unsubscribe = subscribeToJob(jobId, (offers) => {
+            if (isCancelled) return;
+            for (const offer of offers) {
+              const transformedFlight = duffelOfferToFlight(offer);
+              if (transformedFlight) {
+                allOffersMap.set(offer.id, transformedFlight);
+              }
+            }
+            setAllOffers(Array.from(allOffersMap.values()));
+            completedJobs++;
+            if (completedJobs === totalJobs) {
+              clearTimeout(safetyTimeout);
+              setLoading(false);
+            }
+          });
+          unsubscribers.push(unsubscribe);
+        }
+      } catch (err) {
+        console.error('Error in search process:', err);
+        setError('An unexpected error occurred. Please try again.');
+        setLoading(false);
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(safetyTimeout);
+      unsubscribers.forEach((unsub) => unsub());
+    };
+  }, [searchParams]);
+
   // Render logic (reuse existing error/loading/empty states)
   if (loading) {
     return (
       <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
-        <div className="container mx-auto px-4 text-center">
-          <div className="inline-flex items-center justify-center gap-2 text-gray-600">
-            <div className="h-6 w-6 animate-spin rounded-full border-4 border-t-blue-600 border-gray-300"></div>
-            <span>Loading flight deals...</span>
+        <div className="container mx-auto px-4 text-center flex flex-col items-center justify-center">
+          <video
+            ref={videoRef}
+            src={JACK_VIDEO_PATH}
+            width={320}
+            height={180}
+            autoPlay
+            loop
+            muted
+            playsInline
+            onEnded={handleVideoLoop}
+            onPlay={() => setPhraseIndex(0)}
+            className="rounded-lg shadow-lg mb-4"
+            style={{ maxWidth: 400 }}
+          />
+          <div className="text-lg font-semibold text-blue-700 min-h-[2.5rem]">
+            {phrases.length > 0 ? phrases[phraseIndex] : 'Finding the best flights...'}
           </div>
         </div>
       </section>
