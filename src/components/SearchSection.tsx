@@ -343,11 +343,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 <div className="flex items-center gap-4">
                                     <div>
                                         <span className="text-sm text-gray-500">From</span>
-                                        <p className="font-medium">{originAirportCode}</p>
+                                        <p className="font-medium">{originSelectionType === 'city' && originCityNameForApi ? originCityNameForApi : originAirportCode}</p>
                                     </div>
                                     <div>
                                         <span className="text-sm text-gray-500">To</span>
-                                        <p className="font-medium">{destinationAirportCode}</p>
+                                        <p className="font-medium">{destinationSelectionType === 'city' && destinationCityNameForApi ? destinationCityNameForApi : destinationAirportCode}</p>
                                     </div>
                                     <div>
                                         <span className="text-sm text-gray-500">Dates</span>

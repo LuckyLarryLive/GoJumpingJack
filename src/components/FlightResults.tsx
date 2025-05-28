@@ -41,7 +41,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   useEffect(() => {
     async function fetchPhrases() {
       const { data, error } = await supabase.from('loading_phrases').select('phrase');
-      if (error || !data) {
+      console.log('[FlightResults] loading_phrases data:', data, 'error:', error);
+      if (error || !data || data.length === 0) {
         setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
       } else {
         setPhrases(data.map((row: any) => row.phrase));

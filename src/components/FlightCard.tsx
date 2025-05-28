@@ -141,11 +141,23 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const departureDate = formatDate(departureAt);
   const flightPathWidth = getFlightPathWidth(departureAt, returnAt || departureAt);
 
+  // Helper function to get airport/city display name
+  const getDisplayName = (code: string) => {
+    if (!code) return '';
+    // If code is a 3-letter airport code, show airport name
+    if (code.length === 3 && code.toUpperCase() === code) {
+      const airport = airports.find((a: Airport) => a.code === code);
+      return airport ? airport.name : code;
+    }
+    // Otherwise, treat as city name
+    return code;
+  };
+
   // Find the origin and destination airport codes for the main card
   const mainOriginCode = flight.outbound_segments[0]?.origin_airport;
   const mainDestinationCode = flight.outbound_segments[flight.outbound_segments.length - 1]?.destination_airport;
-  const mainOriginName = getAirportName(mainOriginCode);
-  const mainDestinationName = getAirportName(mainDestinationCode);
+  const mainOriginName = getDisplayName(mainOriginCode);
+  const mainDestinationName = getDisplayName(mainDestinationCode);
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
@@ -154,7 +166,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="font-bold">{mainOriginName} → {mainDestinationName}</div>
+                <div className="font-bold flex items-center gap-2 max-w-[60%] truncate" title={`${mainOriginName} → ${mainDestinationName}`}>{mainOriginName} <span className="mx-1">→</span> {mainDestinationName}</div>
                 <div className="text-sm text-gray-500">
                   {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
                 </div>
