@@ -10,7 +10,7 @@ import { useDuffelFlightSearch, FlightSearchParams } from '@/hooks/useDuffelFlig
 
 // --- Component Props Interface ---
 interface FlightResultsProps {
-  searchParams?: SearchParamsType | null;
+  searchParams: SearchParamsType[];
   apiUrl?: string;
   showPagination?: boolean;
   onPageChange?: (page: number) => void;
@@ -26,6 +26,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   currentPage = 1 
 }) => {
   const router = useRouter();
+  const [allOffers, setAllOffers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Remove all local state/fetch logic for flights, isLoading, error, etc.
   // Use the Duffel async hook instead
   const {
@@ -33,7 +37,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     offers,
     meta,
     status,
-    error,
+    error: duffelError,
     fetchPage,
     jobId,
   } = useDuffelFlightSearch();
@@ -61,19 +65,60 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return code && code.length === 3 && code.toUpperCase() === code;
   }
 
-  // Main async search with fallbacks
-  useEffect(() => {
-    if (!searchParams) return;
-    const params: FlightSearchParams = {
-      origin: searchParams.originAirport,
-      destination: searchParams.destinationAirport,
-      departureDate: searchParams.departureDate,
-      returnDate: searchParams.returnDate,
-      passengers: { adults: Number(searchParams.adults) },
-      cabinClass: searchParams.cabinClass || 'economy',
+  // Helper to map SearchParamsType to FlightSearchParams
+  function toFlightSearchParams(params: SearchParamsType): FlightSearchParams {
+    return {
+      origin: params.originAirport,
+      destination: params.destinationAirport,
+      departureDate: params.departureDate,
+      returnDate: params.returnDate,
+      passengers: {
+        adults: params.adults,
+        children: params.children,
+        infants: params.infants,
+      },
+      cabinClass: params.cabinClass || 'economy',
     };
-    initiateSearch(params);
-  }, [searchParams, initiateSearch]);
+  }
+
+  useEffect(() => {
+    if (!searchParams || searchParams.length === 0) return;
+    setLoading(true);
+    setError(null);
+    setAllOffers([]);
+
+    let isCancelled = false;
+    const fetchAll = async () => {
+      try {
+        const allResults: any[] = [];
+        await Promise.all(
+          searchParams.map(async (params) => {
+            try {
+              const flightParams = toFlightSearchParams(params);
+              const result = await initiateSearch(flightParams); // This should return offers
+              if (result && Array.isArray(result)) {
+                allResults.push(...result);
+              }
+            } catch (err: any) {
+              // Optionally handle per-search error
+              console.error('Error fetching offers for params', params, err);
+            }
+          })
+        );
+        if (!isCancelled) {
+          // Deduplicate by offer id
+          const deduped = Array.from(new Map(allResults.map(o => [o.id, o])).values());
+          setAllOffers(deduped);
+        }
+      } catch (err: any) {
+        if (!isCancelled) setError('Failed to fetch flight results.');
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    };
+    fetchAll();
+    return () => { isCancelled = true; };
+  }, [searchParams]);
 
   // Helper: Get the most common or lowest cabin class from all segments
   function deriveCabinClass(slices: any[]): string {
@@ -220,10 +265,20 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   };
 
   // Filtering, sorting, and pagination logic (client-side)
-  const sortedFlights = Array.isArray(offers) ? [...offers].sort((a, b) => a.price - b.price) : [];
+  const sortedFlights = Array.isArray(allOffers) ? [...allOffers].sort((a, b) => a.price - b.price) : [];
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalResults = sortedFlights.length;
   const totalPages = Math.ceil(totalResults / 10);
+
+  // Helper to summarize origins/destinations for display
+  function getSummaryString() {
+    if (!searchParams || searchParams.length === 0) return '';
+    const origins = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.originAirport)));
+    const destinations = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.destinationAirport)));
+    const departureDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.departureDate)));
+    const returnDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean)));
+    return `Flights from ${origins.join(', ')} to ${destinations.join(', ')}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
+  }
 
   // Render logic (reuse existing error/loading/empty states)
   if (status === 'searching' || status === 'pending' || status === 'processing') {
@@ -253,7 +308,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   if (!searchParams) {
     return null;
   }
-  if (offers.length === 0) {
+  if (allOffers.length === 0) {
     return (
       <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
         <div className="container mx-auto px-4">

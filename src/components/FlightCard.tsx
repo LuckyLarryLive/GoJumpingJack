@@ -82,6 +82,22 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return airport ? airport.name : code;
   };
 
+  // Helper function to get airport city from code
+  const getAirportCity = (code: string) => {
+    const airport = airports.find((a: Airport) => a.code === code);
+    return airport ? airport.city : code;
+  };
+
+  // Helper function to get segment duration
+  const getSegmentDuration = (departure: string, arrival: string) => {
+    const start = new Date(departure);
+    const end = new Date(arrival);
+    const durationMs = end.getTime() - start.getTime();
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
+
   const getCabinClassLabel = (cabinClass: string) => {
     const labels: { [key: string]: string } = {
       'economy': 'Economy',
@@ -131,7 +147,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
             <div className="flex items-center justify-between mb-2">
               <div>
                 <div className="text-lg font-semibold">
-                  {getAirportName(originAirport)} → {getAirportName(destinationAirport)}
+                  {getAirportName(originAirport)} <span className="text-gray-400">→</span> {getAirportName(destinationAirport)}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
                 </div>
                 <div className="text-sm text-gray-600">
                   {formatDate(departureAt)} at {formatTime(departureAt)}
@@ -142,7 +161,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               </div>
               <div className="text-right">
                 <div className="text-xl font-bold text-blue-600">
-                  {flight.currency === 'USD' ? '$' : flight.currency} {flight.price.toLocaleString()}
+                  {flight.currency === 'USD' ? '$' : flight.currency} {flight.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className="text-sm text-gray-600">
                   {flight.airline} • {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}
@@ -174,22 +193,24 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
                 {flight.outbound_segments.map((segment, index) => (
-                  <div key={index} className="flex items-center space-x-4 mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-center">
-                        <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
-                        <div className="flex-1 px-4">
-                          <div className="h-0.5 bg-gray-300 relative">
-                            <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                            <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                          </div>
+                  <div key={index} className="flex flex-col items-center mb-2">
+                    <div className="flex items-center justify-center w-full">
+                      <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
+                      <div className="flex-1 px-4 relative">
+                        <div className="h-0.5 bg-gray-300 relative">
+                          <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                          <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
                         </div>
-                        <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                        <div className="absolute left-1/2 -top-6 -translate-x-1/2 text-xs text-gray-500 bg-white px-2 rounded shadow">
+                          {getSegmentDuration(segment.departure_at, segment.arrival_at)}
+                        </div>
                       </div>
-                      <div className="flex justify-center text-xs text-gray-500 mt-1">
-                        <span className="mx-2">{segment.origin_airport}</span>
-                        <span className="mx-2">{segment.destination_airport}</span>
-                      </div>
+                      <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                    </div>
+                    <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
+                      <span className="mx-2">{segment.origin_airport}</span>
+                      <span className="mx-1">✈️</span>
+                      <span className="mx-2">{segment.destination_airport}</span>
                     </div>
                   </div>
                 ))}
@@ -200,22 +221,24 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
                   {flight.return_segments.map((segment, index) => (
-                    <div key={index} className="flex items-center space-x-4 mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-center">
-                          <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
-                          <div className="flex-1 px-4">
-                            <div className="h-0.5 bg-gray-300 relative">
-                              <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                              <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                            </div>
+                    <div key={index} className="flex flex-col items-center mb-2">
+                      <div className="flex items-center justify-center w-full">
+                        <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
+                        <div className="flex-1 px-4 relative">
+                          <div className="h-0.5 bg-gray-300 relative">
+                            <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                            <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
                           </div>
-                          <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                          <div className="absolute left-1/2 -top-6 -translate-x-1/2 text-xs text-gray-500 bg-white px-2 rounded shadow">
+                            {getSegmentDuration(segment.departure_at, segment.arrival_at)}
+                          </div>
                         </div>
-                        <div className="flex justify-center text-xs text-gray-500 mt-1">
-                          <span className="mx-2">{segment.origin_airport}</span>
-                          <span className="mx-2">{segment.destination_airport}</span>
-                        </div>
+                        <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                      </div>
+                      <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
+                        <span className="mx-2">{segment.origin_airport}</span>
+                        <span className="mx-1">✈️</span>
+                        <span className="mx-2">{segment.destination_airport}</span>
                       </div>
                     </div>
                   ))}

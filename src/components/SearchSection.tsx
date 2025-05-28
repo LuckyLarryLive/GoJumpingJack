@@ -25,7 +25,7 @@ const DUFFEL_CONSTRAINTS = {
 
 // --- Component Props Interface ---
 interface SearchSectionProps {
-    onSearchSubmit: (searchParams: SearchParamsType) => void;
+    onSearchSubmit: (searchParams: SearchParamsType[]) => void;
     initialSearchParams?: SearchParamsType;
 }
 
@@ -278,7 +278,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         }
 
         // Call onSearchSubmit with the list of search params
-        searchParamsList.forEach(params => onSearchSubmit(params));
+        onSearchSubmit(searchParamsList);
         setIsMinimized(true);
     };
 

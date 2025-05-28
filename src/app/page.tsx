@@ -25,8 +25,8 @@ export default function HomePage() {
     cabinClass: 'economy',
   };
   // State to hold the current search parameters, passed between SearchSection and FlightResults
-  // It's null initially, meaning no search has been performed yet.
-  const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
+  // It's now an array, meaning multiple searches can be performed at once.
+  const [searchParamsList, setSearchParamsList] = useState<SearchParamsType[]>([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -34,26 +34,21 @@ export default function HomePage() {
 
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.
-  const handleSearchSubmit = (params: SearchParamsType) => {
-      console.log("HomePage received search params:", params);
-      // Update the state with the new search parameters
-      setSearchParams(params);
+  const handleSearchSubmit = (paramsList: SearchParamsType[]) => {
+      console.log("HomePage received search params list:", paramsList);
+      // Update the state with the new search parameters array
+      setSearchParamsList(paramsList);
 
       // Scroll the flight results section into view smoothly after submission.
-      // Use a small delay to allow the DOM to update if FlightResults wasn't rendered before.
       setTimeout(() => {
-        const resultsElement = document.getElementById('flight-results'); // ID set on FlightResults section
-        const searchElement = document.getElementById('search');      // ID set on SearchSection
-
+        const resultsElement = document.getElementById('flight-results');
+        const searchElement = document.getElementById('search');
         if (resultsElement) {
-            // If FlightResults section exists, scroll to it
             resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (searchElement) {
-            // Fallback: if results aren't there yet (e.g., maybe no results found), scroll to search
             searchElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        // If neither exists, no scroll happens (shouldn't occur in normal flow)
-      }, 50); // Short delay (50ms) - adjust if needed
+      }, 50);
   };
 
   // Render the sections of the homepage
@@ -64,12 +59,12 @@ export default function HomePage() {
           {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
           <SearchSection
                onSearchSubmit={handleSearchSubmit}
-               initialSearchParams={searchParams || undefined}
+               initialSearchParams={searchParamsList[0] || defaultSearchParams}
            />
 
           {/* Flight results section - receives the current search params */}
           {/* It will fetch and display flights based on these params */}
-          <FlightResults searchParams={searchParams} />
+          <FlightResults searchParams={searchParamsList} />
 
           {/* Static content sections */}
           <TrendingDestinationsSection />
