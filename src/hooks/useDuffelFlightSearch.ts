@@ -20,7 +20,7 @@ export function useDuffelFlightSearch() {
   const [error, setError] = useState<string | null>(null);
   const duffelInitiateUrl = process.env.NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL!;
 
-  // Initiate search (no auth header, public endpoint)
+  // Initiate search using Supabase client for proper authentication
   const initiateSearch = useCallback(async (params: FlightSearchParams) => {
     setStatus('searching');
     setError(null);
@@ -29,16 +29,12 @@ export function useDuffelFlightSearch() {
     setJobId(null);
 
     try {
-      const res = await fetch(duffelInitiateUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ searchParams: params }),
+      const { data, error: supabaseError } = await supabase.functions.invoke('initiate-duffel-search', {
+        body: { searchParams: params }
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to initiate search');
+      if (supabaseError) throw new Error(supabaseError.message);
+      if (!data) throw new Error('No data received from search initiation');
 
       setJobId(data.job_id);
       setStatus('pending');
@@ -46,7 +42,7 @@ export function useDuffelFlightSearch() {
       setError(err.message);
       setStatus('error');
     }
-  }, [duffelInitiateUrl]);
+  }, []);
 
   // Subscribe to job updates
   useEffect(() => {
@@ -87,7 +83,7 @@ export function useDuffelFlightSearch() {
     };
   }, [jobId]);
 
-  // Manual pagination/sort (no auth header, public endpoint)
+  // Manual pagination/sort using Supabase client for proper authentication
   const fetchPage = useCallback(
     async (opts: { sort?: string; limit?: number; after?: string }) => {
       if (!jobId) return;
@@ -101,21 +97,17 @@ export function useDuffelFlightSearch() {
 
         if (jobError) throw jobError;
 
-        const res = await fetch(duffelInitiateUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const { data, error: supabaseError } = await supabase.functions.invoke('initiate-duffel-search', {
+          body: {
             searchParams: {
               ...job.search_params,
               ...opts,
             },
-          }),
+          }
         });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to fetch page');
+        if (supabaseError) throw new Error(supabaseError.message);
+        if (!data) throw new Error('No data received from search initiation');
 
         setJobId(data.job_id);
         setStatus('pending');
@@ -124,7 +116,7 @@ export function useDuffelFlightSearch() {
         setStatus('error');
       }
     },
-    [jobId, duffelInitiateUrl]
+    [jobId]
   );
 
   return {
