@@ -110,16 +110,48 @@ export function useDuffelFlightSearch() {
               }
 
               if (job.results_data.data.length > 0) {
-                console.log('[useDuffelFlightSearch] Setting offers:', {
-                  count: job.results_data.data.length,
-                  firstOffer: job.results_data.data[0] ? {
-                    id: job.results_data.data[0].id,
-                    total_amount: job.results_data.data[0].total_amount,
-                    total_currency: job.results_data.data[0].total_currency,
-                    slices: job.results_data.data[0].slices?.length
+                // Transform Duffel offers into Flight format
+                const transformedOffers = job.results_data.data.map((offer: any) => {
+                  const outboundSegments = offer.slices?.[0]?.segments || [];
+                  const returnSegments = offer.slices?.[1]?.segments || [];
+                  
+                  // Helper function to create a segment with proper field names
+                  const createSegment = (segment: any) => ({
+                    origin_airport: segment.origin?.iata_code || '',
+                    destination_airport: segment.destination?.iata_code || '',
+                    departure_at: segment.departing_at || '',
+                    arrival_at: segment.arriving_at || '',
+                    duration: segment.duration || '',
+                    airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
+                    flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+                    aircraft: segment.aircraft || '',
+                    cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
+                  });
+
+                  return {
+                    airline: offer.owner?.name || 'Unknown',
+                    price: Number(offer.total_amount),
+                    link: offer.id,
+                    stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
+                    cabin_class: offer.cabin_class || 'economy',
+                    currency: offer.total_currency || 'USD',
+                    outbound_segments: outboundSegments.map(createSegment),
+                    return_segments: returnSegments.map(createSegment),
+                  };
+                });
+
+                console.log('[useDuffelFlightSearch] Setting transformed offers:', {
+                  count: transformedOffers.length,
+                  firstOffer: transformedOffers[0] ? {
+                    airline: transformedOffers[0].airline,
+                    price: transformedOffers[0].price,
+                    stops: transformedOffers[0].stops,
+                    outbound_segments: transformedOffers[0].outbound_segments.length,
+                    return_segments: transformedOffers[0].return_segments.length
                   } : 'missing'
                 });
-                setOffers(job.results_data.data);
+
+                setOffers(transformedOffers);
               } else {
                 console.warn('[useDuffelFlightSearch] No offers found in results');
                 setError('No flight offers found');
