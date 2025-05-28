@@ -1,7 +1,7 @@
 // src/app/page.tsx
 'use client'; // Still required as HomePage uses useState
 
-import React, { useState } from 'react'; // Import useState
+import React, { useState, useEffect } from 'react'; // Import useState and useEffect
 
 // --- Component Imports ---
 // Import all the components extracted into the components directory
@@ -27,6 +27,10 @@ export default function HomePage() {
   // State to hold the current search parameters, passed between SearchSection and FlightResults
   // It's null initially, meaning no search has been performed yet.
   const [searchParams, setSearchParams] = useState<SearchParamsType | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.

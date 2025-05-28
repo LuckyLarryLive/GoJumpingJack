@@ -66,7 +66,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
       if (airports.length > 0) {
         formattedResults.push({
           type: 'city',
-          code: airports[0].code,
+          code: airports.map(a => a.code).join(','), // Join all airport codes with commas
           name: `${airports[0].city} - All airports (${airports.length})`,
           city: airports[0].city,
           state: airports[0].state,

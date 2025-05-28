@@ -217,32 +217,65 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             return;
         }
 
+        // Split airport codes and handle city searches
         const originAirports = originAirportCode.split(',');
         const destinationAirports = destinationAirportCode.split(',');
 
         // Prepare search params for each combination
         const searchParamsList: SearchParamsType[] = [];
-        originAirports.forEach(origin => {
-            destinationAirports.forEach(destination => {
-                const searchParams: SearchParamsType = {
-                    originAirport: origin,
-                    destinationAirport: destination,
-                    departureDate,
-                    adults,
-                    children: passengers.children || undefined,
-                    infants: passengers.infants || undefined,
-                    cabinClass,
-                    currency,
-                    maxConnections,
-                    fromDisplayValue: originDisplayValue,
-                    toDisplayValue: destinationDisplayValue
-                };
-                if (returnDate) {
-                    searchParams.returnDate = returnDate;
-                }
-                searchParamsList.push(searchParams);
+        
+        // If either origin or destination is a city (has multiple airports)
+        if (originAirports.length > 1 || destinationAirports.length > 1) {
+            // Create a search for each airport combination
+            originAirports.forEach(origin => {
+                destinationAirports.forEach(destination => {
+                    const searchParams: SearchParamsType = {
+                        originAirport: origin,
+                        destinationAirport: destination,
+                        departureDate,
+                        adults,
+                        children: passengers.children || undefined,
+                        infants: passengers.infants || undefined,
+                        cabinClass,
+                        currency,
+                        maxConnections,
+                        fromDisplayValue: originDisplayValue,
+                        toDisplayValue: destinationDisplayValue,
+                        toCityNameForApi: destinationCityNameForApi || undefined,
+                        toCountryCodeForApi: destinationCountryCodeForApi || undefined,
+                        toRegionForApi: destinationRegionForApi || undefined,
+                        toSelectionType: destinationSelectionType || undefined
+                    };
+                    if (returnDate) {
+                        searchParams.returnDate = returnDate;
+                    }
+                    searchParamsList.push(searchParams);
+                });
             });
-        });
+        } else {
+            // Single airport to single airport search
+            const searchParams: SearchParamsType = {
+                originAirport: originAirportCode,
+                destinationAirport: destinationAirportCode,
+                departureDate,
+                adults,
+                children: passengers.children || undefined,
+                infants: passengers.infants || undefined,
+                cabinClass,
+                currency,
+                maxConnections,
+                fromDisplayValue: originDisplayValue,
+                toDisplayValue: destinationDisplayValue,
+                toCityNameForApi: destinationCityNameForApi || undefined,
+                toCountryCodeForApi: destinationCountryCodeForApi || undefined,
+                toRegionForApi: destinationRegionForApi || undefined,
+                toSelectionType: destinationSelectionType || undefined
+            };
+            if (returnDate) {
+                searchParams.returnDate = returnDate;
+            }
+            searchParamsList.push(searchParams);
+        }
 
         // Call onSearchSubmit with the list of search params
         searchParamsList.forEach(params => onSearchSubmit(params));

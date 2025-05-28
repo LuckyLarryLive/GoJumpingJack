@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import Link from 'next/link'; // Link import might not be needed if only using <a> for external links
 import type { Flight } from '@/types';
 import FlightTimeline from './FlightTimeline';
+import { airports } from '@/lib/airports';
+import type { Airport } from '@/types/airport';
 
 // --- Date Formatting Utility ---
 const formatDate = (dateString: string | undefined): string => {
@@ -53,7 +55,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const returnAt = flight.return_segments?.[0]?.departure_at;
 
   // Get base URL from environment variable
-  // Provide an empty string fallback, although it should be set
   const baseUrl = process.env.NEXT_PUBLIC_FLIGHT_PROVIDER_BASE_URL || "";
 
   // Construct the full external URL using TravelPayouts base URL
@@ -73,6 +74,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  // Helper function to get airport name from code
+  const getAirportName = (code: string) => {
+    const airport = airports.find((a: Airport) => a.code === code);
+    return airport ? airport.name : code;
   };
 
   const getCabinClassLabel = (cabinClass: string) => {
@@ -117,78 +124,107 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const flightPathWidth = getFlightPathWidth(departureAt, returnAt || departureAt);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        {/* Flight Summary */}
-        <div className="flex-1">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex-1">
-              <div className="text-lg font-semibold text-gray-900">
-                {originAirport} → {destinationAirport}
-              </div>
-              <div className="text-sm text-gray-600">
-                {departureDate}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-blue-600">
-                {typeof flight.price === 'number' ? `${flight.currency} ${flight.price.toLocaleString()}` : 'N/A'}
-              </div>
-              <div className="text-sm text-gray-600">
-                {flight.cabin_class && getCabinClassLabel(flight.cabin_class)}
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Info */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-            <div>
-              <span className="font-medium">Departure:</span> {departureTime}
-            </div>
-            {returnAt && (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+      <div className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
               <div>
-                <span className="font-medium">Return:</span> {returnTime}
+                <div className="text-lg font-semibold">
+                  {getAirportName(originAirport)} → {getAirportName(destinationAirport)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {formatDate(departureAt)} at {formatTime(departureAt)}
+                  {returnAt && (
+                    <span> • Return: {formatDate(returnAt)} at {formatTime(returnAt)}</span>
+                  )}
+                </div>
               </div>
-            )}
-            <div>
-              <span className="font-medium">Duration:</span> {summaryDuration}
-            </div>
-            <div>
-              <span className="font-medium">Stops:</span> {flight.stops}
+              <div className="text-right">
+                <div className="text-xl font-bold text-blue-600">
+                  {flight.currency === 'USD' ? '$' : flight.currency} {flight.price.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {flight.airline} • {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* View Details Button */}
-          <button
-            onClick={() => setShowTimeline(!showTimeline)}
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-          >
-            {showTimeline ? 'Hide Details' : 'View Details'}
-            <span className="transform transition-transform duration-200">
-              {showTimeline ? '↑' : '↓'}
-            </span>
-          </button>
         </div>
 
-        {/* Book Button */}
-        <div className="w-full md:w-auto">
-          <a
-            href={externalFlightUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full md:w-auto px-6 py-3 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors"
+        <button
+          onClick={() => setShowTimeline(!showTimeline)}
+          className="w-full mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center"
+        >
+          {showTimeline ? 'Hide Details' : 'View Details'}
+          <svg
+            className={`ml-1 w-4 h-4 transform transition-transform ${showTimeline ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            Book Now
-          </a>
-        </div>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showTimeline && (
+          <div className="mt-4 border-t pt-4">
+            <div className="space-y-4">
+              {/* Outbound Flight */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
+                {flight.outbound_segments.map((segment, index) => (
+                  <div key={index} className="flex items-center space-x-4 mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-center">
+                        <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
+                        <div className="flex-1 px-4">
+                          <div className="h-0.5 bg-gray-300 relative">
+                            <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                            <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                          </div>
+                        </div>
+                        <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                      </div>
+                      <div className="flex justify-center text-xs text-gray-500 mt-1">
+                        <span className="mx-2">{segment.origin_airport}</span>
+                        <span className="mx-2">{segment.destination_airport}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Return Flight */}
+              {flight.return_segments && flight.return_segments.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
+                  {flight.return_segments.map((segment, index) => (
+                    <div key={index} className="flex items-center space-x-4 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-center">
+                          <div className="w-24 text-sm text-center">{formatTime(segment.departure_at)}</div>
+                          <div className="flex-1 px-4">
+                            <div className="h-0.5 bg-gray-300 relative">
+                              <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                              <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
+                            </div>
+                          </div>
+                          <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                        </div>
+                        <div className="flex justify-center text-xs text-gray-500 mt-1">
+                          <span className="mx-2">{segment.origin_airport}</span>
+                          <span className="mx-2">{segment.destination_airport}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Timeline View */}
-      {showTimeline && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <FlightTimeline flight={flight} />
-        </div>
-      )}
     </div>
   );
 };

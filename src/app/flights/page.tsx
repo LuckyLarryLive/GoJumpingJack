@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlightResults from '@/components/FlightResults';
 import { FaFilter, FaSort } from 'react-icons/fa';
@@ -15,6 +15,10 @@ function FlightsContent() {
     airlines: [] as string[],
     stops: [] as number[],
   });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Extract search parameters
   const origin = searchParams.get('originAirport');
