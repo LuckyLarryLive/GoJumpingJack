@@ -1,10 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { Duffel } from 'https://esm.sh/@duffel/api@1.0.0'
+import { Receiver } from 'https://esm.sh/@upstash/qstash@2.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, upstash-signature, upstash-timestamp',
 }
 
 serve(async (req) => {
@@ -14,10 +14,67 @@ serve(async (req) => {
   }
 
   try {
-    // Verify QStash signature
-    const signature = req.headers.get('x-qstash-signature')
+    // Log all incoming headers for debugging
+    console.log('[process-duffel-job] All incoming headers:');
+    for (const [key, value] of req.headers.entries()) {
+      console.log(`${key}: ${value}`);
+    }
+
+    // Get QStash signature and timestamp - try both lowercase and original case
+    const signature = req.headers.get('upstash-signature') || req.headers.get('Upstash-Signature');
+    let timestamp = req.headers.get('upstash-timestamp') || req.headers.get('Upstash-Timestamp');
+    
+    // If timestamp is missing, use current time as fallback
+    if (!timestamp) {
+      timestamp = Math.floor(Date.now() / 1000).toString();
+      console.log('[process-duffel-job] Using current timestamp as fallback:', timestamp);
+    }
+    
+    // Log the specific headers we're looking for
+    console.log('[process-duffel-job] QStash verification headers:', {
+      signature,
+      timestamp,
+      signatureHeaderExists: req.headers.has('upstash-signature') || req.headers.has('Upstash-Signature'),
+      timestampHeaderExists: req.headers.has('upstash-timestamp') || req.headers.has('Upstash-Timestamp'),
+      currentSigningKey: Deno.env.get('QSTASH_CURRENT_SIGNING_KEY') ? 'SET' : 'NOT SET',
+      nextSigningKey: Deno.env.get('QSTASH_NEXT_SIGNING_KEY') ? 'SET' : 'NOT SET',
+    });
+    
     if (!signature) {
-      throw new Error('Missing QStash signature')
+      throw new Error('Missing QStash signature');
+    }
+
+    // Get the raw body for signature verification
+    const rawBody = await req.text();
+    
+    // Get signing keys
+    const currentSigningKey = Deno.env.get('QSTASH_CURRENT_SIGNING_KEY');
+    const nextSigningKey = Deno.env.get('QSTASH_NEXT_SIGNING_KEY');
+    
+    if (!currentSigningKey && !nextSigningKey) {
+      throw new Error('Missing QStash signing keys');
+    }
+
+    // Create QStash receiver and verify signature
+    const receiver = new Receiver({
+      currentSigningKey,
+      nextSigningKey,
+    });
+
+    const isValid = await receiver.verify({
+      signature,
+      timestamp,
+      body: rawBody,
+    });
+
+    if (!isValid) {
+      throw new Error('Invalid QStash signature');
+    }
+
+    // Parse the verified body
+    const { job_id } = JSON.parse(rawBody);
+    if (!job_id) {
+      throw new Error('Missing job_id');
     }
 
     // Create Supabase client
@@ -25,12 +82,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
-
-    // Parse request body
-    const { job_id } = await req.json()
-    if (!job_id) {
-      throw new Error('Missing job_id')
-    }
 
     // Get job details
     const { data: job, error: jobError } = await supabaseClient
@@ -49,71 +100,203 @@ serve(async (req) => {
       .update({ status: 'processing' })
       .eq('id', job_id)
 
-    // Initialize Duffel client
-    const duffel = new Duffel({
-      token: Deno.env.get('DUFFEL_TOKEN') ?? '',
-    })
+    // Get Duffel token based on mode
+    const duffelMode = Deno.env.get('DUFFEL_MODE');
+    const duffelTestToken = Deno.env.get('DUFFEL_TEST_TOKEN');
+    const duffelLiveToken = Deno.env.get('DUFFEL_LIVE_TOKEN');
+    
+    let duffelToken: string | undefined;
+    if (duffelMode === 'live') {
+      duffelToken = duffelLiveToken;
+    } else if (duffelMode === 'test') {
+      duffelToken = duffelTestToken;
+    }
 
-    // Create offer request
-    const offerRequest = await duffel.offerRequests.create({
-      slices: [
-        {
-          origin: job.search_params.origin,
-          destination: job.search_params.destination,
-          departure_date: job.search_params.departureDate,
-          arrival_time: { from: '06:00', to: '22:00' },
-          departure_time: { from: '06:00', to: '22:00' },
-        },
-        ...(job.search_params.returnDate
-          ? [
-              {
-                origin: job.search_params.destination,
-                destination: job.search_params.origin,
-                departure_date: job.search_params.returnDate,
-                arrival_time: { from: '06:00', to: '22:00' },
-                departure_time: { from: '06:00', to: '22:00' },
-              },
-            ]
-          : []),
-      ],
-      passengers: [
-        ...Array(job.search_params.passengers.adults).fill({ type: 'adult' }),
-        ...Array(job.search_params.passengers.children || 0).fill({ type: 'child' }),
-        ...Array(job.search_params.passengers.infants || 0).fill({ type: 'infant' }),
-      ],
-      cabin_class: job.search_params.cabinClass,
-    })
+    // Log token configuration
+    console.log('[process-duffel-job] Duffel token configuration:', {
+      mode: duffelMode,
+      testTokenSet: duffelTestToken ? 'SET' : 'NOT SET',
+      liveTokenSet: duffelLiveToken ? 'SET' : 'NOT SET',
+      selectedTokenSet: duffelToken ? 'SET' : 'NOT SET',
+    });
 
-    // Get offers
-    const offers = await duffel.offers.list({
-      offer_request_id: offerRequest.data.id,
-      limit: job.search_params.limit || 15,
-      sort: job.search_params.sort || 'total_amount',
-    })
+    if (!duffelToken) {
+      throw new Error(`DUFFEL_TOKEN not set for mode: ${duffelMode}. Please ensure DUFFEL_MODE is set to 'test' or 'live' and the corresponding token is set.`);
+    }
 
-    // Update job with results
-    await supabaseClient
-      .from('duffel_jobs')
-      .update({
-        status: 'completed',
-        results_data: {
-          data: offers.data,
-          meta: offers.meta,
-        },
-      })
-      .eq('id', job_id)
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        job_id,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+    // Prepare offer request body
+    const offerRequestBody = {
+      data: {
+        cabin_class: job.search_params.cabinClass,
+        slices: [
+          {
+            origin: job.search_params.origin,
+            destination: job.search_params.destination,
+            departure_date: job.search_params.departureDate,
+            arrival_time: { from: '06:00', to: '22:00' },
+            departure_time: { from: '06:00', to: '22:00' },
+          },
+          ...(job.search_params.returnDate
+            ? [
+                {
+                  origin: job.search_params.destination,
+                  destination: job.search_params.origin,
+                  departure_date: job.search_params.returnDate,
+                  arrival_time: { from: '06:00', to: '22:00' },
+                  departure_time: { from: '06:00', to: '22:00' },
+                },
+              ]
+            : []),
+        ],
+        passengers: [
+          ...Array(job.search_params.passengers.adults).fill({ type: 'adult' }),
+          ...Array(job.search_params.passengers.children || 0).fill({ type: 'child' }),
+          ...Array(job.search_params.passengers.infants || 0).fill({ type: 'infant' }),
+        ],
       }
-    )
+    };
+
+    console.log('[process-duffel-job] Making direct fetch to Duffel. Offer request body:', JSON.stringify(offerRequestBody));
+    console.log(`[process-duffel-job] Using Duffel Token (type): ${typeof duffelToken}, Mode: ${duffelMode}`);
+
+    try {
+      // Create offer request
+      const offerRequestResponse = await fetch('https://api.duffel.com/air/offer_requests', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${duffelToken}`,
+          'Duffel-Version': 'v2',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip'
+        },
+        body: JSON.stringify(offerRequestBody)
+      });
+
+      const responseBodyText = await offerRequestResponse.text();
+      console.log(`[process-duffel-job] Duffel API status: ${offerRequestResponse.status}`);
+      console.log('[process-duffel-job] Duffel API response body (raw):', responseBodyText);
+
+      if (!offerRequestResponse.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseBodyText);
+        } catch (e) {
+          errorData = { message: "Failed to parse Duffel error response", raw: responseBodyText };
+        }
+        console.error('[process-duffel-job] Duffel API Error:', JSON.stringify(errorData));
+        
+        // Update job status to failed
+        await supabaseClient
+          .from('duffel_jobs')
+          .update({
+            status: 'failed',
+            error_message: JSON.stringify(errorData)
+          })
+          .eq('id', job_id);
+
+        return new Response(
+          JSON.stringify({ error: "Duffel API error", details: errorData }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 // Return 200 since we've handled the error
+          }
+        );
+      }
+
+      const offerRequestData = JSON.parse(responseBodyText);
+      console.log('[process-duffel-job] Offer request created successfully');
+
+      // Get offers using the offer request ID
+      const offersResponse = await fetch(`https://api.duffel.com/air/offers?offer_request_id=${offerRequestData.data.id}&limit=${job.search_params.limit || 15}&sort=${job.search_params.sort || 'total_amount'}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${duffelToken}`,
+          'Duffel-Version': 'v2',
+          'Accept': 'application/json',
+          'Accept-Encoding': 'gzip'
+        }
+      });
+
+      const offersBodyText = await offersResponse.text();
+      console.log(`[process-duffel-job] Duffel Offers API status: ${offersResponse.status}`);
+
+      if (!offersResponse.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(offersBodyText);
+        } catch (e) {
+          errorData = { message: "Failed to parse Duffel error response", raw: offersBodyText };
+        }
+        console.error('[process-duffel-job] Duffel Offers API Error:', JSON.stringify(errorData));
+        
+        // Update job status to failed
+        await supabaseClient
+          .from('duffel_jobs')
+          .update({
+            status: 'failed',
+            error_message: JSON.stringify(errorData)
+          })
+          .eq('id', job_id);
+
+        return new Response(
+          JSON.stringify({ error: "Duffel Offers API error", details: errorData }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 // Return 200 since we've handled the error
+          }
+        );
+      }
+
+      const offersData = JSON.parse(offersBodyText);
+      console.log('[process-duffel-job] Offers retrieved successfully');
+
+      // Update job with results
+      await supabaseClient
+        .from('duffel_jobs')
+        .update({
+          status: 'completed',
+          results_data: {
+            data: offersData.data,
+            meta: offersData.meta,
+          },
+        })
+        .eq('id', job_id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          job_id,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      );
+
+    } catch (error) {
+      console.error('[process-duffel-job] Error calling Duffel API:', error);
+      
+      // Update job status to failed
+      await supabaseClient
+        .from('duffel_jobs')
+        .update({
+          status: 'failed',
+          error_message: error.message
+        })
+        .eq('id', job_id);
+
+      return new Response(
+        JSON.stringify({ error: "Failed to call Duffel API", details: error.message }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Return 200 since we've handled the error
+        }
+      );
+    }
   } catch (error) {
+    console.error('[process-duffel-job] Error:', error);
+
     // If we have a job_id, update the job status to failed
     if (error.job_id) {
       const supabaseClient = createClient(

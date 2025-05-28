@@ -201,14 +201,30 @@ serve(async (req: Request) => {
 
     let qstashRes
     try {
+      // Log the service role key (first 6 and last 4 chars for security)
+      console.log('[DEBUG] SUPABASE_SERVICE_ROLE_KEY (partial):', supabaseServiceRoleKey ? `${supabaseServiceRoleKey.slice(0,6)}...${supabaseServiceRoleKey.slice(-4)}` : 'undefined');
+
+      // Prepare QStash headers with forwarding headers
+      const qstashHeaders = {
+        'Authorization': `Bearer ${cleanedQstashToken}`,
+        'Content-Type': 'application/json',
+        // Forward both apikey and Authorization headers to ensure compatibility
+        'Upstash-Forward-apikey': supabaseServiceRoleKey,
+        'Upstash-Forward-Authorization': `Bearer ${supabaseServiceRoleKey}`,
+      };
+
+      console.log('[DEBUG] QStash request headers:', {
+        ...qstashHeaders,
+        'Authorization': 'Bearer [REDACTED]',
+        'Upstash-Forward-apikey': '[REDACTED]',
+        'Upstash-Forward-Authorization': 'Bearer [REDACTED]',
+      });
+
       console.log('[DEBUG] Making QStash request to:', qstashPublishUrl)
 
       qstashRes = await fetch(qstashPublishUrl, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${cleanedQstashToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: qstashHeaders,
         body: qstashForwardBody,
       })
 
@@ -220,6 +236,11 @@ serve(async (req: Request) => {
           status: 502,
         })
       }
+
+      // Log successful QStash response
+      console.log('[DEBUG] QStash response status:', qstashRes.status);
+      const qstashResponseText = await qstashRes.text();
+      console.log('[DEBUG] QStash response body:', qstashResponseText);
 
       return new Response(
         JSON.stringify({
