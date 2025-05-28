@@ -103,14 +103,16 @@ function FlightsContent() {
 
           {/* Flight Results */}
           <FlightResults
-            searchParams={{
-              originAirport: origin || '',
-              destinationAirport: destination || '',
-              departureDate: departureDate || '',
-              returnDate: returnDate || '',
-              adults: parseInt(adults || '1', 10),
-              cabinClass: cabinClass || 'economy'
-            }}
+            searchParams={[
+              {
+                originAirport: origin || '',
+                destinationAirport: destination || '',
+                departureDate: departureDate || '',
+                returnDate: returnDate || '',
+                adults: parseInt(adults || '1', 10),
+                cabinClass: cabinClass || 'economy'
+              }
+            ]}
             showPagination={true}
             onPageChange={setCurrentPage}
             currentPage={currentPage}
