@@ -3,10 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import type { SearchParamsType, Flight } from '@/types'; // Import shared types
+import type { FlightSearchParams } from '@/hooks/useDuffelFlightSearch';
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
 import { useRouter } from 'next/navigation';
 import { FaPlane, FaArrowRight, FaClock, FaMoneyBillWave } from 'react-icons/fa';
-import { useDuffelFlightSearch, FlightSearchParams } from '@/hooks/useDuffelFlightSearch';
+import { supabase } from '@/lib/supabaseClient';
 
 // --- Component Props Interface ---
 interface FlightResultsProps {
@@ -29,18 +30,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [allOffers, setAllOffers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Remove all local state/fetch logic for flights, isLoading, error, etc.
-  // Use the Duffel async hook instead
-  const {
-    initiateSearch,
-    offers,
-    meta,
-    status,
-    error: duffelError,
-    fetchPage,
-    jobId,
-  } = useDuffelFlightSearch();
 
   // Helper: Filter valid flights (not partial, has outbound segments)
   function filterValidFlights(flights: any[]): Flight[] {
@@ -81,43 +70,64 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     };
   }
 
+  // Helper to subscribe to a job's results
+  function subscribeToJob(jobId: string, onOffers: (offers: any[]) => void) {
+    const channelName = `duffel_job_${jobId}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'duffel_jobs',
+          filter: `id=eq.${jobId}`,
+        },
+        (payload) => {
+          if (payload?.new?.results_data?.data) {
+            onOffers(payload.new.results_data.data);
+          }
+        }
+      )
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }
+
   useEffect(() => {
     if (!searchParams || searchParams.length === 0) return;
     setLoading(true);
     setError(null);
     setAllOffers([]);
-
     let isCancelled = false;
-    const fetchAll = async () => {
-      try {
-        const allResults: any[] = [];
-        await Promise.all(
-          searchParams.map(async (params) => {
-            try {
-              const flightParams = toFlightSearchParams(params);
-              const result = await initiateSearch(flightParams); // This should return offers
-              if (result && Array.isArray(result)) {
-                allResults.push(...result);
-              }
-            } catch (err: any) {
-              // Optionally handle per-search error
-              console.error('Error fetching offers for params', params, err);
-            }
-          })
-        );
-        if (!isCancelled) {
-          // Deduplicate by offer id
-          const deduped = Array.from(new Map(allResults.map(o => [o.id, o])).values());
-          setAllOffers(deduped);
-        }
-      } catch (err: any) {
-        if (!isCancelled) setError('Failed to fetch flight results.');
-      } finally {
-        if (!isCancelled) setLoading(false);
+    let unsubscribers: (() => void)[] = [];
+    const allOffersMap = new Map();
+
+    (async () => {
+      for (const params of searchParams) {
+        const flightParams = toFlightSearchParams(params);
+        // Call initiateSearch and get jobId
+        const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
+          body: { searchParams: flightParams }
+        });
+        if (error || !data?.job_id) continue;
+        const jobId = data.job_id;
+        // Subscribe to this job's results
+        const unsubscribe = subscribeToJob(jobId, (offers) => {
+          if (isCancelled) return;
+          for (const offer of offers) {
+            allOffersMap.set(offer.id, offer);
+          }
+          setAllOffers(Array.from(allOffersMap.values()));
+        });
+        unsubscribers.push(unsubscribe);
       }
+      setLoading(false);
+    })();
+
+    return () => {
+      isCancelled = true;
+      unsubscribers.forEach((unsub) => unsub());
     };
-    fetchAll();
-    return () => { isCancelled = true; };
   }, [searchParams]);
 
   // Helper: Get the most common or lowest cabin class from all segments
@@ -253,14 +263,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   }, []);
 
   const handleSeeAllFlights = () => {
-    if (!searchParams) return;
+    if (!searchParams || searchParams.length === 0) return;
     const params = new URLSearchParams();
-    if (searchParams.originAirport) params.append('originAirport', searchParams.originAirport);
-    if (searchParams.destinationAirport) params.append('destinationAirport', searchParams.destinationAirport);
-    if (searchParams.departureDate) params.append('departureDate', searchParams.departureDate);
-    if (searchParams.returnDate) params.append('returnDate', searchParams.returnDate);
-    if (searchParams.adults) params.append('adults', searchParams.adults.toString());
-    if (searchParams.cabinClass) params.append('cabinClass', searchParams.cabinClass);
+    const first = searchParams[0];
+    if (first.originAirport) params.append('originAirport', first.originAirport);
+    if (first.destinationAirport) params.append('destinationAirport', first.destinationAirport);
+    if (first.departureDate) params.append('departureDate', first.departureDate);
+    if (first.returnDate) params.append('returnDate', first.returnDate);
+    if (first.adults) params.append('adults', first.adults.toString());
+    if (first.cabinClass) params.append('cabinClass', first.cabinClass);
     router.push(`/flights?${params.toString()}`);
   };
 
@@ -281,7 +292,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   }
 
   // Render logic (reuse existing error/loading/empty states)
-  if (status === 'searching' || status === 'pending' || status === 'processing') {
+  if (loading) {
     return (
       <section id="flight-results" className="py-8 md:py-12 bg-white scroll-mt-24">
         <div className="container mx-auto px-4 text-center">
