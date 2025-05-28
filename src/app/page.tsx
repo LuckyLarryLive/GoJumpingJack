@@ -16,16 +16,7 @@ import type { SearchParamsType } from '@/types';
 
 // --- Main Page Component ---
 export default function HomePage() {
-  // Set default search params for initial load (show top 3 flights for a default route)
-  const defaultSearchParams: SearchParamsType = {
-    originAirport: 'LHR',
-    destinationAirport: 'HND',
-    departureDate: '2025-05-20',
-    adults: 1,
-    cabinClass: 'economy',
-  };
-  // State to hold the current search parameters, passed between SearchSection and FlightResults
-  // It's now an array, meaning multiple searches can be performed at once.
+  // Remove defaultSearchParams. Start with an empty array.
   const [searchParamsList, setSearchParamsList] = useState<SearchParamsType[]>([]);
 
   useEffect(() => {
@@ -59,12 +50,14 @@ export default function HomePage() {
           {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
           <SearchSection
                onSearchSubmit={handleSearchSubmit}
-               initialSearchParams={searchParamsList[0] || defaultSearchParams}
+               initialSearchParams={searchParamsList[0] || undefined}
            />
 
           {/* Flight results section - receives the current search params */}
           {/* It will fetch and display flights based on these params */}
-          <FlightResults searchParams={searchParamsList} />
+          {searchParamsList.length > 0 && (
+            <FlightResults searchParams={searchParamsList} />
+          )}
 
           {/* Static content sections */}
           <TrendingDestinationsSection />
