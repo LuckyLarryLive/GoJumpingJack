@@ -60,18 +60,61 @@ export function useDuffelFlightSearch() {
         },
         (payload) => {
           const job = payload.new;
+          console.log('[useDuffelFlightSearch] Received job update:', {
+            jobId: job.id,
+            status: job.status,
+            hasResultsData: !!job.results_data,
+            resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
+            resultsDataStructure: job.results_data ? {
+              hasData: !!job.results_data.data,
+              dataLength: job.results_data.data?.length,
+              hasMeta: !!job.results_data.meta,
+              metaKeys: job.results_data.meta ? Object.keys(job.results_data.meta) : []
+            } : null,
+            rawResultsData: job.results_data // Log the raw data for debugging
+          });
+
           switch (job.status) {
             case 'processing':
               setStatus('processing');
               break;
             case 'completed':
               setStatus('complete');
-              setOffers(job.results_data.data);
-              setMeta(job.results_data.meta);
+              if (job.results_data?.data) {
+                console.log('[useDuffelFlightSearch] Setting offers:', {
+                  count: job.results_data.data.length,
+                  firstOffer: job.results_data.data[0] ? {
+                    id: job.results_data.data[0].id,
+                    total_amount: job.results_data.data[0].total_amount,
+                    total_currency: job.results_data.data[0].total_currency,
+                    slices: job.results_data.data[0].slices?.length
+                  } : 'missing'
+                });
+                setOffers(job.results_data.data);
+              } else {
+                console.error('[useDuffelFlightSearch] No offers data in completed job:', {
+                  jobId: job.id,
+                  status: job.status,
+                  hasResultsData: !!job.results_data,
+                  resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
+                  rawResultsData: job.results_data
+                });
+                setError('No flight offers found');
+                setStatus('error');
+              }
+              if (job.results_data?.meta) {
+                console.log('[useDuffelFlightSearch] Setting meta:', {
+                  metaKeys: Object.keys(job.results_data.meta),
+                  metaData: job.results_data.meta
+                });
+                setMeta(job.results_data.meta);
+              } else {
+                console.warn('[useDuffelFlightSearch] No meta data in completed job');
+              }
               break;
             case 'failed':
               setStatus('error');
-              setError(job.error_message);
+              setError(job.error_message || 'Search failed');
               break;
           }
         }

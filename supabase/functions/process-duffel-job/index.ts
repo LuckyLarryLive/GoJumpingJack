@@ -250,18 +250,76 @@ serve(async (req) => {
 
       const offersData = JSON.parse(offersBodyText);
       console.log('[process-duffel-job] Offers retrieved successfully');
+      console.log('[process-duffel-job] Offers data structure:', {
+        hasData: !!offersData.data,
+        dataLength: offersData.data?.length,
+        hasMeta: !!offersData.meta,
+        metaKeys: offersData.meta ? Object.keys(offersData.meta) : [],
+        firstOfferSample: offersData.data?.[0] ? {
+          id: offersData.data[0].id,
+          total_amount: offersData.data[0].total_amount,
+          total_currency: offersData.data[0].total_currency,
+          slices: offersData.data[0].slices?.length
+        } : null
+      });
 
       // Update job with results
-      await supabaseClient
+      const updateData = {
+        status: 'completed',
+        results_data: {
+          data: offersData.data || [],
+          meta: offersData.meta || {}
+        }
+      };
+      
+      console.log('[process-duffel-job] Updating job with data:', {
+        jobId: job_id,
+        status: updateData.status,
+        hasResultsData: !!updateData.results_data,
+        resultsDataKeys: Object.keys(updateData.results_data),
+        resultsDataStructure: {
+          hasData: !!updateData.results_data.data,
+          dataLength: updateData.results_data.data?.length,
+          hasMeta: !!updateData.results_data.meta,
+          metaKeys: updateData.results_data.meta ? Object.keys(updateData.results_data.meta) : []
+        }
+      });
+
+      const { error: updateError } = await supabaseClient
         .from('duffel_jobs')
-        .update({
-          status: 'completed',
-          results_data: {
-            data: offersData.data,
-            meta: offersData.meta,
-          },
-        })
+        .update(updateData)
         .eq('id', job_id);
+
+      if (updateError) {
+        console.error('[process-duffel-job] Error updating job:', updateError);
+        throw new Error(`Failed to update job: ${updateError.message}`);
+      }
+
+      // Verify the update was successful
+      const { data: updatedJob, error: verifyError } = await supabaseClient
+        .from('duffel_jobs')
+        .select('*')
+        .eq('id', job_id)
+        .single();
+
+      if (verifyError) {
+        console.error('[process-duffel-job] Error verifying job update:', verifyError);
+      } else {
+        console.log('[process-duffel-job] Job update verified:', {
+          jobId: updatedJob.id,
+          status: updatedJob.status,
+          hasResultsData: !!updatedJob.results_data,
+          resultsDataKeys: updatedJob.results_data ? Object.keys(updatedJob.results_data) : [],
+          resultsDataStructure: updatedJob.results_data ? {
+            hasData: !!updatedJob.results_data.data,
+            dataLength: updatedJob.results_data.data?.length,
+            hasMeta: !!updatedJob.results_data.meta,
+            metaKeys: updatedJob.results_data.meta ? Object.keys(updatedJob.results_data.meta) : []
+          } : null
+        });
+      }
+
+      console.log('[process-duffel-job] Job updated successfully');
 
       return new Response(
         JSON.stringify({
