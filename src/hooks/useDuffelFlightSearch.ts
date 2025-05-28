@@ -50,8 +50,12 @@ export function useDuffelFlightSearch() {
 
     console.log('[useDuffelFlightSearch] Setting up subscription for job:', jobId);
 
+    // Create a unique channel name for this job
+    const channelName = `duffel_job_${jobId}`;
+    console.log('[useDuffelFlightSearch] Creating channel:', channelName);
+
     const channel = supabase
-      .channel(`duffel_job_${jobId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -61,127 +65,148 @@ export function useDuffelFlightSearch() {
           filter: `id=eq.${jobId}`,
         },
         (payload) => {
-          console.log('[useDuffelFlightSearch] Raw payload received:', payload);
+          console.log('[useDuffelFlightSearch] REALTIME CALLBACK TRIGGERED. Raw payload:', JSON.stringify(payload, null, 2));
           
-          const job = payload.new;
-          console.log('[useDuffelFlightSearch] Received job update:', {
-            jobId: job.id,
-            status: job.status,
-            hasResultsData: !!job.results_data,
-            resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
-            resultsDataStructure: job.results_data ? {
-              hasData: !!job.results_data.data,
-              dataLength: job.results_data.data?.length,
-              hasMeta: !!job.results_data.meta,
-              metaKeys: job.results_data.meta ? Object.keys(job.results_data.meta) : []
-            } : null,
-            rawResultsData: job.results_data // Log the raw data for debugging
-          });
+          try {
+            if (!payload) {
+              throw new Error('Received empty payload from Realtime');
+            }
 
-          switch (job.status) {
-            case 'processing':
-              console.log('[useDuffelFlightSearch] Job is processing');
-              setStatus('processing');
-              break;
-            case 'completed':
-              console.log('[useDuffelFlightSearch] Job completed, processing results');
-              setStatus('complete');
-              
-              // Check if results_data exists and is an object
-              if (!job.results_data || typeof job.results_data !== 'object') {
-                console.error('[useDuffelFlightSearch] Invalid results_data:', {
-                  type: typeof job.results_data,
-                  value: job.results_data
-                });
-                setError('Invalid results data received');
-                setStatus('error');
-                return;
-              }
+            if (!payload.new) {
+              throw new Error('Payload missing new data');
+            }
 
-              // Check if data array exists
-              if (!Array.isArray(job.results_data.data)) {
-                console.error('[useDuffelFlightSearch] Invalid data array:', {
-                  type: typeof job.results_data.data,
-                  value: job.results_data.data
-                });
-                setError('Invalid offers data received');
-                setStatus('error');
-                return;
-              }
+            const job = payload.new;
+            console.log('[useDuffelFlightSearch] Processing job update:', {
+              jobId: job.id,
+              status: job.status,
+              hasResultsData: !!job.results_data,
+              resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
+              resultsDataStructure: job.results_data ? {
+                hasData: !!job.results_data.data,
+                dataLength: job.results_data.data?.length,
+                hasMeta: !!job.results_data.meta,
+                metaKeys: job.results_data.meta ? Object.keys(job.results_data.meta) : []
+              } : null,
+              rawResultsData: job.results_data // Log the raw data for debugging
+            });
 
-              if (job.results_data.data.length > 0) {
-                // Transform Duffel offers into Flight format
-                const transformedOffers = job.results_data.data.map((offer: any) => {
-                  const outboundSegments = offer.slices?.[0]?.segments || [];
-                  const returnSegments = offer.slices?.[1]?.segments || [];
-                  
-                  // Helper function to create a segment with proper field names
-                  const createSegment = (segment: any) => ({
-                    origin_airport: segment.origin?.iata_code || '',
-                    destination_airport: segment.destination?.iata_code || '',
-                    departure_at: segment.departing_at || '',
-                    arrival_at: segment.arriving_at || '',
-                    duration: segment.duration || '',
-                    airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
-                    flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
-                    aircraft: segment.aircraft || '',
-                    cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
+            switch (job.status) {
+              case 'processing':
+                console.log('[useDuffelFlightSearch] Job is processing');
+                setStatus('processing');
+                break;
+              case 'completed':
+                console.log('[useDuffelFlightSearch] Job completed, processing results');
+                setStatus('complete');
+                
+                // Check if results_data exists and is an object
+                if (!job.results_data || typeof job.results_data !== 'object') {
+                  console.error('[useDuffelFlightSearch] Invalid results_data:', {
+                    type: typeof job.results_data,
+                    value: job.results_data
+                  });
+                  setError('Invalid results data received');
+                  setStatus('error');
+                  return;
+                }
+
+                // Check if data array exists
+                if (!Array.isArray(job.results_data.data)) {
+                  console.error('[useDuffelFlightSearch] Invalid data array:', {
+                    type: typeof job.results_data.data,
+                    value: job.results_data.data
+                  });
+                  setError('Invalid offers data received');
+                  setStatus('error');
+                  return;
+                }
+
+                if (job.results_data.data.length > 0) {
+                  // Transform Duffel offers into Flight format
+                  const transformedOffers = job.results_data.data.map((offer: any) => {
+                    const outboundSegments = offer.slices?.[0]?.segments || [];
+                    const returnSegments = offer.slices?.[1]?.segments || [];
+                    
+                    // Helper function to create a segment with proper field names
+                    const createSegment = (segment: any) => ({
+                      origin_airport: segment.origin?.iata_code || '',
+                      destination_airport: segment.destination?.iata_code || '',
+                      departure_at: segment.departing_at || '',
+                      arrival_at: segment.arriving_at || '',
+                      duration: segment.duration || '',
+                      airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
+                      flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+                      aircraft: segment.aircraft || '',
+                      cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
+                    });
+
+                    return {
+                      airline: offer.owner?.name || 'Unknown',
+                      price: Number(offer.total_amount),
+                      link: offer.id,
+                      stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
+                      cabin_class: offer.cabin_class || 'economy',
+                      currency: offer.total_currency || 'USD',
+                      outbound_segments: outboundSegments.map(createSegment),
+                      return_segments: returnSegments.map(createSegment),
+                    };
                   });
 
-                  return {
-                    airline: offer.owner?.name || 'Unknown',
-                    price: Number(offer.total_amount),
-                    link: offer.id,
-                    stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
-                    cabin_class: offer.cabin_class || 'economy',
-                    currency: offer.total_currency || 'USD',
-                    outbound_segments: outboundSegments.map(createSegment),
-                    return_segments: returnSegments.map(createSegment),
-                  };
-                });
+                  console.log('[useDuffelFlightSearch] Setting transformed offers:', {
+                    count: transformedOffers.length,
+                    firstOffer: transformedOffers[0] ? {
+                      airline: transformedOffers[0].airline,
+                      price: transformedOffers[0].price,
+                      stops: transformedOffers[0].stops,
+                      outbound_segments: transformedOffers[0].outbound_segments.length,
+                      return_segments: transformedOffers[0].return_segments.length
+                    } : 'missing'
+                  });
 
-                console.log('[useDuffelFlightSearch] Setting transformed offers:', {
-                  count: transformedOffers.length,
-                  firstOffer: transformedOffers[0] ? {
-                    airline: transformedOffers[0].airline,
-                    price: transformedOffers[0].price,
-                    stops: transformedOffers[0].stops,
-                    outbound_segments: transformedOffers[0].outbound_segments.length,
-                    return_segments: transformedOffers[0].return_segments.length
-                  } : 'missing'
-                });
+                  setOffers(transformedOffers);
+                } else {
+                  console.warn('[useDuffelFlightSearch] No offers found in results');
+                  setError('No flight offers found');
+                  setStatus('error');
+                }
 
-                setOffers(transformedOffers);
-              } else {
-                console.warn('[useDuffelFlightSearch] No offers found in results');
-                setError('No flight offers found');
+                // Process meta data
+                if (job.results_data.meta && typeof job.results_data.meta === 'object') {
+                  console.log('[useDuffelFlightSearch] Setting meta:', {
+                    metaKeys: Object.keys(job.results_data.meta),
+                    metaData: job.results_data.meta
+                  });
+                  setMeta(job.results_data.meta);
+                } else {
+                  console.warn('[useDuffelFlightSearch] No meta data in completed job');
+                }
+                break;
+              case 'failed':
+                console.log('[useDuffelFlightSearch] Job failed:', job.error_message);
                 setStatus('error');
-              }
-
-              // Process meta data
-              if (job.results_data.meta && typeof job.results_data.meta === 'object') {
-                console.log('[useDuffelFlightSearch] Setting meta:', {
-                  metaKeys: Object.keys(job.results_data.meta),
-                  metaData: job.results_data.meta
-                });
-                setMeta(job.results_data.meta);
-              } else {
-                console.warn('[useDuffelFlightSearch] No meta data in completed job');
-              }
-              break;
-            case 'failed':
-              console.log('[useDuffelFlightSearch] Job failed:', job.error_message);
-              setStatus('error');
-              setError(job.error_message || 'Search failed');
-              break;
-            default:
-              console.warn('[useDuffelFlightSearch] Unknown job status:', job.status);
-              break;
+                setError(job.error_message || 'Search failed');
+                break;
+              default:
+                console.warn('[useDuffelFlightSearch] Unknown job status:', job.status);
+                break;
+            }
+          } catch (error) {
+            console.error('[useDuffelFlightSearch] CRITICAL ERROR IN REALTIME CALLBACK:', error);
+            setError('Error processing flight results');
+            setStatus('error');
           }
         }
       )
       .subscribe((status) => {
         console.log('[useDuffelFlightSearch] Subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('[useDuffelFlightSearch] Successfully subscribed to channel:', channelName);
+        } else if (status === 'CLOSED') {
+          console.log('[useDuffelFlightSearch] Channel closed:', channelName);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[useDuffelFlightSearch] Channel error:', channelName);
+        }
       });
 
     return () => {
