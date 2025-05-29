@@ -15,6 +15,10 @@ const publicPaths = [
   '/api/auth/request-password-reset',
   '/api/auth/reset-password',
   '/api/duffel/airlines',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -57,5 +61,9 @@ export const config = {
   matcher: [
     '/api/:path*',
     '/account/:path*',
+    '/login',
+    '/signup',
+    '/forgot-password',
+    '/reset-password',
   ],
 }; 
