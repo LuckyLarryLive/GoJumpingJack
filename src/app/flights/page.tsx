@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense, useEffect } from 'react';
+import { useState, Suspense, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlightResults from '@/components/FlightResults';
 import { FaFilter, FaSort } from 'react-icons/fa';
@@ -21,12 +21,58 @@ function FlightsContent() {
   }, []);
 
   // Extract search parameters
+  const allSearchParamsRaw = searchParams.get('allSearchParams');
+  let parsedSearchParams = [];
+  if (allSearchParamsRaw) {
+    try {
+      parsedSearchParams = JSON.parse(decodeURIComponent(allSearchParamsRaw));
+    } catch (e) {
+      parsedSearchParams = [];
+    }
+  }
   const origin = searchParams.get('originAirport');
   const destination = searchParams.get('destinationAirport');
   const departureDate = searchParams.get('departureDate');
   const returnDate = searchParams.get('returnDate');
   const adults = searchParams.get('adults');
   const cabinClass = searchParams.get('cabinClass');
+
+  // Use allSearchParams if present, otherwise fallback to single param
+  const effectiveSearchParams = parsedSearchParams.length > 0 ? parsedSearchParams : [
+    {
+      originAirport: origin || '',
+      destinationAirport: destination || '',
+      departureDate: departureDate || '',
+      returnDate: returnDate || '',
+      adults: parseInt(adults || '1', 10),
+      cabinClass: cabinClass || 'economy'
+    }
+  ];
+
+  // Helper to get city names for summary
+  const getSummaryString = useMemo(() => {
+    if (!effectiveSearchParams || effectiveSearchParams.length === 0) return '';
+    const first = effectiveSearchParams[0];
+    let originLabel = '';
+    if (first.fromCityNameForApi) {
+      originLabel = first.fromCityNameForApi;
+    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+      originLabel = first.fromCityNameForApi;
+    } else {
+      originLabel = first.originAirport;
+    }
+    let destinationLabel = '';
+    if (first.toCityNameForApi) {
+      destinationLabel = first.toCityNameForApi;
+    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+      destinationLabel = first.toCityNameForApi;
+    } else {
+      destinationLabel = first.destinationAirport;
+    }
+    const departureDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.departureDate)));
+    const returnDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.returnDate).filter(Boolean)));
+    return `Flights from ${originLabel} to ${destinationLabel}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
+  }, [effectiveSearchParams]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -85,7 +131,7 @@ function FlightsContent() {
           <div className="bg-white rounded-lg shadow p-4 mb-6">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">
-                Flights from {origin} to {destination}
+                {getSummaryString}
               </h1>
               <div className="flex items-center space-x-4">
                 <select
@@ -103,16 +149,7 @@ function FlightsContent() {
 
           {/* Flight Results */}
           <FlightResults
-            searchParams={[
-              {
-                originAirport: origin || '',
-                destinationAirport: destination || '',
-                departureDate: departureDate || '',
-                returnDate: returnDate || '',
-                adults: parseInt(adults || '1', 10),
-                cabinClass: cabinClass || 'economy'
-              }
-            ]}
+            searchParams={effectiveSearchParams}
             showPagination={true}
             onPageChange={setCurrentPage}
             currentPage={currentPage}

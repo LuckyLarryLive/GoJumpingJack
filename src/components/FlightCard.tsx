@@ -227,9 +227,13 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                       <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
                     </div>
                     <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
-                      <span className="mx-2">{segment.origin_airport}</span>
+                      <span className="mx-2" title={getAirportName(segment.origin_airport)}>
+                        {getAirportName(segment.origin_airport)} ({segment.origin_airport})
+                      </span>
                       <span className="mx-1">✈️</span>
-                      <span className="mx-2">{segment.destination_airport}</span>
+                      <span className="mx-2" title={getAirportName(segment.destination_airport)}>
+                        {getAirportName(segment.destination_airport)} ({segment.destination_airport})
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -253,9 +257,13 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                         <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
                       </div>
                       <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
-                        <span className="mx-2">{segment.origin_airport}</span>
+                        <span className="mx-2" title={getAirportName(segment.origin_airport)}>
+                          {getAirportName(segment.origin_airport)} ({segment.origin_airport})
+                        </span>
                         <span className="mx-1">✈️</span>
-                        <span className="mx-2">{segment.destination_airport}</span>
+                        <span className="mx-2" title={getAirportName(segment.destination_airport)}>
+                          {getAirportName(segment.destination_airport)} ({segment.destination_airport})
+                        </span>
                       </div>
                     </div>
                   ))}

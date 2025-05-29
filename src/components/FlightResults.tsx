@@ -210,30 +210,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   const handleSeeAllFlights = () => {
     if (!searchParams || searchParams.length === 0) return;
-    const params = new URLSearchParams();
-    const first = searchParams[0];
-    
-    // Use the full airport codes string for city searches
-    if (first.originAirport) {
-      params.append('originAirport', first.originAirport);
-    }
-    if (first.destinationAirport) {
-      params.append('destinationAirport', first.destinationAirport);
-    }
-    if (first.departureDate) {
-      params.append('departureDate', first.departureDate);
-    }
-    if (first.returnDate) {
-      params.append('returnDate', first.returnDate);
-    }
-    if (first.adults) {
-      params.append('adults', first.adults.toString());
-    }
-    if (first.cabinClass) {
-      params.append('cabinClass', first.cabinClass);
-    }
-    
-    router.push(`/flights?${params.toString()}`);
+    // Serialize all searchParams as JSON and encode
+    const allParams = encodeURIComponent(JSON.stringify(searchParams));
+    router.push(`/flights?allSearchParams=${allParams}`);
   };
 
   // Filtering, sorting, and pagination logic (client-side)
@@ -248,17 +227,17 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     if (!searchParams || searchParams.length === 0) return '';
     const first = searchParams[0];
     let originLabel = '';
-    if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+    if (first.fromCityNameForApi) {
       originLabel = first.fromCityNameForApi;
-    } else if (first.fromCityNameForApi) {
+    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
       originLabel = first.fromCityNameForApi;
     } else {
       originLabel = first.originAirport;
     }
     let destinationLabel = '';
-    if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+    if (first.toCityNameForApi) {
       destinationLabel = first.toCityNameForApi;
-    } else if (first.toCityNameForApi) {
+    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
       destinationLabel = first.toCityNameForApi;
     } else {
       destinationLabel = first.destinationAirport;
