@@ -170,9 +170,9 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}>{summaryOriginDisplay} <span className="mx-1">→</span> {summaryDestinationDisplay}</div>
+                <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}>{getAirportDisplay(originAirport)} <span className="mx-1">→</span> {getAirportDisplay(destinationAirport)}</div>
                 <div className="text-sm text-gray-500">
-                  {summaryOriginDisplay} → {summaryDestinationDisplay}
+                  {originAirport} → {destinationAirport}
                 </div>
                 <div className="text-sm text-gray-600">
                   {formatDate(departureAt)} at {formatTime(departureAt)}

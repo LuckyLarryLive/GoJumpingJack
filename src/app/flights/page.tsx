@@ -188,6 +188,7 @@ function FlightsContent() {
             onPageChange={setCurrentPage}
             currentPage={currentPage}
             filterFlights={filterFlightsByStops}
+            sortBy={sortBy}
           />
         </div>
       </div>

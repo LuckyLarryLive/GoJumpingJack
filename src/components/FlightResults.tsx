@@ -17,6 +17,7 @@ interface FlightResultsProps {
   onPageChange?: (page: number) => void;
   currentPage?: number;
   filterFlights?: (flights: any[]) => any[];
+  sortBy?: string; // Add sortBy prop
 }
 
 const JACK_VIDEO_PATH = '/Jack_Finding_Flights.mp4';
@@ -28,7 +29,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   showPagination = false, 
   onPageChange, 
   currentPage = 1,
-  filterFlights
+  filterFlights,
+  sortBy = 'price' // Default to price sorting
 }) => {
   const router = useRouter();
   const [allOffers, setAllOffers] = useState<any[]>([]);
@@ -224,8 +226,35 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     router.push(`/flights?allSearchParams=${allParams}`);
   };
 
+  // Helper function to calculate total duration in minutes
+  const calculateTotalDuration = (flight: any) => {
+    if (!Array.isArray(flight.outbound_segments) || !flight.outbound_segments.length) return 0;
+    const firstSegment = flight.outbound_segments[0];
+    const lastSegment = flight.outbound_segments[flight.outbound_segments.length - 1];
+    const start = new Date(firstSegment?.departure_at);
+    const end = new Date(lastSegment?.arrival_at);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+    return end.getTime() - start.getTime();
+  };
+
   // Filtering, sorting, and pagination logic (client-side)
-  let sortedFlights = Array.isArray(allOffers) ? [...allOffers].sort((a, b) => a.price - b.price) : [];
+  let sortedFlights = Array.isArray(allOffers) ? [...allOffers] : [];
+  
+  // Apply sorting based on sortBy value
+  sortedFlights.sort((a, b) => {
+    switch (sortBy) {
+      case 'duration':
+        return calculateTotalDuration(a) - calculateTotalDuration(b);
+      case 'departure':
+        const aTime = new Date(a.outbound_segments[0]?.departure_at).getTime();
+        const bTime = new Date(b.outbound_segments[0]?.departure_at).getTime();
+        return aTime - bTime;
+      case 'price':
+      default:
+        return a.price - b.price;
+    }
+  });
+
   if (filterFlights) sortedFlights = filterFlights(sortedFlights);
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalResults = sortedFlights.length;
