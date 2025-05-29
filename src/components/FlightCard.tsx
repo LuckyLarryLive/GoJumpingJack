@@ -168,7 +168,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="font-bold flex items-center gap-2 max-w-[60%] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
+                <div className="font-bold flex items-center gap-2 max-w-[25ch] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
                 <div className="text-sm text-gray-500">
                   {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
                 </div>
@@ -212,7 +212,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               {/* Outbound Flight */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
-                <div className="text-xs text-center text-gray-500 mb-2">{getSegmentDuration(departureAt, returnAt || departureAt)}</div>
+                <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                 {flight.outbound_segments.map((segment, index) => (
                   <div key={index} className="flex flex-col items-center mb-2">
                     <div className="flex items-center justify-center w-full">
@@ -241,7 +241,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               {flight.return_segments && flight.return_segments.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
-                  <div className="text-xs text-center text-gray-500 mb-2">{getSegmentDuration(returnAt || departureAt, returnAt || departureAt)}</div>
+                  <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                   {flight.return_segments.map((segment, index) => (
                     <div key={index} className="flex flex-col items-center mb-2">
                       <div className="flex items-center justify-center w-full">

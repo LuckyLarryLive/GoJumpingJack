@@ -57,15 +57,14 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Handler for when the video loops
   const handleVideoLoop = () => {
-    if (phrases.length > 1) {
-      let nextIndex = phraseIndex;
-      let tries = 0;
-      while (phrases.length > 1 && nextIndex === phraseIndex && tries < 10) {
-        nextIndex = Math.floor(Math.random() * phrases.length);
-        tries++;
-      }
-      setPhraseIndex(nextIndex);
+    if (phrases.length === 0) return;
+    let nextIndex = phraseIndex;
+    let tries = 0;
+    while (phrases.length > 1 && nextIndex === phraseIndex && tries < 10) {
+      nextIndex = Math.floor(Math.random() * phrases.length);
+      tries++;
     }
+    setPhraseIndex(nextIndex);
   };
 
   // Helper: Filter valid flights (not partial, has outbound segments)
@@ -386,7 +385,6 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             muted
             playsInline
             onEnded={handleVideoLoop}
-            onPlay={() => setPhraseIndex(0)}
             className="rounded-lg shadow-lg mb-4"
             style={{ maxWidth: 800 }}
           />
