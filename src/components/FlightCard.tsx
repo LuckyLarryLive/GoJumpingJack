@@ -154,6 +154,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   };
 
   // Find the origin and destination airport codes for the main card
+  // Always use full airport name and code for both origin and destination
   const mainOriginCode = flight.outbound_segments[0]?.origin_airport;
   const mainDestinationCode = flight.outbound_segments[flight.outbound_segments.length - 1]?.destination_airport;
   const mainOriginName = getAirportName(mainOriginCode);

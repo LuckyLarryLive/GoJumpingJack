@@ -241,6 +241,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalResults = sortedFlights.length;
   const totalPages = Math.ceil(totalResults / 10);
+  console.log('[FlightResults] searchParams.length:', searchParams.length, 'allOffers.length:', allOffers.length, 'displayedFlights.length:', displayedFlights.length, 'showPagination:', showPagination);
 
   // Helper to summarize origins/destinations for display
   function getSummaryString() {
@@ -249,11 +250,15 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     let originLabel = '';
     if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
       originLabel = first.fromCityNameForApi;
+    } else if (first.fromCityNameForApi) {
+      originLabel = first.fromCityNameForApi;
     } else {
       originLabel = first.originAirport;
     }
     let destinationLabel = '';
     if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+      destinationLabel = first.toCityNameForApi;
+    } else if (first.toCityNameForApi) {
       destinationLabel = first.toCityNameForApi;
     } else {
       destinationLabel = first.destinationAirport;
@@ -335,6 +340,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                   }
                 }
                 setAllOffers(Array.from(allOffersMap.values()));
+                console.log('[FlightResults] setAllOffers called. allOffersMap size:', allOffersMap.size);
                 completedJobs++;
                 if (completedJobs === totalJobs) {
                   clearTimeout(safetyTimeout);
