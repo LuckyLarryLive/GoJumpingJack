@@ -2,9 +2,11 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuthContext } from '@/contexts/AuthContext';
 // REMOVED: No need to import or instantiate Lobster font here
 
 const Header: React.FC = () => {
+    const { user } = useAuthContext();
     const logoSize = 96; // Maintain consistent sizing variable if desired
     const headerHeightClass = 'h-24'; // Consistent header height
     const logoHeightClass = 'h-20';   // Logo height within header
@@ -38,14 +40,27 @@ const Header: React.FC = () => {
                         </Link>
                     </div>
 
-                    {/* Login/Sign Up section */}
+                    {/* User section */}
                     <div className="flex items-center space-x-4">
-                        <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded">
-                            Login
-                        </Link>
-                        <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Sign Up
-                        </Link>
+                        {user ? (
+                            <div className="flex items-center space-x-4">
+                                <Link href="/account" className="text-sm font-medium text-gray-700 hover:text-blue-600">
+                                    Welcome, {user.firstName} ({user.siteRewardsTokens} Tokens)
+                                </Link>
+                                <Link href="/logout" className="text-sm font-medium text-gray-600 hover:text-blue-600">
+                                    Logout
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-4">
+                                <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded">
+                                    Login
+                                </Link>
+                                <Link href="/signup" className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Sign Up
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
             </nav>
