@@ -53,7 +53,13 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Handler for when the video loops
   const handleVideoLoop = () => {
-    setPhraseIndex((prev) => (phrases.length > 0 ? (prev + 1) % phrases.length : 0));
+    if (phrases.length > 1) {
+      let nextIndex = phraseIndex;
+      while (phrases.length > 1 && nextIndex === phraseIndex) {
+        nextIndex = Math.floor(Math.random() * phrases.length);
+      }
+      setPhraseIndex(nextIndex);
+    }
   };
 
   // Helper: Filter valid flights (not partial, has outbound segments)
@@ -367,8 +373,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           <video
             ref={videoRef}
             src={JACK_VIDEO_PATH}
-            width={320}
-            height={180}
+            width={640}
+            height={360}
             autoPlay
             loop
             muted
@@ -376,7 +382,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             onEnded={handleVideoLoop}
             onPlay={() => setPhraseIndex(0)}
             className="rounded-lg shadow-lg mb-4"
-            style={{ maxWidth: 400 }}
+            style={{ maxWidth: 800 }}
           />
           <div className="text-lg font-semibold text-blue-700 min-h-[2.5rem]">
             {phrases.length > 0 ? phrases[phraseIndex] : 'Finding the best flights...'}
