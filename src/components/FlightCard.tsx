@@ -168,7 +168,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="font-bold flex items-center gap-2 max-w-[25ch] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
+                <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
                 <div className="text-sm text-gray-500">
                   {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
                 </div>
@@ -222,9 +222,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                           <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
                           <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
                         </div>
-                        <div className="absolute left-1/2 -top-6 -translate-x-1/2 text-xs text-gray-500 bg-white px-2 rounded shadow">
-                          {getSegmentDuration(segment.departure_at, segment.arrival_at)}
-                        </div>
                       </div>
                       <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
                     </div>
@@ -250,9 +247,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                           <div className="h-0.5 bg-gray-300 relative">
                             <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
                             <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
-                          </div>
-                          <div className="absolute left-1/2 -top-6 -translate-x-1/2 text-xs text-gray-500 bg-white px-2 rounded shadow">
-                            {getSegmentDuration(segment.departure_at, segment.arrival_at)}
                           </div>
                         </div>
                         <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
