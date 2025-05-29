@@ -162,6 +162,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const mainOriginDisplay = `${mainOriginName} (${mainOriginCode})`;
   const mainDestinationDisplay = `${mainDestinationName} (${mainDestinationCode})`;
 
+  // Summary line: use full airport name and code
+  const summaryOriginDisplay = `${mainOriginName} (${mainOriginCode})`;
+  const summaryDestinationDisplay = `${mainDestinationName} (${mainDestinationCode})`;
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
       <div className="p-4">
@@ -171,7 +175,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               <div>
                 <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
                 <div className="text-sm text-gray-500">
-                  {getAirportCity(originAirport)} → {getAirportCity(destinationAirport)}
+                  {summaryOriginDisplay} → {summaryDestinationDisplay}
                 </div>
                 <div className="text-sm text-gray-600">
                   {formatDate(departureAt)} at {formatTime(departureAt)}
@@ -182,7 +186,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               </div>
               <div className="text-right">
                 <div className="text-xl font-bold text-blue-600">
-                  {flight.currency === 'USD' ? '$' : flight.currency} {flight.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span style={{ whiteSpace: 'nowrap' }}>{flight.currency === 'USD' ? '$' : flight.currency}{flight.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="text-sm text-gray-600">
                   {flight.airline} • {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}

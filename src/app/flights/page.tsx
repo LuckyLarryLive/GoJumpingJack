@@ -22,7 +22,7 @@ function FlightsContent() {
 
   // Extract search parameters
   const allSearchParamsRaw = searchParams.get('allSearchParams');
-  let parsedSearchParams = [];
+  let parsedSearchParams: any[] = [];
   if (allSearchParamsRaw) {
     try {
       parsedSearchParams = JSON.parse(decodeURIComponent(allSearchParamsRaw));
@@ -71,7 +71,11 @@ function FlightsContent() {
     }
     const departureDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.departureDate)));
     const returnDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.returnDate).filter(Boolean)));
-    return `Flights from ${originLabel} to ${destinationLabel}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
+    return [
+      String(`Flights from ${originLabel} to ${destinationLabel}`), <br key="br1" />,
+      departureDates.length === 1 ? <span key="dep">Departure: {departureDates[0]}</span> : null,
+      returnDates.length === 1 ? [<br key="br2" />, `Return: ${returnDates[0]}`] : null
+    ] as React.ReactNode[];
   }, [effectiveSearchParams]);
 
   return (
@@ -130,9 +134,33 @@ function FlightsContent() {
           {/* Sort Controls */}
           <div className="bg-white rounded-lg shadow p-4 mb-6">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">
-                {getSummaryString}
-              </h1>
+              <div>
+                <div className="text-2xl font-bold">
+                  {((): React.ReactNode => {
+                    if (!effectiveSearchParams || effectiveSearchParams.length === 0) return null;
+                    const first = effectiveSearchParams[0];
+                    let originLabel = '';
+                    if (first.fromCityNameForApi) {
+                      originLabel = first.fromCityNameForApi;
+                    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+                      originLabel = first.fromCityNameForApi;
+                    } else {
+                      originLabel = first.originAirport;
+                    }
+                    let destinationLabel = '';
+                    if (first.toCityNameForApi) {
+                      destinationLabel = first.toCityNameForApi;
+                    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+                      destinationLabel = first.toCityNameForApi;
+                    } else {
+                      destinationLabel = first.destinationAirport;
+                    }
+                    const departureDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.departureDate)));
+                    const returnDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.returnDate).filter(Boolean)));
+                    return getSummaryString;
+                  })()}
+                </div>
+              </div>
               <div className="flex items-center space-x-4">
                 <select
                   value={sortBy}
