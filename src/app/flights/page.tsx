@@ -13,7 +13,7 @@ function FlightsContent() {
   const [filters, setFilters] = useState({
     maxPrice: '',
     airlines: [] as string[],
-    stops: [] as number[],
+    maxStops: '',
   });
 
   useEffect(() => {
@@ -78,6 +78,19 @@ function FlightsContent() {
     ] as React.ReactNode[];
   }, [effectiveSearchParams]);
 
+  // Filtering logic for flights
+  const filterFlightsByStops = (flights: any[]) => {
+    if (!filters.maxStops) return flights;
+    const maxStops = filters.maxStops;
+    return flights.filter(flight => {
+      if (maxStops === '0') return flight.stops === 0;
+      if (maxStops === '1') return flight.stops === 1;
+      if (maxStops === '2') return flight.stops === 2;
+      if (maxStops === '3') return flight.stops >= 3;
+      return true;
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row gap-8">
@@ -105,26 +118,19 @@ function FlightsContent() {
             {/* Stops Filter */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stops
+                Max Stops
               </label>
-              <div className="space-y-2">
-                {[0, 1, 2].map((stop) => (
-                  <label key={stop} className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={filters.stops.includes(stop)}
-                      onChange={(e) => {
-                        const newStops = e.target.checked
-                          ? [...filters.stops, stop]
-                          : filters.stops.filter((s) => s !== stop);
-                        setFilters({ ...filters, stops: newStops });
-                      }}
-                      className="mr-2"
-                    />
-                    {stop === 0 ? 'Non-stop' : `${stop} stop${stop > 1 ? 's' : ''}`}
-                  </label>
-                ))}
-              </div>
+              <select
+                value={filters.maxStops}
+                onChange={e => setFilters({ ...filters, maxStops: e.target.value })}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Any</option>
+                <option value="0">Non-Stop</option>
+                <option value="1">1 Stop</option>
+                <option value="2">2 Stops</option>
+                <option value="3">3+ Stops</option>
+              </select>
             </div>
           </div>
         </div>
@@ -181,6 +187,7 @@ function FlightsContent() {
             showPagination={true}
             onPageChange={setCurrentPage}
             currentPage={currentPage}
+            filterFlights={filterFlightsByStops}
           />
         </div>
       </div>

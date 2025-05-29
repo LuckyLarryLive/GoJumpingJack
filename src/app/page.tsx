@@ -30,16 +30,16 @@ export default function HomePage() {
       // Update the state with the new search parameters array
       setSearchParamsList(paramsList);
 
-      // Scroll the flight results section into view smoothly after submission.
-      setTimeout(() => {
-        const resultsElement = document.getElementById('flight-results');
-        const searchElement = document.getElementById('search');
-        if (resultsElement) {
-            resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (searchElement) {
-            searchElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 50);
+      // REMOVE: Scroll the flight results section into view smoothly after submission.
+      // setTimeout(() => {
+      //   const resultsElement = document.getElementById('flight-results');
+      //   const searchElement = document.getElementById('search');
+      //   if (resultsElement) {
+      //       resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      //   } else if (searchElement) {
+      //       searchElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      //   }
+      // }, 50);
   };
 
   // Render the sections of the homepage

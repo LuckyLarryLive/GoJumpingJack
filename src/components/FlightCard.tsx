@@ -153,18 +153,15 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return code;
   };
 
-  // Find the origin and destination airport codes for the main card
-  // Always use full airport name and code for both origin and destination
-  const mainOriginCode = flight.outbound_segments[0]?.origin_airport;
-  const mainDestinationCode = flight.outbound_segments[flight.outbound_segments.length - 1]?.destination_airport;
-  const mainOriginName = getAirportName(mainOriginCode);
-  const mainDestinationName = getAirportName(mainDestinationCode);
-  const mainOriginDisplay = `${mainOriginName} (${mainOriginCode})`;
-  const mainDestinationDisplay = `${mainDestinationName} (${mainDestinationCode})`;
+  // Helper to get display string for an airport code
+  const getAirportDisplay = (code: string) => {
+    const airport = airports.find((a: Airport) => a.code === code);
+    return airport ? `${airport.name} (${code})` : code;
+  };
 
-  // Summary line: use full airport name and code
-  const summaryOriginDisplay = `${mainOriginName} (${mainOriginCode})`;
-  const summaryDestinationDisplay = `${mainDestinationName} (${mainDestinationCode})`;
+  // Main card header: use best available info
+  const summaryOriginDisplay = getAirportDisplay(originAirport);
+  const summaryDestinationDisplay = getAirportDisplay(destinationAirport);
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4">
@@ -173,7 +170,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${mainOriginDisplay} → ${mainDestinationDisplay}`}>{mainOriginDisplay} <span className="mx-1">→</span> {mainDestinationDisplay}</div>
+                <div className="font-bold flex items-center gap-2 max-w-[40ch] truncate" title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}>{summaryOriginDisplay} <span className="mx-1">→</span> {summaryDestinationDisplay}</div>
                 <div className="text-sm text-gray-500">
                   {summaryOriginDisplay} → {summaryDestinationDisplay}
                 </div>
@@ -231,12 +228,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                       <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
                     </div>
                     <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
-                      <span className="mx-2" title={getAirportName(segment.origin_airport)}>
-                        {getAirportName(segment.origin_airport)} ({segment.origin_airport})
+                      <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
+                        {getAirportDisplay(segment.origin_airport)}
                       </span>
                       <span className="mx-1">✈️</span>
-                      <span className="mx-2" title={getAirportName(segment.destination_airport)}>
-                        {getAirportName(segment.destination_airport)} ({segment.destination_airport})
+                      <span className="mx-2" title={getAirportDisplay(segment.destination_airport)}>
+                        {getAirportDisplay(segment.destination_airport)}
                       </span>
                     </div>
                   </div>
@@ -261,12 +258,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                         <div className="w-24 text-sm text-center">{formatTime(segment.arrival_at)}</div>
                       </div>
                       <div className="flex justify-center text-xs text-gray-500 mt-1 items-center">
-                        <span className="mx-2" title={getAirportName(segment.origin_airport)}>
-                          {getAirportName(segment.origin_airport)} ({segment.origin_airport})
+                        <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
+                          {getAirportDisplay(segment.origin_airport)}
                         </span>
                         <span className="mx-1">✈️</span>
-                        <span className="mx-2" title={getAirportName(segment.destination_airport)}>
-                          {getAirportName(segment.destination_airport)} ({segment.destination_airport})
+                        <span className="mx-2" title={getAirportDisplay(segment.destination_airport)}>
+                          {getAirportDisplay(segment.destination_airport)}
                         </span>
                       </div>
                     </div>

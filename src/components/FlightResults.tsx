@@ -16,6 +16,7 @@ interface FlightResultsProps {
   showPagination?: boolean;
   onPageChange?: (page: number) => void;
   currentPage?: number;
+  filterFlights?: (flights: any[]) => any[];
 }
 
 const JACK_VIDEO_PATH = '/Jack_Finding_Flights.mp4';
@@ -26,7 +27,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   apiUrl,
   showPagination = false, 
   onPageChange, 
-  currentPage = 1 
+  currentPage = 1,
+  filterFlights
 }) => {
   const router = useRouter();
   const [allOffers, setAllOffers] = useState<any[]>([]);
@@ -223,7 +225,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   };
 
   // Filtering, sorting, and pagination logic (client-side)
-  const sortedFlights = Array.isArray(allOffers) ? [...allOffers].sort((a, b) => a.price - b.price) : [];
+  let sortedFlights = Array.isArray(allOffers) ? [...allOffers].sort((a, b) => a.price - b.price) : [];
+  if (filterFlights) sortedFlights = filterFlights(sortedFlights);
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalResults = sortedFlights.length;
   const totalPages = Math.ceil(totalResults / 10);
