@@ -44,8 +44,12 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       console.log('[FlightResults] loading_phrases data:', data, 'error:', error);
       if (error || !data || data.length === 0) {
         setPhrases(['Finding the best flights...', 'Jack is searching for deals...']);
+        setPhraseIndex(Math.floor(Math.random() * 2));
       } else {
         setPhrases(data.map((row: any) => row.phrase));
+        // Set a random initial phrase index
+        const max = data.length;
+        setPhraseIndex(Math.floor(Math.random() * max));
       }
     }
     fetchPhrases();
@@ -55,8 +59,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const handleVideoLoop = () => {
     if (phrases.length > 1) {
       let nextIndex = phraseIndex;
-      while (phrases.length > 1 && nextIndex === phraseIndex) {
+      let tries = 0;
+      while (phrases.length > 1 && nextIndex === phraseIndex && tries < 10) {
         nextIndex = Math.floor(Math.random() * phrases.length);
+        tries++;
       }
       setPhraseIndex(nextIndex);
     }
