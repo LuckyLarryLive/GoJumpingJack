@@ -36,6 +36,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const [phrases, setPhrases] = useState<string[]>([]);
   const [phraseIndex, setPhraseIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastTimeRef = useRef(0);
 
   // Fetch loading phrases from Supabase on mount
   useEffect(() => {
@@ -55,16 +56,22 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     fetchPhrases();
   }, []);
 
-  // Handler for when the video loops
-  const handleVideoLoop = () => {
-    if (phrases.length === 0) return;
-    let nextIndex = phraseIndex;
-    let tries = 0;
-    while (phrases.length > 1 && nextIndex === phraseIndex && tries < 10) {
-      nextIndex = Math.floor(Math.random() * phrases.length);
-      tries++;
+  // Handler for when the video loops (using onTimeUpdate)
+  const handleVideoTimeUpdate = () => {
+    const video = videoRef.current;
+    if (!video || phrases.length === 0) return;
+    const currentTime = video.currentTime;
+    if (currentTime < lastTimeRef.current) {
+      // Video looped
+      let nextIndex = phraseIndex;
+      let tries = 0;
+      while (phrases.length > 1 && nextIndex === phraseIndex && tries < 10) {
+        nextIndex = Math.floor(Math.random() * phrases.length);
+        tries++;
+      }
+      setPhraseIndex(nextIndex);
     }
-    setPhraseIndex(nextIndex);
+    lastTimeRef.current = currentTime;
   };
 
   // Helper: Filter valid flights (not partial, has outbound segments)
@@ -369,7 +376,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             loop
             muted
             playsInline
-            onEnded={handleVideoLoop}
+            onTimeUpdate={handleVideoTimeUpdate}
             className="rounded-lg shadow-lg mb-4"
             style={{ maxWidth: 800 }}
           />
