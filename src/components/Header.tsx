@@ -1,3 +1,5 @@
+'use client';
+
 // src/components/Header.tsx
 import React from 'react';
 import Image from 'next/image';

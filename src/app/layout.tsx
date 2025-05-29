@@ -4,10 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
-
-// Import Header and Footer components (adjust paths if needed)
-import Header from '@/components/Header'; // Assuming Header is in components
-import Footer from '@/components/Footer'; // Assuming Footer is in components
+import ClientLayout from '@/components/ClientLayout';
 
 // --- Font Instantiation (Your setup is correct) ---
 const playfair = Playfair_Display({
@@ -78,11 +75,9 @@ export default function RootLayout({
         `}
       >
         <AuthProvider>
-          <Header /> {/* ADDED: Header included on all pages */}
-          <main className="flex-grow"> {/* ADDED: Main content area that grows */}
-            {children} {/* Page content goes here */}
-          </main>
-          <Footer /> {/* ADDED: Footer included on all pages */}
+          <ClientLayout>
+            {children}
+          </ClientLayout>
         </AuthProvider>
       </body>
     </html>
