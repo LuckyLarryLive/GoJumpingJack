@@ -88,8 +88,14 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     console.error('Signup error:', error);
+    let errorMessage = 'Failed to create account';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'object') {
+      errorMessage = JSON.stringify(error);
+    }
     return NextResponse.json(
-      { error: 'Failed to create account' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
