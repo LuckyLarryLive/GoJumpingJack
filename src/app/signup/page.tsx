@@ -188,7 +188,7 @@ export default function SignupPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {error && (
+          {error && error !== 'Jack says your passwords need to match' && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600">{error}</p>
             </div>
@@ -215,9 +215,16 @@ export default function SignupPage() {
               </div>
 
               <div className="relative">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  {passwordError && (
+                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                      {passwordError}
+                    </div>
+                  )}
+                </div>
                 <div className="mt-1 relative">
                   <input
                     id="password"
@@ -235,7 +242,8 @@ export default function SignupPage() {
                     type="button"
                     tabIndex={-1}
                     aria-label="Show password"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    style={{ top: '50%', transform: 'translateY(-50%)' }}
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
                     onMouseLeave={() => setShowPassword(false)}
@@ -248,18 +256,20 @@ export default function SignupPage() {
                   <p className="text-xs text-gray-500 mt-1">
                     Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
                   </p>
-                  {passwordError && (
-                    <div className="absolute left-0 mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
-                      {passwordError}
-                    </div>
-                  )}
                 </div>
               </div>
 
               <div className="relative">
-                <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-700">
-                  Confirm password
-                </label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-700">
+                    Confirm password
+                  </label>
+                  {error === 'Jack says your passwords need to match' && (
+                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                      {error}
+                    </div>
+                  )}
+                </div>
                 <div className="mt-1 relative">
                   <input
                     id="passwordConfirmation"
@@ -277,7 +287,8 @@ export default function SignupPage() {
                     type="button"
                     tabIndex={-1}
                     aria-label="Show password confirmation"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    style={{ top: '50%', transform: 'translateY(-50%)' }}
                     onMouseDown={() => setShowPasswordConfirm(true)}
                     onMouseUp={() => setShowPasswordConfirm(false)}
                     onMouseLeave={() => setShowPasswordConfirm(false)}
@@ -287,11 +298,6 @@ export default function SignupPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
                     </svg>
                   </button>
-                  {error === 'Jack says your passwords need to match' && (
-                    <div className="absolute left-0 mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
-                      {error}
-                    </div>
-                  )}
                 </div>
               </div>
 
