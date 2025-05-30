@@ -7,6 +7,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { SignupStep1, SignupStep2 } from '@/types/user';
 import AirlineSearchInput from '@/components/AirlineSearchInput';
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
+import AirportSearchInput from '@/components/AirportSearchInput';
 
 export default function SignupPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -16,10 +17,10 @@ export default function SignupPage() {
     password: '',
     passwordConfirmation: '',
   });
-  const [step2Data, setStep2Data] = useState<SignupStep2>({
+  const [step2Data, setStep2Data] = useState<Omit<SignupStep2, 'dateOfBirth'> & { dateOfBirth: Date | null }>({
     firstName: '',
     lastName: '',
-    dateOfBirth: new Date(),
+    dateOfBirth: null,
     phoneNumber: '',
     homeAirportIataCode: null,
     avoidedAirlineIataCodes: null,
@@ -134,6 +135,11 @@ export default function SignupPage() {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (!step2Data.dateOfBirth) {
+      setError('Date of birth is required.');
+      return;
+    }
 
     try {
       await signup(2, step2Data);
@@ -360,8 +366,8 @@ export default function SignupPage() {
                     name="dateOfBirth"
                     type="date"
                     required
-                    value={step2Data.dateOfBirth ? new Date(step2Data.dateOfBirth).toISOString().split('T')[0] : ''}
-                    onChange={(e) => setStep2Data({ ...step2Data, dateOfBirth: new Date(e.target.value) })}
+                    value={step2Data.dateOfBirth ? step2Data.dateOfBirth.toISOString().split('T')[0] : ''}
+                    onChange={(e) => setStep2Data({ ...step2Data, dateOfBirth: e.target.value ? new Date(e.target.value) : null })}
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                 </div>
@@ -387,76 +393,16 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="homeAirportIataCode" className="block text-sm font-medium text-gray-700">
-                  Home airport (IATA code)
+                  Home City / Airport
                 </label>
                 <div className="mt-1">
-                  <input
-                    id="homeAirportIataCode"
-                    name="homeAirportIataCode"
-                    type="text"
-                    maxLength={3}
-                    value={step2Data.homeAirportIataCode || ''}
-                    onChange={(e) => setStep2Data({ ...step2Data, homeAirportIataCode: e.target.value.toUpperCase() })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  <AirportSearchInput
+                    id="home-airport-search"
+                    label="Search city or airport"
+                    placeholder="Start typing a city or airport name"
+                    onAirportSelect={(iataCode, displayValue) => setStep2Data({ ...step2Data, homeAirportIataCode: iataCode })}
+                    currentValue={step2Data.homeAirportIataCode}
                   />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Airlines to avoid
-                </label>
-                <div className="space-y-4">
-                  <AirlineSearchInput
-                    id="airline-search"
-                    label="Search airlines"
-                    placeholder="Search for an airline"
-                    onAirlineSelect={handleAirlineSelect}
-                  />
-                  
-                  {avoidedAirlines.length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">Selected airlines:</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {avoidedAirlines.map((airline) => (
-                          <div
-                            key={airline.iataCode}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                          >
-                            {airline.name}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveAirline(airline.iataCode)}
-                              className="ml-2 text-blue-600 hover:text-blue-800"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="defaultCabinClass" className="block text-sm font-medium text-gray-700">
-                  Default cabin class
-                </label>
-                <div className="mt-1">
-                  <select
-                    id="defaultCabinClass"
-                    name="defaultCabinClass"
-                    value={step2Data.defaultCabinClass || ''}
-                    onChange={(e) => setStep2Data({ ...step2Data, defaultCabinClass: e.target.value as any })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  >
-                    <option value="">Select cabin class</option>
-                    <option value="economy">Economy</option>
-                    <option value="premium_economy">Premium Economy</option>
-                    <option value="business">Business</option>
-                    <option value="first">First</option>
-                  </select>
                 </div>
               </div>
 
