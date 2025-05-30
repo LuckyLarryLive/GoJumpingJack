@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -32,16 +32,102 @@ export default function SignupPage() {
   const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>([]);
   const { signup } = useAuthContext();
   const router = useRouter();
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+  const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
+
+  // Password validation regex (same as schema)
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+
+  const validatePassword = (password: string) => {
+    return passwordRegex.test(password);
+  };
+
+  const handlePasswordBlur = () => {
+    setPasswordTouched(true);
+    if (!validatePassword(step1Data.password)) {
+      setPasswordError("Jack says your password needs attention");
+    } else {
+      setPasswordError('');
+    }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStep1Data({ ...step1Data, password: e.target.value });
+    if (passwordTouched) {
+      if (!validatePassword(e.target.value)) {
+        setPasswordError("Jack says your password needs attention");
+      } else {
+        setPasswordError('');
+      }
+    }
+  };
+
+  const handlePasswordConfirmBlur = () => {
+    if (step1Data.password !== step1Data.passwordConfirmation) {
+      setError("Jack says your passwords need to match");
+      if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
+      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.add('border-red-500');
+    } else {
+      setError('');
+      if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
+      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+    }
+  };
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setPasswordTouched(true);
 
+    // Check password validity
+    if (!validatePassword(step1Data.password)) {
+      setPasswordError("Jack says your password needs attention");
+      if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
+      return;
+    } else {
+      setPasswordError('');
+      if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
+    }
+
+    // Check passwords match
+    if (step1Data.password !== step1Data.passwordConfirmation) {
+      setError("Jack says your passwords need to match");
+      if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
+      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.add('border-red-500');
+      return;
+    } else {
+      setError('');
+      if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
+      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+    }
+
+    // Check if email already exists
     try {
-      await signup(1, step1Data);
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 1, data: step1Data }),
+      });
+      const result = await res.json();
+      if (!res.ok && result.error === 'Email already registered') {
+        setError('Jack says this email is already registered.');
+        setStep1Data({ email: '', password: '', passwordConfirmation: '' });
+        setPasswordError('');
+        setPasswordTouched(false);
+        if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
+        if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+        return;
+      } else if (!res.ok) {
+        setError(result.error || 'Failed to create account');
+        return;
+      }
       setStep(2);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create account');
+      setError('Failed to create account');
     }
   };
 
@@ -104,7 +190,7 @@ export default function SignupPage() {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600">{error.includes('regex') ? 'Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.' : error}</p>
+              <p className="text-red-600">{error}</p>
             </div>
           )}
 
@@ -128,42 +214,84 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
+                    ref={passwordInputRef}
                     value={step1Data.password}
-                    onChange={(e) => setStep1Data({ ...step1Data, password: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    onChange={handlePasswordChange}
+                    onBlur={handlePasswordBlur}
+                    className={`appearance-none block w-full px-3 py-2 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label="Show password"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    onMouseDown={() => setShowPassword(true)}
+                    onMouseUp={() => setShowPassword(false)}
+                    onMouseLeave={() => setShowPassword(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    </svg>
+                  </button>
                   <p className="text-xs text-gray-500 mt-1">
                     Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
                   </p>
+                  {passwordError && (
+                    <div className="absolute left-0 mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                      {passwordError}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div>
+              <div className="relative">
                 <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-700">
                   Confirm password
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
                   <input
                     id="passwordConfirmation"
                     name="passwordConfirmation"
-                    type="password"
+                    type={showPasswordConfirm ? 'text' : 'password'}
                     autoComplete="new-password"
                     required
+                    ref={passwordConfirmInputRef}
                     value={step1Data.passwordConfirmation}
                     onChange={(e) => setStep1Data({ ...step1Data, passwordConfirmation: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    onBlur={handlePasswordConfirmBlur}
+                    className={`appearance-none block w-full px-3 py-2 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
                   />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    aria-label="Show password confirmation"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                    onMouseDown={() => setShowPasswordConfirm(true)}
+                    onMouseUp={() => setShowPasswordConfirm(false)}
+                    onMouseLeave={() => setShowPasswordConfirm(false)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    </svg>
+                  </button>
+                  {error === 'Jack says your passwords need to match' && (
+                    <div className="absolute left-0 mt-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                      {error}
+                    </div>
+                  )}
                 </div>
               </div>
 
