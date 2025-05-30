@@ -34,7 +34,7 @@ export const userSchema = z.object({
 // Signup Schema (Step 1)
 export const signupStep1Schema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+  password: z.string().min(12).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/),
   passwordConfirmation: z.string(),
 }).refine((data) => data.password === data.passwordConfirmation, {
   message: "Passwords don't match",
