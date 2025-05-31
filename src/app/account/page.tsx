@@ -120,7 +120,7 @@ export default function AccountPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 py-6 px-2 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto w-full max-w-full">
+          <div className="mx-auto w-full">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
 
             {error && (
@@ -149,7 +149,7 @@ export default function AccountPage() {
                       id="firstName"
                       value={formData.firstName || ''}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -163,7 +163,7 @@ export default function AccountPage() {
                       id="lastName"
                       value={formData.lastName || ''}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -177,7 +177,7 @@ export default function AccountPage() {
                       id="email"
                       value={user.email}
                       disabled
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 bg-gray-50 text-gray-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 bg-gray-50 text-gray-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -191,7 +191,7 @@ export default function AccountPage() {
                       id="phoneNumber"
                       value={formData.phoneNumber || ''}
                       onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -205,7 +205,7 @@ export default function AccountPage() {
                       id="dateOfBirth"
                       value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString().split('T')[0] : ''}
                       onChange={(e) => setFormData({ ...formData, dateOfBirth: new Date(e.target.value) })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function AccountPage() {
                       id="homeAirportIataCode"
                       value={formData.homeAirportIataCode || ''}
                       onChange={(e) => setFormData({ ...formData, homeAirportIataCode: e.target.value })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -237,7 +237,7 @@ export default function AccountPage() {
                       name="defaultCabinClass"
                       value={formData.defaultCabinClass || ''}
                       onChange={(e) => setFormData({ ...formData, defaultCabinClass: e.target.value as any })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     >
                       <option value="">Select cabin class</option>
                       <option value="economy">Economy</option>
@@ -259,7 +259,7 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultAdultPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultAdultPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -275,7 +275,7 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultChildPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultChildPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
@@ -291,7 +291,7 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultInfantPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultInfantPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>

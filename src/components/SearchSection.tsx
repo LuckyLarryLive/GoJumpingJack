@@ -337,10 +337,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
         return (
             <section id="search" className="py-6 bg-gray-50" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
                 <div className="container mx-auto px-2 sm:px-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto w-full max-w-full" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full max-w-full">
-                            <div className="flex-1 w-full max-w-full">
-                                <div className="flex flex-wrap gap-4 w-full max-w-full">
+                    <div className="bg-white p-4 rounded-lg shadow-sm mx-auto w-full" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+                            <div className="flex-1 w-full">
+                                <div className="flex flex-wrap gap-4 w-full">
                                     <div>
                                         <span className="text-base sm:text-sm text-gray-500">From</span>
                                         <p className="font-medium break-words max-w-full">{originSelectionType === 'city' && originCityNameForApi ? originCityNameForApi : originAirportCode}</p>
@@ -384,8 +384,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     return (
         <section id="search" className="py-6 bg-gray-50 scroll-mt-24" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
             <div className="container mx-auto px-2 sm:px-4">
-                <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-4xl mx-auto w-full max-w-full">
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-full">
+                <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg mx-auto w-full">
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                         {/* Trip Type Toggle */}
                         <div className="md:col-span-2 lg:col-span-4 flex items-center space-x-4 mb-2">
                             <label className="inline-flex items-center">

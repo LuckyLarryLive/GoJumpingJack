@@ -93,10 +93,10 @@ function FlightsContent() {
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-6">
-      <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-full">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full">
         {/* Filters Sidebar */}
-        <div className="w-full md:w-64 space-y-6 mb-4 md:mb-0">
-          <div className="bg-white rounded-lg shadow p-4 w-full max-w-full">
+        <div className="w-full md:w-1/4">
+          <div className="bg-white rounded-lg shadow p-4 w-full">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <FaFilter className="mr-2" /> Filters
             </h2>
@@ -110,7 +110,7 @@ function FlightsContent() {
                 type="number"
                 value={filters.maxPrice}
                 onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                className="w-full max-w-full p-3 border rounded-lg text-base sm:text-sm"
+                className="w-full p-3 border rounded-lg text-base sm:text-sm"
                 placeholder="Enter max price"
               />
             </div>
@@ -123,7 +123,7 @@ function FlightsContent() {
               <select
                 value={filters.maxStops}
                 onChange={e => setFilters({ ...filters, maxStops: e.target.value })}
-                className="w-full max-w-full p-3 border rounded-lg text-base sm:text-sm"
+                className="w-full p-3 border rounded-lg text-base sm:text-sm"
               >
                 <option value="">Any</option>
                 <option value="0">Non-Stop</option>
@@ -136,9 +136,9 @@ function FlightsContent() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 w-full max-w-full">
+        <div className="flex-1 w-full">
           {/* Sort Controls */}
-          <div className="bg-white rounded-lg shadow p-4 mb-6 w-full max-w-full">
+          <div className="bg-white rounded-lg shadow p-4 mb-6 w-full">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
               <div>
                 <div className="text-xl sm:text-2xl font-bold break-words max-w-full">

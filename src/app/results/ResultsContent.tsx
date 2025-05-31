@@ -107,7 +107,7 @@ export default function ResultsContent() {
     return (
       <>
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 md:gap-6 mb-6 items-end w-full max-w-full">
+        <div className="flex flex-wrap gap-4 md:gap-6 mb-6 items-end w-full">
           {/* Price Filter */}
           <div>
             <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Price Range</label>
@@ -165,14 +165,14 @@ export default function ResultsContent() {
             </select>
           </div>
         </div>
-        <div className="space-y-4 w-full max-w-full">
+        <div className="space-y-4 w-full">
           {Array.isArray(pageFlights) && pageFlights.length > 0 ? pageFlights.map((flight, index) => (
             <FlightCard key={`${flight.link || 'flight-result'}-${startIdx + index}`} flight={flight} />
           )) : <div className="text-center text-gray-600 py-10">No flights to display.</div>}
         </div>
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-8 w-full max-w-full">
+          <div className="flex justify-center items-center gap-4 mt-8 w-full">
             <button
               className="px-4 py-2 bg-gray-200 rounded-lg text-base sm:text-sm disabled:opacity-50"
               onClick={() => setPage(page - 1)}
@@ -195,8 +195,8 @@ export default function ResultsContent() {
   };
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-6 w-full max-w-full">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 break-words max-w-full">
+    <div className="container mx-auto px-2 sm:px-4 py-6 w-full">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 break-words">
         Flight Results
         {originAirport && destinationAirport && (
           <span className="block text-lg font-normal text-gray-600 mt-1">

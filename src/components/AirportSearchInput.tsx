@@ -426,7 +426,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // --- Render ---
   console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
-    <div ref={containerRef} className="relative w-full max-w-full">
+    <div ref={containerRef} className="relative w-full">
       <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">{label}</label>
       <input
         type="text"
@@ -445,7 +445,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
             }
           }, 150);
         }}
-        className="w-full max-w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm text-base sm:text-sm"
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm text-base sm:text-sm"
         autoComplete="off"
       />
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}

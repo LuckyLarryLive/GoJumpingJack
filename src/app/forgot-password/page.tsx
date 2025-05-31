@@ -25,7 +25,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-8 px-2 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full max-w-full space-y-8">
+      <div className="w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
             Reset your password
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
               type="email"
               autoComplete="email"
               required
-              className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+              className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

@@ -164,12 +164,12 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const summaryDestinationDisplay = getAirportDisplay(destinationAirport);
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 w-full max-w-full">
-      <div className="p-4 w-full max-w-full">
-        <div className="flex flex-col sm:flex-row justify-between items-start w-full max-w-full gap-2">
-          <div className="flex-1 w-full max-w-full">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 w-full max-w-full">
-              <div className="w-full max-w-full">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 w-full">
+      <div className="p-4 w-full">
+        <div className="flex flex-col sm:flex-row justify-between items-start w-full gap-2">
+          <div className="flex-1 w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 w-full">
+              <div className="w-full">
                 <div className="font-bold flex items-center gap-2 max-w-full truncate text-base sm:text-lg" title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}>{getAirportDisplay(originAirport)} <span className="mx-1">→</span> {getAirportDisplay(destinationAirport)}</div>
                 <div className="text-sm text-gray-500 max-w-full break-words">
                   {originAirport} → {destinationAirport}
@@ -209,15 +209,15 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
         </button>
 
         {showTimeline && (
-          <div className="mt-4 border-t pt-4 w-full max-w-full">
-            <div className="space-y-4 w-full max-w-full">
+          <div className="mt-4 border-t pt-4 w-full">
+            <div className="space-y-4 w-full">
               {/* Outbound Flight */}
               <div>
                 <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
                 <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                 {flight.outbound_segments.map((segment, index) => (
-                  <div key={index} className="flex flex-col items-center mb-2 w-full max-w-full">
-                    <div className="flex items-center justify-center w-full max-w-full">
+                  <div key={index} className="flex flex-col items-center mb-2 w-full">
+                    <div className="flex items-center justify-center w-full">
                       <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.departure_at)}</div>
                       <div className="flex-1 px-2 sm:px-4 relative">
                         <div className="h-0.5 bg-gray-300 relative">
@@ -227,7 +227,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                       </div>
                       <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.arrival_at)}</div>
                     </div>
-                    <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full max-w-full">
+                    <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full">
                       <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
                         {getAirportDisplay(segment.origin_airport)}
                       </span>
@@ -246,8 +246,8 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                   <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
                   <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                   {flight.return_segments.map((segment, index) => (
-                    <div key={index} className="flex flex-col items-center mb-2 w-full max-w-full">
-                      <div className="flex items-center justify-center w-full max-w-full">
+                    <div key={index} className="flex flex-col items-center mb-2 w-full">
+                      <div className="flex items-center justify-center w-full">
                         <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.departure_at)}</div>
                         <div className="flex-1 px-2 sm:px-4 relative">
                           <div className="h-0.5 bg-gray-300 relative">
@@ -257,7 +257,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
                         </div>
                         <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.arrival_at)}</div>
                       </div>
-                      <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full max-w-full">
+                      <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full">
                         <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
                           {getAirportDisplay(segment.origin_airport)}
                         </span>
