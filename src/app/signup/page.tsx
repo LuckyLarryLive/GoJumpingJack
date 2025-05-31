@@ -243,7 +243,7 @@ export default function SignupPage() {
                     value={step1Data.password}
                     onChange={handlePasswordChange}
                     onBlur={handlePasswordBlur}
-                    className={`appearance-none block w-full max-w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
+                    className={`appearance-none block w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
                   />
                   <button
                     type="button"
@@ -287,7 +287,7 @@ export default function SignupPage() {
                     value={step1Data.passwordConfirmation}
                     onChange={(e) => setStep1Data({ ...step1Data, passwordConfirmation: e.target.value })}
                     onBlur={handlePasswordConfirmBlur}
-                    className={`appearance-none block w-full max-w-full px-4 py-3 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
+                    className={`appearance-none block w-full px-4 py-3 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
                   />
                   <button
                     type="button"
@@ -422,7 +422,7 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultAdultPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultAdultPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultChildPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultChildPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
@@ -458,7 +458,7 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultInfantPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultInfantPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
