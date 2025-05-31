@@ -25,9 +25,9 @@ export default function SignupPage() {
     homeAirportIataCode: null,
     avoidedAirlineIataCodes: null,
     defaultCabinClass: null,
-    defaultAdultPassengers: null,
-    defaultChildPassengers: null,
-    defaultInfantPassengers: null,
+    defaultAdultPassengers: 1,
+    defaultChildPassengers: 0,
+    defaultInfantPassengers: 0,
     loyaltyPrograms: null,
   });
   const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>([]);
@@ -136,14 +136,12 @@ export default function SignupPage() {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!step2Data.dateOfBirth) {
-      setError('Date of birth is required.');
-      return;
+    let dateOfBirth = step2Data.dateOfBirth;
+    if (typeof dateOfBirth === 'string') {
+      dateOfBirth = new Date(dateOfBirth);
     }
-
     try {
-      await signup(2, step2Data);
+      await signup(2, { ...step2Data, dateOfBirth });
       router.push('/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete profile');
@@ -434,7 +432,7 @@ export default function SignupPage() {
                       type="number"
                       min="0"
                       max="9"
-                      value={step2Data.defaultChildPassengers ?? ''}
+                      value={step2Data.defaultChildPassengers ?? 0}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultChildPassengers: parseInt(e.target.value) })}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
@@ -452,7 +450,7 @@ export default function SignupPage() {
                       type="number"
                       min="0"
                       max="9"
-                      value={step2Data.defaultInfantPassengers ?? ''}
+                      value={step2Data.defaultInfantPassengers ?? 0}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultInfantPassengers: parseInt(e.target.value) })}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
