@@ -221,18 +221,16 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  {passwordError && (
-                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
-                      {passwordError}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-1 relative">
+              <div>
+                <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                {passwordError && (
+                  <div className="ml-0 mb-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
+                    {passwordError}
+                  </div>
+                )}
+                <div className="relative">
                   <input
                     id="password"
                     name="password"
@@ -259,24 +257,22 @@ export default function SignupPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
                     </svg>
                   </button>
-                  <p className="text-xs sm:text-xs text-gray-500 mt-2 max-w-full break-words">
-                    Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
-                  </p>
                 </div>
+                <p className="text-xs sm:text-xs text-gray-500 mt-2 max-w-full break-words">
+                  Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
+                </p>
               </div>
 
-              <div className="relative">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="passwordConfirmation" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                    Confirm password
-                  </label>
-                  {error === 'Jack says your passwords need to match' && (
-                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
-                      {error}
-                    </div>
-                  )}
-                </div>
-                <div className="mt-1 relative">
+              <div>
+                <label htmlFor="passwordConfirmation" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  Confirm password
+                </label>
+                {error === 'Jack says your passwords need to match' && (
+                  <div className="ml-0 mb-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
+                    {error}
+                  </div>
+                )}
+                <div className="relative">
                   <input
                     id="passwordConfirmation"
                     name="passwordConfirmation"
@@ -438,7 +434,7 @@ export default function SignupPage() {
                       type="number"
                       min="0"
                       max="9"
-                      value={step2Data.defaultChildPassengers || ''}
+                      value={step2Data.defaultChildPassengers ?? ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultChildPassengers: parseInt(e.target.value) })}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
@@ -456,7 +452,7 @@ export default function SignupPage() {
                       type="number"
                       min="0"
                       max="9"
-                      value={step2Data.defaultInfantPassengers || ''}
+                      value={step2Data.defaultInfantPassengers ?? ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultInfantPassengers: parseInt(e.target.value) })}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
@@ -495,15 +491,7 @@ export default function SignupPage() {
                 >
                   Sign in
                 </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Back to step 1
-                </button>
-              )}
+              ) : null}
             </div>
           </div>
         </div>
