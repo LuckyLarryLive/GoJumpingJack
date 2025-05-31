@@ -133,15 +133,41 @@ export default function SignupPage() {
     }
   };
 
+  // Phone number formatting helper
+  function formatUSPhoneNumber(value: string) {
+    // Remove all non-digit characters
+    const digits = value.replace(/\D/g, '');
+    if (digits.length === 0) return '';
+    let formatted = '+1 ';
+    if (digits.length <= 3) {
+      formatted += `(${digits}`;
+    } else if (digits.length <= 6) {
+      formatted += `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    } else {
+      formatted += `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+    }
+    return formatted.trim();
+  }
+
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    let dateOfBirth = step2Data.dateOfBirth;
-    if (typeof dateOfBirth === 'string') {
-      dateOfBirth = new Date(dateOfBirth);
+    let dateOfBirthISO: string | undefined = undefined;
+    if (step2Data.dateOfBirth instanceof Date && !isNaN(step2Data.dateOfBirth.getTime())) {
+      dateOfBirthISO = step2Data.dateOfBirth.toISOString();
+    } else if (typeof step2Data.dateOfBirth === 'string') {
+      // Try to parse string to Date
+      const d = new Date(step2Data.dateOfBirth);
+      if (!isNaN(d.getTime())) {
+        dateOfBirthISO = d.toISOString();
+      }
+    }
+    let homeAirportIataCode = step2Data.homeAirportIataCode;
+    if (typeof homeAirportIataCode === 'string' && homeAirportIataCode.includes(',')) {
+      homeAirportIataCode = homeAirportIataCode.split(',')[0];
     }
     try {
-      await signup(2, { ...step2Data, dateOfBirth });
+      await signup(2, { ...step2Data, dateOfBirth: dateOfBirthISO, homeAirportIataCode });
       router.push('/account');
     } catch (err) {
       // Try to parse backend error for user-friendly display
@@ -393,8 +419,15 @@ export default function SignupPage() {
                     type="tel"
                     autoComplete="tel"
                     required
-                    value={step2Data.phoneNumber}
-                    onChange={(e) => setStep2Data({ ...step2Data, phoneNumber: e.target.value })}
+                    value={formatUSPhoneNumber(step2Data.phoneNumber)}
+                    onChange={(e) => {
+                      // Only store digits
+                      setStep2Data({ ...step2Data, phoneNumber: e.target.value.replace(/\D/g, '') });
+                    }}
+                    onBlur={(e) => {
+                      // Format on blur (already formatted onChange)
+                      setStep2Data({ ...step2Data, phoneNumber: e.target.value.replace(/\D/g, '') });
+                    }}
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
