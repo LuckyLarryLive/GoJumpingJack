@@ -136,7 +136,13 @@ export default function SignupPage() {
   // Phone number formatting helper
   function formatUSPhoneNumber(value: string) {
     // Remove all non-digit characters
-    const digits = value.replace(/\D/g, '');
+    let digits = value.replace(/\D/g, '');
+    // If starts with 1 and length > 10, remove the leading 1
+    if (digits.length > 10 && digits[0] === '1') {
+      digits = digits.slice(1);
+    }
+    // Only keep the last 10 digits
+    digits = digits.slice(-10);
     if (digits.length === 0) return '';
     let formatted = '+1 ';
     if (digits.length <= 3) {
@@ -421,12 +427,22 @@ export default function SignupPage() {
                     required
                     value={formatUSPhoneNumber(step2Data.phoneNumber)}
                     onChange={(e) => {
-                      // Only store digits
-                      setStep2Data({ ...step2Data, phoneNumber: e.target.value.replace(/\D/g, '') });
+                      // Only store last 10 digits, strip leading 1 if present
+                      let digits = e.target.value.replace(/\D/g, '');
+                      if (digits.length > 10 && digits[0] === '1') {
+                        digits = digits.slice(1);
+                      }
+                      digits = digits.slice(-10);
+                      setStep2Data({ ...step2Data, phoneNumber: digits });
                     }}
                     onBlur={(e) => {
-                      // Format on blur (already formatted onChange)
-                      setStep2Data({ ...step2Data, phoneNumber: e.target.value.replace(/\D/g, '') });
+                      // Only store last 10 digits, strip leading 1 if present
+                      let digits = e.target.value.replace(/\D/g, '');
+                      if (digits.length > 10 && digits[0] === '1') {
+                        digits = digits.slice(1);
+                      }
+                      digits = digits.slice(-10);
+                      setStep2Data({ ...step2Data, phoneNumber: digits });
                     }}
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
