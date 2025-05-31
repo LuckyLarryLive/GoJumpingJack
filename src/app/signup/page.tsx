@@ -144,7 +144,23 @@ export default function SignupPage() {
       await signup(2, { ...step2Data, dateOfBirth });
       router.push('/account');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to complete profile');
+      // Try to parse backend error for user-friendly display
+      let msg = 'Failed to complete profile';
+      if (err && typeof err === 'object' && 'message' in err) {
+        try {
+          const parsed = JSON.parse((err as any).message);
+          if (Array.isArray(parsed)) {
+            msg = parsed.map((e: any) => e.message || JSON.stringify(e)).join(' ');
+          } else if (typeof parsed === 'object' && parsed.message) {
+            msg = parsed.message;
+          } else {
+            msg = (err as any).message;
+          }
+        } catch {
+          msg = (err as any).message;
+        }
+      }
+      setError(msg);
     }
   };
 
@@ -475,12 +491,11 @@ export default function SignupPage() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  {step === 1 ? 'Already have an account?' : 'Need to go back?'}
-                </span>
+                {step === 1 ? (
+                  <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+                ) : null}
               </div>
             </div>
-
             <div className="mt-6">
               {step === 1 ? (
                 <Link
