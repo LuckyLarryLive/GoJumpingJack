@@ -336,40 +336,40 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     if (isMinimized) {
         return (
             <section id="search" className="py-6 bg-gray-50" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
-                <div className="container mx-auto px-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-4">
+                <div className="container mx-auto px-2 sm:px-4">
+                    <div className="bg-white p-4 rounded-lg shadow-sm max-w-6xl mx-auto w-full max-w-full" style={{ backgroundColor: 'rgba(255,255,255,0.75)' }}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full max-w-full">
+                            <div className="flex-1 w-full max-w-full">
+                                <div className="flex flex-wrap gap-4 w-full max-w-full">
                                     <div>
-                                        <span className="text-sm text-gray-500">From</span>
-                                        <p className="font-medium">{originSelectionType === 'city' && originCityNameForApi ? originCityNameForApi : originAirportCode}</p>
+                                        <span className="text-base sm:text-sm text-gray-500">From</span>
+                                        <p className="font-medium break-words max-w-full">{originSelectionType === 'city' && originCityNameForApi ? originCityNameForApi : originAirportCode}</p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-500">To</span>
-                                        <p className="font-medium">{destinationSelectionType === 'city' && destinationCityNameForApi ? destinationCityNameForApi : destinationAirportCode}</p>
+                                        <span className="text-base sm:text-sm text-gray-500">To</span>
+                                        <p className="font-medium break-words max-w-full">{destinationSelectionType === 'city' && destinationCityNameForApi ? destinationCityNameForApi : destinationAirportCode}</p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-500">Dates</span>
-                                        <p className="font-medium">
+                                        <span className="text-base sm:text-sm text-gray-500">Dates</span>
+                                        <p className="font-medium break-words max-w-full">
                                             {departureDate} {returnDate ? `- ${returnDate}` : '(One-way)'}
                                         </p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-500">Passengers</span>
-                                        <p className="font-medium">
+                                        <span className="text-base sm:text-sm text-gray-500">Passengers</span>
+                                        <p className="font-medium break-words max-w-full">
                                             {adults + passengers.children} {passengers.infants > 0 ? `+ ${passengers.infants} infant` : ''}
                                         </p>
                                     </div>
                                     <div>
-                                        <span className="text-sm text-gray-500">Class</span>
-                                        <p className="font-medium capitalize">{cabinClass.replace('_', ' ')}</p>
+                                        <span className="text-base sm:text-sm text-gray-500">Class</span>
+                                        <p className="font-medium capitalize break-words max-w-full">{cabinClass.replace('_', ' ')}</p>
                                     </div>
                                 </div>
                             </div>
                             <button
                                 onClick={handleEditFilters}
-                                className="text-blue-600 hover:text-blue-800 font-medium"
+                                className="text-blue-600 hover:text-blue-800 font-medium mt-4 sm:mt-0 px-4 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all"
                             >
                                 Edit Search
                             </button>
@@ -383,9 +383,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     // Expanded View (Form)
     return (
         <section id="search" className="py-6 bg-gray-50 scroll-mt-24" style={{ backgroundImage: `url(${backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center', transition: 'opacity 1.75s ease-in-out', opacity: isFading ? 0 : 1 }}>
-            <div className="container mx-auto px-4">
-                <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-4xl mx-auto">
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="container mx-auto px-2 sm:px-4">
+                <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg max-w-4xl mx-auto w-full max-w-full">
+                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-full">
                         {/* Trip Type Toggle */}
                         <div className="md:col-span-2 lg:col-span-4 flex items-center space-x-4 mb-2">
                             <label className="inline-flex items-center">
@@ -397,7 +397,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                     onChange={handleTripTypeChange}
                                     className="form-radio text-blue-600"
                                 />
-                                <span className="ml-2">Round Trip</span>
+                                <span className="ml-2 text-base sm:text-sm">Round Trip</span>
                             </label>
                             <label className="inline-flex items-center">
                                 <input
@@ -408,7 +408,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                     onChange={handleTripTypeChange}
                                     className="form-radio text-blue-600"
                                 />
-                                <span className="ml-2">One Way</span>
+                                <span className="ml-2 text-base sm:text-sm">One Way</span>
                             </label>
                         </div>
 
@@ -437,7 +437,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
                         {/* Date Inputs */}
                         <div>
-                            <label htmlFor="departure-date" className="block text-sm font-medium text-gray-700 mb-1">Depart</label>
+                            <label htmlFor="departure-date" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Depart</label>
                             <input
                                 type="date"
                                 id="departure-date"
@@ -445,12 +445,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 required
                                 value={departureDate}
                                 onChange={(e) => setDepartureDate(e.target.value)}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm"
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm text-base sm:text-sm"
                                 min={today}
                             />
                         </div>
                         <div>
-                            <label htmlFor="return-date" className="block text-sm font-medium text-gray-700 mb-1">Return</label>
+                            <label htmlFor="return-date" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Return</label>
                             <input
                                 type="date"
                                 id="return-date"
@@ -459,7 +459,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                                 value={returnDate}
                                 onChange={(e) => setReturnDate(e.target.value)}
                                 disabled={tripType === 'one-way'}
-                                className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm ${tripType === 'one-way' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white/25 backdrop-blur-sm text-base sm:text-sm ${tripType === 'one-way' ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 min={departureDate || today}
                             />
                         </div>
@@ -467,27 +467,27 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         {/* Passengers */}
                         <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-end">
                           <div className="flex flex-col flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Adults</label>
+                            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Adults</label>
                             <div className="flex items-center gap-2 mt-1">
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('adults', Math.max(1, passengers.adults - 1))} disabled={passengers.adults <= 1}>-</button>
-                              <span className="w-8 text-center font-semibold">{passengers.adults}</span>
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('adults', Math.min(9, passengers.adults + 1))} disabled={passengers.adults >= 9}>+</button>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('adults', Math.max(1, passengers.adults - 1))} disabled={passengers.adults <= 1}>-</button>
+                              <span className="w-8 text-center font-semibold text-base sm:text-sm">{passengers.adults}</span>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('adults', Math.min(9, passengers.adults + 1))} disabled={passengers.adults >= 9}>+</button>
                             </div>
                           </div>
                           <div className="flex flex-col flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Children</label>
+                            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Children</label>
                             <div className="flex items-center gap-2 mt-1">
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('children', Math.max(0, passengers.children - 1))} disabled={passengers.children <= 0}>-</button>
-                              <span className="w-8 text-center font-semibold">{passengers.children}</span>
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('children', Math.min(8, passengers.children + 1))} disabled={passengers.children >= 8}>+</button>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('children', Math.max(0, passengers.children - 1))} disabled={passengers.children <= 0}>-</button>
+                              <span className="w-8 text-center font-semibold text-base sm:text-sm">{passengers.children}</span>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('children', Math.min(8, passengers.children + 1))} disabled={passengers.children >= 8}>+</button>
                             </div>
                           </div>
                           <div className="flex flex-col flex-1">
-                            <label className="block text-sm font-medium text-gray-700">Infants</label>
+                            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Infants</label>
                             <div className="flex items-center gap-2 mt-1">
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('infants', Math.max(0, passengers.infants - 1))} disabled={passengers.infants <= 0}>-</button>
-                              <span className="w-8 text-center font-semibold">{passengers.infants}</span>
-                              <button type="button" className="px-2 py-1 rounded bg-gray-200 hover:bg-gray-300" onClick={() => handlePassengerChange('infants', Math.min(passengers.adults, passengers.infants + 1))} disabled={passengers.infants >= passengers.adults}>+</button>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('infants', Math.max(0, passengers.infants - 1))} disabled={passengers.infants <= 0}>-</button>
+                              <span className="w-8 text-center font-semibold text-base sm:text-sm">{passengers.infants}</span>
+                              <button type="button" className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm" onClick={() => handlePassengerChange('infants', Math.min(passengers.adults, passengers.infants + 1))} disabled={passengers.infants >= passengers.adults}>+</button>
                             </div>
                             <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
                           </div>
@@ -498,7 +498,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             <button
                                 type="button"
                                 onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
+                                className="text-blue-600 hover:text-blue-800 font-medium flex items-center mt-2"
                             >
                                 {showAdvancedOptions ? 'Hide' : 'Show'} Advanced Options
                                 <svg
@@ -517,11 +517,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                             <>
                                 {/* Cabin Class */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
+                                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Cabin Class</label>
                                     <select
                                         value={cabinClass}
                                         onChange={(e) => setCabinClass(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                        className="w-full p-3 border border-gray-300 rounded-lg bg-white/25 backdrop-blur-sm text-base sm:text-sm"
                                     >
                                         {DUFFEL_CONSTRAINTS.cabinClasses.map((cabin) => (
                                             <option key={cabin.value} value={cabin.value}>{cabin.label}</option>
@@ -531,11 +531,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
                                 {/* Currency */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Currency</label>
                                     <select
                                         value={currency}
                                         onChange={(e) => setCurrency(e.target.value)}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                        className="w-full p-3 border border-gray-300 rounded-lg bg-white/25 backdrop-blur-sm text-base sm:text-sm"
                                     >
                                         {DUFFEL_CONSTRAINTS.supportedCurrencies.map((curr) => (
                                             <option key={curr} value={curr}>
@@ -547,11 +547,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
                                 {/* Max Connections */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Max Connections</label>
+                                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Max Connections</label>
                                     <select
                                         value={maxConnections}
                                         onChange={(e) => setMaxConnections(parseInt(e.target.value))}
-                                        className="w-full p-2 border border-gray-300 rounded-md bg-white/25 backdrop-blur-sm"
+                                        className="w-full p-3 border border-gray-300 rounded-lg bg-white/25 backdrop-blur-sm text-base sm:text-sm"
                                     >
                                         <option value="0">Non-stop only</option>
                                         {Array.from({ length: DUFFEL_CONSTRAINTS.maxConnections }, (_, i) => (
@@ -568,7 +568,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                         <div className="md:col-span-2 lg:col-span-4">
                             <button
                                 type="submit"
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition duration-300"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-lg transition duration-300 text-base sm:text-sm mt-2"
                             >
                                 Search Flights
                             </button>

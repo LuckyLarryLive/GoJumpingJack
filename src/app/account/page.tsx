@@ -118,29 +118,29 @@ export default function AccountPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
+      <div className="min-h-screen bg-gray-50 py-6 px-2 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mx-auto w-full max-w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">Account Settings</h1>
 
             {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-red-600">{error}</p>
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg max-w-full break-words">
+                <p className="text-red-600 text-base sm:text-sm">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <p className="text-green-600">{success}</p>
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg max-w-full break-words">
+                <p className="text-green-600 text-base sm:text-sm">{success}</p>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white shadow rounded-lg p-4 sm:p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h2>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                   <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="firstName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       First name
                     </label>
                     <input
@@ -149,12 +149,12 @@ export default function AccountPage() {
                       id="firstName"
                       value={formData.firstName || ''}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="lastName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Last name
                     </label>
                     <input
@@ -163,12 +163,12 @@ export default function AccountPage() {
                       id="lastName"
                       value={formData.lastName || ''}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="email" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Email
                     </label>
                     <input
@@ -177,12 +177,12 @@ export default function AccountPage() {
                       id="email"
                       value={user.email}
                       disabled
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 text-gray-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 bg-gray-50 text-gray-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="phoneNumber" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Phone number
                     </label>
                     <input
@@ -191,12 +191,12 @@ export default function AccountPage() {
                       id="phoneNumber"
                       value={formData.phoneNumber || ''}
                       onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="dateOfBirth" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Date of birth
                     </label>
                     <input
@@ -205,17 +205,17 @@ export default function AccountPage() {
                       id="dateOfBirth"
                       value={formData.dateOfBirth ? new Date(formData.dateOfBirth).toISOString().split('T')[0] : ''}
                       onChange={(e) => setFormData({ ...formData, dateOfBirth: new Date(e.target.value) })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white shadow rounded-lg p-4 sm:p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Travel Preferences</h2>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                   <div>
-                    <label htmlFor="homeAirportIataCode" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="homeAirportIataCode" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Home airport
                     </label>
                     <input
@@ -224,12 +224,12 @@ export default function AccountPage() {
                       id="homeAirportIataCode"
                       value={formData.homeAirportIataCode || ''}
                       onChange={(e) => setFormData({ ...formData, homeAirportIataCode: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="defaultCabinClass" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="defaultCabinClass" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Default cabin class
                     </label>
                     <select
@@ -237,7 +237,7 @@ export default function AccountPage() {
                       name="defaultCabinClass"
                       value={formData.defaultCabinClass || ''}
                       onChange={(e) => setFormData({ ...formData, defaultCabinClass: e.target.value as any })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     >
                       <option value="">Select cabin class</option>
                       <option value="economy">Economy</option>
@@ -248,7 +248,7 @@ export default function AccountPage() {
                   </div>
 
                   <div>
-                    <label htmlFor="defaultAdultPassengers" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="defaultAdultPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Default adults
                     </label>
                     <input
@@ -259,12 +259,12 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultAdultPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultAdultPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="defaultChildPassengers" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="defaultChildPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Default children
                     </label>
                     <input
@@ -275,12 +275,12 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultChildPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultChildPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="defaultInfantPassengers" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="defaultInfantPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Default infants
                     </label>
                     <input
@@ -291,13 +291,13 @@ export default function AccountPage() {
                       max="9"
                       value={formData.defaultInfantPassengers || ''}
                       onChange={(e) => setFormData({ ...formData, defaultInfantPassengers: parseInt(e.target.value) })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="mt-1 block w-full max-w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Airlines to avoid
                   </label>
                   <div className="space-y-4">
@@ -310,12 +310,12 @@ export default function AccountPage() {
                     
                     {avoidedAirlines.length > 0 && (
                       <div className="mt-4">
-                        <h3 className="text-sm font-medium text-gray-700 mb-2">Selected airlines:</h3>
+                        <h3 className="text-base sm:text-sm font-medium text-gray-700 mb-2">Selected airlines:</h3>
                         <div className="flex flex-wrap gap-2">
                           {avoidedAirlines.map((airline) => (
                             <div
                               key={airline.iataCode}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                              className="inline-flex items-center px-3 py-1 rounded-full text-base sm:text-sm font-medium bg-blue-100 text-blue-800"
                             >
                               {airline.name}
                               <button
@@ -334,7 +334,7 @@ export default function AccountPage() {
                 </div>
 
                 <div className="mt-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Loyalty Programs
                   </label>
                   <LoyaltyProgramsInput
@@ -347,7 +347,7 @@ export default function AccountPage() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 text-base sm:text-sm font-medium"
                 >
                   Save Changes
                 </button>

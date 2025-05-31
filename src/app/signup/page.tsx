@@ -39,6 +39,7 @@ export default function SignupPage() {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
+  const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
 
   // Password validation regex (same as schema)
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
@@ -185,25 +186,25 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-6 px-2 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto w-full max-w-md">
+        <h2 className="mt-6 text-center text-2xl sm:text-3xl font-extrabold text-gray-900">
           {step === 1 ? 'Create your account' : 'Complete your profile'}
         </h2>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <div className="mt-6 sm:mx-auto w-full max-w-md">
+        <div className="bg-white py-6 px-2 sm:px-6 shadow rounded-lg sm:rounded-xl overflow-x-auto">
           {error && error !== 'Jack says your passwords need to match' && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600">{error}</p>
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg max-w-full break-words">
+              <p className="text-red-600 text-base sm:text-sm">{error}</p>
             </div>
           )}
 
           {step === 1 ? (
-            <form onSubmit={handleStep1Submit} className="space-y-6">
+            <form onSubmit={handleStep1Submit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="email" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                   Email address
                 </label>
                 <div className="mt-1">
@@ -215,18 +216,18 @@ export default function SignupPage() {
                     required
                     value={step1Data.email}
                     onChange={(e) => setStep1Data({ ...step1Data, email: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
 
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Password
                   </label>
                   {passwordError && (
-                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
                       {passwordError}
                     </div>
                   )}
@@ -242,14 +243,13 @@ export default function SignupPage() {
                     value={step1Data.password}
                     onChange={handlePasswordChange}
                     onBlur={handlePasswordBlur}
-                    className={`appearance-none block w-full px-3 py-2 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`appearance-none block w-full max-w-full px-4 py-3 border ${passwordError ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
                   />
                   <button
                     type="button"
                     tabIndex={-1}
                     aria-label="Show password"
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
                     onMouseDown={() => setShowPassword(true)}
                     onMouseUp={() => setShowPassword(false)}
                     onMouseLeave={() => setShowPassword(false)}
@@ -259,7 +259,7 @@ export default function SignupPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
                     </svg>
                   </button>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs sm:text-xs text-gray-500 mt-2 max-w-full break-words">
                     Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
                   </p>
                 </div>
@@ -267,11 +267,11 @@ export default function SignupPage() {
 
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="passwordConfirmation" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Confirm password
                   </label>
                   {error === 'Jack says your passwords need to match' && (
-                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded shadow text-xs z-10">
+                    <div className="ml-2 bg-red-100 border border-red-400 text-red-700 px-3 py-1 rounded-lg shadow text-xs z-10 max-w-full break-words">
                       {error}
                     </div>
                   )}
@@ -287,14 +287,13 @@ export default function SignupPage() {
                     value={step1Data.passwordConfirmation}
                     onChange={(e) => setStep1Data({ ...step1Data, passwordConfirmation: e.target.value })}
                     onBlur={handlePasswordConfirmBlur}
-                    className={`appearance-none block w-full px-3 py-2 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    className={`appearance-none block w-full max-w-full px-4 py-3 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
                   />
                   <button
                     type="button"
                     tabIndex={-1}
                     aria-label="Show password confirmation"
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
-                    style={{ top: '50%', transform: 'translateY(-50%)' }}
                     onMouseDown={() => setShowPasswordConfirm(true)}
                     onMouseUp={() => setShowPasswordConfirm(false)}
                     onMouseLeave={() => setShowPasswordConfirm(false)}
@@ -310,17 +309,17 @@ export default function SignupPage() {
               <div>
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2"
                 >
                   Continue
                 </button>
               </div>
             </form>
           ) : (
-            <form onSubmit={handleStep2Submit} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <form onSubmit={handleStep2Submit} className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="firstName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     First name
                   </label>
                   <div className="mt-1">
@@ -332,13 +331,13 @@ export default function SignupPage() {
                       required
                       value={step2Data.firstName}
                       onChange={(e) => setStep2Data({ ...step2Data, firstName: e.target.value })}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="lastName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Last name
                   </label>
                   <div className="mt-1">
@@ -350,14 +349,14 @@ export default function SignupPage() {
                       required
                       value={step2Data.lastName}
                       onChange={(e) => setStep2Data({ ...step2Data, lastName: e.target.value })}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="dateOfBirth" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                   Date of birth
                 </label>
                 <div className="mt-1">
@@ -368,13 +367,13 @@ export default function SignupPage() {
                     required
                     value={step2Data.dateOfBirth ? step2Data.dateOfBirth.toISOString().split('T')[0] : ''}
                     onChange={(e) => setStep2Data({ ...step2Data, dateOfBirth: e.target.value ? new Date(e.target.value) : null })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="phoneNumber" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                   Phone number
                 </label>
                 <div className="mt-1">
@@ -386,13 +385,13 @@ export default function SignupPage() {
                     required
                     value={step2Data.phoneNumber}
                     onChange={(e) => setStep2Data({ ...step2Data, phoneNumber: e.target.value })}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="homeAirportIataCode" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="homeAirportIataCode" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                   Home City / Airport
                 </label>
                 <div className="mt-1">
@@ -400,15 +399,18 @@ export default function SignupPage() {
                     id="home-airport-search"
                     label="Search city or airport"
                     placeholder="Start typing a city or airport name"
-                    onAirportSelect={(iataCode, displayValue) => setStep2Data({ ...step2Data, homeAirportIataCode: iataCode })}
-                    currentValue={step2Data.homeAirportIataCode}
+                    onAirportSelect={(iataCode, displayValue) => {
+                      setStep2Data({ ...step2Data, homeAirportIataCode: iataCode });
+                      setHomeAirportDisplay(displayValue);
+                    }}
+                    currentValue={homeAirportDisplay}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
                 <div>
-                  <label htmlFor="defaultAdultPassengers" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="defaultAdultPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Default adults
                   </label>
                   <div className="mt-1">
@@ -420,13 +422,13 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultAdultPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultAdultPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="defaultChildPassengers" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="defaultChildPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Default children
                   </label>
                   <div className="mt-1">
@@ -438,13 +440,13 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultChildPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultChildPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="defaultInfantPassengers" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="defaultInfantPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                     Default infants
                   </label>
                   <div className="mt-1">
@@ -456,26 +458,16 @@ export default function SignupPage() {
                       max="9"
                       value={step2Data.defaultInfantPassengers || ''}
                       onChange={(e) => setStep2Data({ ...step2Data, defaultInfantPassengers: parseInt(e.target.value) })}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Loyalty Programs
-                </label>
-                <LoyaltyProgramsInput
-                  value={step2Data.loyaltyPrograms || []}
-                  onChange={(programs) => setStep2Data({ ...step2Data, loyaltyPrograms: programs })}
-                />
-              </div>
-
-              <div>
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2"
                 >
                   Complete signup
                 </button>
@@ -499,7 +491,7 @@ export default function SignupPage() {
               {step === 1 ? (
                 <Link
                   href="/login"
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Sign in
                 </Link>
@@ -507,7 +499,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-lg shadow-sm text-base sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   Back to step 1
                 </button>

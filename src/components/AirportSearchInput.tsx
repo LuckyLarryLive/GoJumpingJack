@@ -426,8 +426,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // --- Render ---
   console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
-    <div ref={containerRef} className="relative w-full">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div ref={containerRef} className="relative w-full max-w-full">
+      <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">{label}</label>
       <input
         type="text"
         id={id}
@@ -445,18 +445,18 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
             }
           }, 150);
         }}
-        className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm"
+        className="w-full max-w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm text-base sm:text-sm"
         autoComplete="off"
       />
       {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
       {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
-        <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-[300px] sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-md shadow-lg">
+        <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-0 max-w-full sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
           {/* Render grouped city suggestions (multiple airports) */}
           {groupedSuggestions.map((group, groupIdx) => (
             <li key={group.city.city + '-group'} className="">
               {group.city.city && group.airports.length > 1 && (
                 <div
-                  className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50"
+                  className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50 break-words max-w-full"
                   tabIndex={0}
                   onMouseDown={() => handleCitySelection(group.city.city, group.airports.map(a => a.code))}
                   onKeyDown={e => {
@@ -466,7 +466,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   }}
                 >
                   <FaCity className="mr-2 text-blue-500" />
-                  <span>{highlightMatch(`${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`, query)}</span>
+                  <span className="break-words max-w-full">{highlightMatch(`${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`, query)}</span>
                 </div>
               )}
               {group.airports.map((airport: Airport) => (
@@ -495,14 +495,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                     handleSuggestionClick(airport);
                   }}
                   onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
-                  className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
+                  className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
-                  <div>
-                    <div className="font-semibold text-gray-800">
+                  <div className="break-words max-w-full">
+                    <div className="font-semibold text-gray-800 break-words max-w-full">
                       {highlightMatch(`${airport.name} (${airport.code})`, query)}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 break-words max-w-full">
                       {airport.city ? airport.city : ''}
                       {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
                       {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}
@@ -538,14 +538,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   handleSuggestionClick(airport);
                 }}
                 onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
-                className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
+                className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
               >
                 <FaPlane className="mt-1 mr-2 text-blue-400" />
-                <div>
-                  <div className="font-semibold text-gray-800">
+                <div className="break-words max-w-full">
+                  <div className="font-semibold text-gray-800 break-words max-w-full">
                     {highlightMatch(`${airport.name} (${airport.code})`, query)}
                   </div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-gray-500 break-words max-w-full">
                     {airport.city ? airport.city : ''}
                     {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
                     {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}

@@ -107,10 +107,10 @@ export default function ResultsContent() {
     return (
       <>
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6 items-end">
+        <div className="flex flex-wrap gap-4 md:gap-6 mb-6 items-end w-full max-w-full">
           {/* Price Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Price Range</label>
+            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Price Range</label>
             <div className="flex gap-2 items-center">
               <input
                 type="number"
@@ -118,7 +118,7 @@ export default function ResultsContent() {
                 max={maxPrice}
                 value={priceFilter ? priceFilter[0] : minPrice}
                 onChange={e => setPriceFilter([Number(e.target.value), priceFilter ? priceFilter[1] : maxPrice])}
-                className="w-20 p-1 border border-gray-300 rounded"
+                className="w-20 p-2 border border-gray-300 rounded-lg text-base sm:text-sm"
               />
               <span>-</span>
               <input
@@ -127,10 +127,10 @@ export default function ResultsContent() {
                 max={maxPrice}
                 value={priceFilter ? priceFilter[1] : maxPrice}
                 onChange={e => setPriceFilter([priceFilter ? priceFilter[0] : minPrice, Number(e.target.value)])}
-                className="w-20 p-1 border border-gray-300 rounded"
+                className="w-20 p-2 border border-gray-300 rounded-lg text-base sm:text-sm"
               />
               <button
-                className="ml-2 px-2 py-1 bg-gray-200 rounded"
+                className="ml-2 px-3 py-2 bg-gray-200 rounded-lg text-base sm:text-sm"
                 onClick={() => setPriceFilter(null)}
                 disabled={!priceFilter}
               >Clear</button>
@@ -138,11 +138,11 @@ export default function ResultsContent() {
           </div>
           {/* Cabin Class Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Cabin Class</label>
+            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Cabin Class</label>
             <select
               value={cabinClassFilter}
               onChange={e => setCabinClassFilter(e.target.value)}
-              className="p-1 border border-gray-300 rounded"
+              className="p-2 border border-gray-300 rounded-lg text-base sm:text-sm"
             >
               <option value="">All</option>
               {Array.isArray(sortedFlights) && unique(sortedFlights.map(f => f.cabin_class)).map(cabin => (
@@ -152,11 +152,11 @@ export default function ResultsContent() {
           </div>
           {/* Airline Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Airline</label>
+            <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">Airline</label>
             <select
               value={airlineFilter}
               onChange={e => setAirlineFilter(e.target.value)}
-              className="p-1 border border-gray-300 rounded"
+              className="p-2 border border-gray-300 rounded-lg text-base sm:text-sm"
             >
               <option value="">All</option>
               {Array.isArray(sortedFlights) && unique(sortedFlights.map(f => f.airline)).map(airline => (
@@ -165,16 +165,16 @@ export default function ResultsContent() {
             </select>
           </div>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-4 w-full max-w-full">
           {Array.isArray(pageFlights) && pageFlights.length > 0 ? pageFlights.map((flight, index) => (
             <FlightCard key={`${flight.link || 'flight-result'}-${startIdx + index}`} flight={flight} />
           )) : <div className="text-center text-gray-600 py-10">No flights to display.</div>}
         </div>
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-4 mt-8">
+          <div className="flex justify-center items-center gap-4 mt-8 w-full max-w-full">
             <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 bg-gray-200 rounded-lg text-base sm:text-sm disabled:opacity-50"
               onClick={() => setPage(page - 1)}
               disabled={page === 1}
             >
@@ -182,7 +182,7 @@ export default function ResultsContent() {
             </button>
             <span className="text-gray-700">Page {page} of {totalPages}</span>
             <button
-              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+              className="px-4 py-2 bg-gray-200 rounded-lg text-base sm:text-sm disabled:opacity-50"
               onClick={() => setPage(page + 1)}
               disabled={page === totalPages}
             >
@@ -195,8 +195,8 @@ export default function ResultsContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
+    <div className="container mx-auto px-2 sm:px-4 py-6 w-full max-w-full">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 break-words max-w-full">
         Flight Results
         {originAirport && destinationAirport && (
           <span className="block text-lg font-normal text-gray-600 mt-1">
