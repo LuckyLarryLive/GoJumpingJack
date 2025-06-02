@@ -159,7 +159,7 @@ export default function SignupPage() {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    let dateOfBirthISO: string | undefined = undefined;
+    let dateOfBirthISO: string | null = null;
     if (step2Data.dateOfBirth instanceof Date && !isNaN(step2Data.dateOfBirth.getTime())) {
       dateOfBirthISO = step2Data.dateOfBirth.toISOString();
     } else if (typeof step2Data.dateOfBirth === 'string') {
@@ -168,8 +168,10 @@ export default function SignupPage() {
       if (!isNaN(d.getTime())) {
         dateOfBirthISO = d.toISOString();
       } else {
-        dateOfBirthISO = undefined;
+        dateOfBirthISO = null;
       }
+    } else {
+      dateOfBirthISO = null;
     }
     let homeAirportIataCode = step2Data.homeAirportIataCode;
     if (typeof homeAirportIataCode === 'string' && homeAirportIataCode.includes(',')) {
