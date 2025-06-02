@@ -167,6 +167,8 @@ export default function SignupPage() {
       const d = new Date(step2Data.dateOfBirth);
       if (!isNaN(d.getTime())) {
         dateOfBirthISO = d.toISOString();
+      } else {
+        dateOfBirthISO = undefined;
       }
     }
     let homeAirportIataCode = step2Data.homeAirportIataCode;

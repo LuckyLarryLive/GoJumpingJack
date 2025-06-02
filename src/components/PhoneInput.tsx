@@ -19,7 +19,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     if (inputRef.current) {
       itiRef.current = intlTelInput(inputRef.current, {
         initialCountry: 'us',
-        nationalMode: false,
+        nationalMode: true,
         formatOnDisplay: true,
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
@@ -30,8 +30,16 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       // Listen for changes
       const handleChange = () => {
         if (itiRef.current) {
-          const number = itiRef.current.getNumber();
-          onChange(number);
+          // Get E.164 value for parent, but display national format
+          const e164 = itiRef.current.getNumber();
+          let national = '';
+          if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
+            national = itiRef.current.getNumber((window as any).intlTelInputUtils.numberFormat.NATIONAL);
+          } else {
+            national = itiRef.current.getNumber();
+          }
+          if (inputRef.current) inputRef.current.value = national || '';
+          onChange(e164 || '');
         }
       };
       inputRef.current.addEventListener('countrychange', handleChange);
@@ -48,6 +56,16 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   useEffect(() => {
     if (itiRef.current && value !== itiRef.current.getNumber()) {
       itiRef.current.setNumber(value);
+      // Also update the displayed value to national format
+      if (inputRef.current) {
+        let national = '';
+        if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
+          national = itiRef.current.getNumber((window as any).intlTelInputUtils.numberFormat.NATIONAL);
+        } else {
+          national = itiRef.current.getNumber();
+        }
+        inputRef.current.value = national || '';
+      }
     }
   }, [value]);
 
