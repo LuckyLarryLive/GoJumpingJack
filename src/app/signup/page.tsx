@@ -219,10 +219,7 @@ export default function SignupPage() {
 
     // Update form data
     const newIataCodes = [...(step2Data.avoidedAirlineIataCodes || []), iataCode];
-    setStep2Data({
-      ...step2Data,
-      avoidedAirlineIataCodes: newIataCodes
-    });
+    setStep2Data(prev => ({ ...prev, avoidedAirlineIataCodes: newIataCodes }));
   };
 
   const handleRemoveAirline = (iataCode: string) => {
@@ -231,10 +228,7 @@ export default function SignupPage() {
 
     // Update form data
     const newIataCodes = (step2Data.avoidedAirlineIataCodes || []).filter(code => code !== iataCode);
-    setStep2Data({
-      ...step2Data,
-      avoidedAirlineIataCodes: newIataCodes
-    });
+    setStep2Data(prev => ({ ...prev, avoidedAirlineIataCodes: newIataCodes }));
   };
 
   return (
@@ -378,7 +372,7 @@ export default function SignupPage() {
                       autoComplete="given-name"
                       required
                       value={step2Data.firstName}
-                      onChange={(e) => setStep2Data({ ...step2Data, firstName: e.target.value })}
+                      onChange={(e) => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
                       className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -396,7 +390,7 @@ export default function SignupPage() {
                       autoComplete="family-name"
                       required
                       value={step2Data.lastName}
-                      onChange={(e) => setStep2Data({ ...step2Data, lastName: e.target.value })}
+                      onChange={(e) => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
                       className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -414,7 +408,7 @@ export default function SignupPage() {
                     type="date"
                     required
                     value={step2Data.dateOfBirth ? step2Data.dateOfBirth.toISOString().split('T')[0] : ''}
-                    onChange={(e) => setStep2Data({ ...step2Data, dateOfBirth: e.target.value ? new Date(e.target.value) : null })}
+                    onChange={(e) => setStep2Data(prev => ({ ...prev, dateOfBirth: e.target.value ? new Date(e.target.value) : null }))}
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
@@ -434,7 +428,7 @@ export default function SignupPage() {
                       // Only set if valid E.164, else set to empty string
                       const valid = val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
                       console.log('[PhoneInput onChange] Setting phoneNumber:', valid ? val : '');
-                      setStep2Data({ ...step2Data, phoneNumber: valid ? val : '' });
+                      setStep2Data(prev => ({ ...prev, phoneNumber: valid ? val : '' }));
                     }}
                   />
                 </div>
@@ -450,7 +444,7 @@ export default function SignupPage() {
                     label="Search city or airport"
                     placeholder="Start typing a city or airport name"
                     onAirportSelect={(iataCode, displayValue) => {
-                      setStep2Data({ ...step2Data, homeAirportIataCode: iataCode });
+                      setStep2Data(prev => ({ ...prev, homeAirportIataCode: iataCode }));
                       setHomeAirportDisplay(displayValue);
                     }}
                     currentValue={homeAirportDisplay}
@@ -471,7 +465,7 @@ export default function SignupPage() {
                       min="1"
                       max="9"
                       value={step2Data.defaultAdultPassengers || ''}
-                      onChange={(e) => setStep2Data({ ...step2Data, defaultAdultPassengers: parseInt(e.target.value) })}
+                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultAdultPassengers: parseInt(e.target.value) }))}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -489,7 +483,7 @@ export default function SignupPage() {
                       min="0"
                       max="9"
                       value={step2Data.defaultChildPassengers ?? 0}
-                      onChange={(e) => setStep2Data({ ...step2Data, defaultChildPassengers: parseInt(e.target.value) })}
+                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultChildPassengers: parseInt(e.target.value) }))}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -507,7 +501,7 @@ export default function SignupPage() {
                       min="0"
                       max="9"
                       value={step2Data.defaultInfantPassengers ?? 0}
-                      onChange={(e) => setStep2Data({ ...step2Data, defaultInfantPassengers: parseInt(e.target.value) })}
+                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultInfantPassengers: parseInt(e.target.value) }))}
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
