@@ -366,15 +366,6 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       return group.city.city && group.airports.length > 1;
     });
 
-  // Add render-time debug logging
-  console.log('[AirportSearchInput][RENDER]', {
-    id,
-    query,
-    suggestions,
-    isDropdownOpen,
-    selectedAirport
-  });
-
   // Modified hover handling for list items
   const handleItemHover = (index: number) => {
     // Only update activeIndex if it's different to prevent unnecessary re-renders
@@ -384,7 +375,6 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   };
 
   // --- Render ---
-  console.log('[AirportSearchInput] Rendering suggestions:', suggestions);
   return (
     <div ref={containerRef} className="relative w-full">
       <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">{label}</label>

@@ -429,8 +429,13 @@ export default function SignupPage() {
                     id="phoneNumber"
                     label=""
                     required
-                    value={step2Data.phoneNumber}
-                    onChange={(val) => setStep2Data({ ...step2Data, phoneNumber: val })}
+                    value={step2Data.phoneNumber || ''}
+                    onChange={(val) => {
+                      // Only set if valid E.164, else set to empty string
+                      const valid = val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
+                      console.log('[PhoneInput onChange] Setting phoneNumber:', valid ? val : '');
+                      setStep2Data({ ...step2Data, phoneNumber: valid ? val : '' });
+                    }}
                   />
                 </div>
               </div>
