@@ -15,10 +15,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<any>(null);
   const [displayValue, setDisplayValue] = useState('');
-  const [lastCountry, setLastCountry] = useState<string | null>(null);
 
+  // Initialize intl-tel-input once
   useEffect(() => {
-    console.log('[PhoneInput] Mount');
     if (inputRef.current) {
       itiRef.current = intlTelInput(inputRef.current, {
         initialCountry: 'us',
@@ -26,7 +25,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         formatOnDisplay: true,
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
-
       // Set initial value
       if (value) {
         itiRef.current.setNumber(value);
@@ -38,15 +36,10 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         }
         setDisplayValue(national || '');
       }
-
       // Listen for country change
       const handleCountryChange = () => {
         if (itiRef.current) {
-          const country = itiRef.current.getSelectedCountryData().iso2;
-          setLastCountry(country);
-          console.log('[PhoneInput] Country changed:', country);
-          // Only set number on country change
-          itiRef.current.setNumber(displayValue);
+          itiRef.current.setNumber(inputRef.current?.value || '');
           let e164 = itiRef.current.getNumber();
           let national = '';
           if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
@@ -66,10 +59,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     }
   }, []);
 
-  // Keep displayValue in sync with parent value (e.g., form reset)
+  // Sync displayValue with parent value
   useEffect(() => {
     if (itiRef.current && value !== itiRef.current.getNumber()) {
-      console.log('[PhoneInput] Parent value changed:', value);
       itiRef.current.setNumber(value);
       let national = '';
       if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
@@ -81,13 +73,26 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     }
   }, [value]);
 
-  // Handle manual typing (keep displayValue in sync)
+  // Handle manual typing
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDisplayValue(e.target.value);
     if (itiRef.current) {
-      // Only update E.164 value, don't call setNumber (let the user type freely)
+      itiRef.current.setNumber(e.target.value);
       let e164 = itiRef.current.getNumber();
       onChange(e164 || '');
+    }
+  };
+
+  // On blur, reformat to national format
+  const handleBlur = () => {
+    if (itiRef.current) {
+      let national = '';
+      if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
+        national = itiRef.current.getNumber((window as any).intlTelInputUtils.numberFormat.NATIONAL);
+      } else {
+        national = itiRef.current.getNumber();
+      }
+      setDisplayValue(national || '');
     }
   };
 
@@ -107,6 +112,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         autoComplete="tel"
         value={displayValue}
         onChange={handleInputChange}
+        onBlur={handleBlur}
       />
       {error && <div className="text-red-600 text-xs mt-1">{error}</div>}
     </div>

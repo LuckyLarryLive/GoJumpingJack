@@ -45,6 +45,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // --- Helper functions, Effects, Handlers ---
   // (All the functions and useEffects from the original component go here)
 
+  useEffect(() => {
+    console.log('[AirportSearchInput] MOUNT', { id });
+  }, [id]);
+
   // Helper to format display string
   const getFormattedDisplay = useCallback((airport: Airport | null): string => {
     if (!airport) return '';
@@ -222,69 +226,26 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   };
 
   // Update handleSuggestionClick to handle city selections
-  const handleSuggestionClick = (suggestion: Airport) => {
-    console.log('[AirportSearchInput] Suggestion clicked:', {
-      name: suggestion.name,
-      code: suggestion.code,
-      city: suggestion.city,
-      state: suggestion.state,
-      country: suggestion.country,
-      raw: suggestion
-    });
-    
-    const displayValue = getFormattedDisplay(suggestion);
-    console.log('[AirportSearchInput] Constructed display value for single airport:', displayValue);
-    
-    const cityNameForApi = suggestion.city;
-    const countryCodeForApi = suggestion.country;
-    const regionForApi = (suggestion.state && suggestion.state !== suggestion.country) ? suggestion.state : null;
-
-    console.log('[AirportSearchInput] Calling onAirportSelect for SINGLE airport:', {
-      airportCode: suggestion.code,
-      displayValue,
-      selectionType: 'airport',
-      cityNameForApi,
-      countryCodeForApi,
-      regionForApi
-    });
-    onAirportSelect(
-      suggestion.code, 
-      displayValue, 
-      'airport', 
-      cityNameForApi, 
-      countryCodeForApi,
-      regionForApi
-    );
-    
+  const handleSuggestionClick = (airport: Airport) => {
+    const displayValue = getFormattedDisplay(airport);
+    onAirportSelect(airport.code, displayValue, 'airport', airport.city, airport.country, airport.state);
     setQuery(displayValue);
-    setSelectedAirport(suggestion);
+    setSelectedAirport(airport);
     setIsDropdownOpen(false);
     setSuggestions([]);
+    setActiveIndex(-1);
+    setTimeout(() => { isInteracting.current = false; }, 100);
+    console.log('[AirportSearchInput] Airport selected:', displayValue);
   };
 
   // Add a new function to handle city selection
   const handleCitySelection = (cityName: string, airportCodes: string[]) => {
-    console.log('[AirportSearchInput] City selection clicked:', { cityName, airportCodes });
-    isInteracting.current = true; 
-    
-    const firstAirport = suggestions.find(a => airportCodes.includes(a.code)); // Ensure firstAirport is from current suggestions
-    console.log('[AirportSearchInput] First airport details for city selection:', firstAirport);
-    
+    const firstAirport = suggestions.find(a => airportCodes.includes(a.code));
     const displayValue = `${cityName} – All Airports (${airportCodes.join(', ')})`;
     const joinedAirportCodes = airportCodes.join(',');
-
     const cityNameForApi = cityName;
     const countryCodeForApi = firstAirport ? firstAirport.country : null;
     const regionForApi = (firstAirport && firstAirport.state && firstAirport.state !== firstAirport.country) ? firstAirport.state : null;
-
-    console.log('[AirportSearchInput] Calling onAirportSelect for CITY (All Airports):', {
-      airportCode: joinedAirportCodes,
-      displayValue,
-      selectionType: 'city',
-      cityNameForApi,
-      countryCodeForApi,
-      regionForApi
-    });
     onAirportSelect(
       joinedAirportCodes, 
       displayValue, 
@@ -293,13 +254,12 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       countryCodeForApi,
       regionForApi
     );
-    
     setQuery(displayValue);
     setIsDropdownOpen(false); 
     setSuggestions([]);
     setActiveIndex(-1);
-    
     setTimeout(() => { isInteracting.current = false; }, 100);
+    console.log('[AirportSearchInput] City selected:', displayValue);
   };
 
    // Handle Focus

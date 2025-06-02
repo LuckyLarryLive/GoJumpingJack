@@ -176,6 +176,7 @@ export default function SignupPage() {
       homeAirportIataCode = homeAirportIataCode.split(',')[0];
     }
     try {
+      console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthISO, homeAirportIataCode });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthISO, homeAirportIataCode });
       router.push('/account');
     } catch (err) {
