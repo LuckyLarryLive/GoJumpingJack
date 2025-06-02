@@ -8,6 +8,7 @@ import { SignupStep1, SignupStep2 } from '@/types/user';
 import AirlineSearchInput from '@/components/AirlineSearchInput';
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import AirportSearchInput from '@/components/AirportSearchInput';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function SignupPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -419,32 +420,12 @@ export default function SignupPage() {
                   Phone number
                 </label>
                 <div className="mt-1">
-                  <input
+                  <PhoneInput
                     id="phoneNumber"
-                    name="phoneNumber"
-                    type="tel"
-                    autoComplete="tel"
+                    label=""
                     required
-                    value={formatUSPhoneNumber(step2Data.phoneNumber)}
-                    onChange={(e) => {
-                      // Only store last 10 digits, strip leading 1 if present
-                      let digits = e.target.value.replace(/\D/g, '');
-                      if (digits.length > 10 && digits[0] === '1') {
-                        digits = digits.slice(1);
-                      }
-                      digits = digits.slice(-10);
-                      setStep2Data({ ...step2Data, phoneNumber: digits });
-                    }}
-                    onBlur={(e) => {
-                      // Only store last 10 digits, strip leading 1 if present
-                      let digits = e.target.value.replace(/\D/g, '');
-                      if (digits.length > 10 && digits[0] === '1') {
-                        digits = digits.slice(1);
-                      }
-                      digits = digits.slice(-10);
-                      setStep2Data({ ...step2Data, phoneNumber: digits });
-                    }}
-                    className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                    value={step2Data.phoneNumber}
+                    onChange={(val) => setStep2Data({ ...step2Data, phoneNumber: val })}
                   />
                 </div>
               </div>

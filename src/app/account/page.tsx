@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { User } from '@/types/user';
 import AirlineSearchInput from '@/components/AirlineSearchInput';
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function AccountPage() {
   const { user, updateProfile } = useAuthContext();
@@ -185,13 +186,12 @@ export default function AccountPage() {
                     <label htmlFor="phoneNumber" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                       Phone number
                     </label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
+                    <PhoneInput
                       id="phoneNumber"
+                      label=""
+                      required
                       value={formData.phoneNumber || ''}
-                      onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      onChange={(val) => setFormData({ ...formData, phoneNumber: val })}
                     />
                   </div>
 
