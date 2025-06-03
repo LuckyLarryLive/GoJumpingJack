@@ -15,6 +15,19 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<any>(null);
 
+  // Helper to format the input to national format
+  const formatNational = () => {
+    if (itiRef.current && inputRef.current) {
+      let national = '';
+      if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
+        national = itiRef.current.getNumber((window as any).intlTelInputUtils.numberFormat.NATIONAL);
+      } else {
+        national = itiRef.current.getNumber();
+      }
+      inputRef.current.value = national || '';
+    }
+  };
+
   // Initialize intl-tel-input once
   useEffect(() => {
     if (inputRef.current) {
@@ -27,18 +40,21 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       // Set initial value
       if (value) {
         itiRef.current.setNumber(value);
+        formatNational();
       }
       // Listen for country change and blur
       const handleCountryChange = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
           onChange(e164 || '');
+          formatNational();
         }
       };
       const handleBlur = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
           onChange(e164 || '');
+          formatNational();
         }
       };
       inputRef.current.addEventListener('countrychange', handleCountryChange);
@@ -55,6 +71,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   useEffect(() => {
     if (itiRef.current && value !== itiRef.current.getNumber()) {
       itiRef.current.setNumber(value);
+      formatNational();
     }
   }, [value]);
 

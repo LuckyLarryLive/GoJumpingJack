@@ -159,27 +159,27 @@ export default function SignupPage() {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    let dateOfBirthISO: string | null = null;
+    let dateOfBirthValue: Date | null = null;
     if (step2Data.dateOfBirth instanceof Date && !isNaN(step2Data.dateOfBirth.getTime())) {
-      dateOfBirthISO = step2Data.dateOfBirth.toISOString();
+      dateOfBirthValue = step2Data.dateOfBirth;
     } else if (typeof step2Data.dateOfBirth === 'string') {
       // Try to parse string to Date
       const d = new Date(step2Data.dateOfBirth);
       if (!isNaN(d.getTime())) {
-        dateOfBirthISO = d.toISOString();
+        dateOfBirthValue = d;
       } else {
-        dateOfBirthISO = null;
+        dateOfBirthValue = null;
       }
     } else {
-      dateOfBirthISO = null;
+      dateOfBirthValue = null;
     }
     let homeAirportIataCode = step2Data.homeAirportIataCode;
     if (typeof homeAirportIataCode === 'string' && homeAirportIataCode.includes(',')) {
       homeAirportIataCode = homeAirportIataCode.split(',')[0];
     }
     try {
-      console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthISO, homeAirportIataCode });
-      await signup(2, { ...step2Data, dateOfBirth: dateOfBirthISO, homeAirportIataCode });
+      console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
+      await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
       router.push('/account');
     } catch (err) {
       // Try to parse backend error for user-friendly display
