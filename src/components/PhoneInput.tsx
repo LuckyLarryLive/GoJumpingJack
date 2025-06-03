@@ -28,6 +28,11 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     }
   };
 
+  // Helper to check if a value is a valid E.164 number
+  const isValidE164 = (val: string) => {
+    return val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
+  };
+
   // Initialize intl-tel-input once
   useEffect(() => {
     if (inputRef.current) {
@@ -46,14 +51,18 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       const handleCountryChange = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          onChange(e164 || '');
+          if (isValidE164(e164)) {
+            onChange(e164);
+          }
           formatNational();
         }
       };
       const handleBlur = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          onChange(e164 || '');
+          if (isValidE164(e164)) {
+            onChange(e164);
+          }
           formatNational();
         }
       };
