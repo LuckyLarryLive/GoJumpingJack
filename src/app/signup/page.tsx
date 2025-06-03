@@ -159,6 +159,8 @@ export default function SignupPage() {
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    console.log('Submitting form...');
+
     let dateOfBirthValue: Date | null = null;
     if (step2Data.dateOfBirth instanceof Date && !isNaN(step2Data.dateOfBirth.getTime())) {
       dateOfBirthValue = step2Data.dateOfBirth;
@@ -173,10 +175,38 @@ export default function SignupPage() {
     } else {
       dateOfBirthValue = null;
     }
+
+    if (!step2Data.phoneNumber) {
+      console.log('Validation failed: phone number missing');
+      setError('Phone number is required');
+      return;
+    }
+    if (!dateOfBirthValue) {
+      console.log('Validation failed: date of birth missing or invalid');
+      setError('Date of birth is required');
+      return;
+    }
+    if (!step2Data.firstName) {
+      console.log('Validation failed: first name missing');
+      setError('First name is required');
+      return;
+    }
+    if (!step2Data.lastName) {
+      console.log('Validation failed: last name missing');
+      setError('Last name is required');
+      return;
+    }
+    if (!step2Data.homeAirportIataCode) {
+      console.log('Validation failed: home airport missing');
+      setError('Home airport is required');
+      return;
+    }
+
     let homeAirportIataCode = step2Data.homeAirportIataCode;
     if (typeof homeAirportIataCode === 'string' && homeAirportIataCode.includes(',')) {
       homeAirportIataCode = homeAirportIataCode.split(',')[0];
     }
+
     try {
       console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
