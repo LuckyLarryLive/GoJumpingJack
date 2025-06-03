@@ -33,7 +33,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       if (isValidE164(value)) {
         itiRef.current.setNumber(value);
       }
-      // Listen for country change and blur
+      // Listen for country change, blur, and input
       const handleCountryChange = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
@@ -50,11 +50,21 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
           }
         }
       };
+      const handleInput = () => {
+        if (itiRef.current) {
+          const e164 = itiRef.current.getNumber();
+          if (isValidE164(e164)) {
+            onChange(e164);
+          }
+        }
+      };
       inputRef.current.addEventListener('countrychange', handleCountryChange);
       inputRef.current.addEventListener('blur', handleBlur);
+      inputRef.current.addEventListener('input', handleInput);
       return () => {
         inputRef.current?.removeEventListener('countrychange', handleCountryChange);
         inputRef.current?.removeEventListener('blur', handleBlur);
+        inputRef.current?.removeEventListener('input', handleInput);
         itiRef.current?.destroy();
       };
     }
