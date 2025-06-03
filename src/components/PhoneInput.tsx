@@ -25,7 +25,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     if (inputRef.current) {
       itiRef.current = intlTelInput(inputRef.current, {
         initialCountry: 'us',
-        nationalMode: true,
+        nationalMode: false,
         formatOnDisplay: true,
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
@@ -94,6 +94,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         className={`appearance-none block w-full max-w-full px-4 py-3 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
         autoComplete="tel"
         defaultValue={value}
+        placeholder="e.g. +1 352-426-7128"
       />
       {error && <div className="text-red-600 text-xs mt-1">{error}</div>}
     </div>
