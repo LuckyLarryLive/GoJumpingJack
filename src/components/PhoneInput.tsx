@@ -15,19 +15,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<any>(null);
 
-  // Helper to format the input to national format
-  const formatNational = () => {
-    if (itiRef.current && inputRef.current) {
-      let national = '';
-      if (typeof window !== 'undefined' && (window as any).intlTelInputUtils) {
-        national = itiRef.current.getNumber((window as any).intlTelInputUtils.numberFormat.NATIONAL);
-      } else {
-        national = itiRef.current.getNumber();
-      }
-      inputRef.current.value = national || '';
-    }
-  };
-
   // Helper to check if a value is a valid E.164 number
   const isValidE164 = (val: string) => {
     return val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
@@ -42,10 +29,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         formatOnDisplay: true,
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
-      // Set initial value
+      // Set initial value only if valid
       if (isValidE164(value)) {
         itiRef.current.setNumber(value);
-        formatNational();
       }
       // Listen for country change and blur
       const handleCountryChange = () => {
@@ -54,7 +40,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
           if (isValidE164(e164)) {
             onChange(e164);
           }
-          formatNational();
         }
       };
       const handleBlur = () => {
@@ -63,7 +48,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
           if (isValidE164(e164)) {
             onChange(e164);
           }
-          formatNational();
         }
       };
       inputRef.current.addEventListener('countrychange', handleCountryChange);
@@ -76,14 +60,8 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     }
   }, []);
 
-  // On parent value change (reset), update the input only if value is valid
-  useEffect(() => {
-    if (itiRef.current && isValidE164(value) && value !== itiRef.current.getNumber()) {
-      itiRef.current.setNumber(value);
-      formatNational();
-    }
-    // If value is empty or invalid, do not update the input (prevents clearing)
-  }, [value]);
+  // On parent value change (reset), only setNumber if value is valid and not empty, and only on initial mount
+  // After mount, do not update the input value from React
 
   return (
     <div className="w-full">
