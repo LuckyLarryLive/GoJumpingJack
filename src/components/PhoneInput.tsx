@@ -43,7 +43,7 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
       // Set initial value
-      if (value) {
+      if (isValidE164(value)) {
         itiRef.current.setNumber(value);
         formatNational();
       }
@@ -76,12 +76,13 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
     }
   }, []);
 
-  // On parent value change (reset), update the input
+  // On parent value change (reset), update the input only if value is valid
   useEffect(() => {
-    if (itiRef.current && value !== itiRef.current.getNumber()) {
+    if (itiRef.current && isValidE164(value) && value !== itiRef.current.getNumber()) {
       itiRef.current.setNumber(value);
       formatNational();
     }
+    // If value is empty or invalid, do not update the input (prevents clearing)
   }, [value]);
 
   return (
