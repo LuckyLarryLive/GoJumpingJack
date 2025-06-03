@@ -30,14 +30,16 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
       // Set initial value only if valid
-      if (isValidE164(value)) {
+      if (value && itiRef.current.isValidNumber && itiRef.current.isValidNumber()) {
         itiRef.current.setNumber(value);
       }
       // Listen for country change, blur, and input
       const handleCountryChange = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          if (isValidE164(e164)) {
+          const isValid = itiRef.current.isValidNumber();
+          console.log('[PhoneInput] countrychange:', { e164, isValid });
+          if (isValid) {
             onChange(e164);
           }
         }
@@ -45,7 +47,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       const handleBlur = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          if (isValidE164(e164)) {
+          const isValid = itiRef.current.isValidNumber();
+          console.log('[PhoneInput] blur:', { e164, isValid });
+          if (isValid) {
             onChange(e164);
           }
         }
@@ -53,7 +57,9 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       const handleInput = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          if (isValidE164(e164)) {
+          const isValid = itiRef.current.isValidNumber();
+          console.log('[PhoneInput] input:', { e164, isValid });
+          if (isValid) {
             onChange(e164);
           }
         }
