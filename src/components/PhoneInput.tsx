@@ -37,31 +37,19 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       const handleCountryChange = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          const isValid = itiRef.current.isValidNumber();
-          console.log('[PhoneInput] countrychange:', { e164, isValid });
-          if (isValid) {
-            onChange(e164);
-          }
+          onChange(e164);
         }
       };
       const handleBlur = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          const isValid = itiRef.current.isValidNumber();
-          console.log('[PhoneInput] blur:', { e164, isValid });
-          if (isValid) {
-            onChange(e164);
-          }
+          onChange(e164);
         }
       };
       const handleInput = () => {
         if (itiRef.current) {
           const e164 = itiRef.current.getNumber();
-          const isValid = itiRef.current.isValidNumber();
-          console.log('[PhoneInput] input:', { e164, isValid });
-          if (isValid) {
-            onChange(e164);
-          }
+          onChange(e164);
         }
       };
       inputRef.current.addEventListener('countrychange', handleCountryChange);

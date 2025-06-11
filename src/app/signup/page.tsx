@@ -41,6 +41,7 @@ export default function SignupPage() {
   const passwordInputRef = useRef<HTMLInputElement>(null);
   const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
   const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
+  const [phoneNumberError, setPhoneNumberError] = useState('');
 
   // Password validation regex (same as schema)
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
@@ -165,7 +166,6 @@ export default function SignupPage() {
     if (step2Data.dateOfBirth instanceof Date && !isNaN(step2Data.dateOfBirth.getTime())) {
       dateOfBirthValue = step2Data.dateOfBirth;
     } else if (typeof step2Data.dateOfBirth === 'string') {
-      // Try to parse string to Date
       const d = new Date(step2Data.dateOfBirth);
       if (!isNaN(d.getTime())) {
         dateOfBirthValue = d;
@@ -176,9 +176,19 @@ export default function SignupPage() {
       dateOfBirthValue = null;
     }
 
+    const validPhone = step2Data.phoneNumber && typeof step2Data.phoneNumber === 'string' && step2Data.phoneNumber.startsWith('+') && step2Data.phoneNumber.length > 5;
     if (!step2Data.phoneNumber) {
-      console.log('Validation failed: phone number missing');
+      setPhoneNumberError('Phone number is required');
       setError('Phone number is required');
+      return;
+    }
+    if (!validPhone) {
+      setPhoneNumberError('Please enter a valid phone number.');
+      setError('Please enter a valid phone number.');
+      return;
+    }
+    if (phoneNumberError) {
+      setError(phoneNumberError);
       return;
     }
     if (!dateOfBirthValue) {
@@ -291,7 +301,10 @@ export default function SignupPage() {
                     autoComplete="email"
                     required
                     value={step1Data.email}
-                    onChange={(e) => setStep1Data({ ...step1Data, email: e.target.value })}
+                    onChange={(e) => {
+                      setStep1Data({ ...step1Data, email: e.target.value });
+                      if (error === 'Jack says this email is already registered.') setError('');
+                    }}
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
@@ -455,11 +468,11 @@ export default function SignupPage() {
                     required
                     value={step2Data.phoneNumber || ''}
                     onChange={(val) => {
-                      // Only set if valid E.164, else set to empty string
                       const valid = val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
-                      console.log('[PhoneInput onChange] Setting phoneNumber:', valid ? val : '');
-                      setStep2Data(prev => ({ ...prev, phoneNumber: valid ? val : '' }));
+                      setStep2Data(prev => ({ ...prev, phoneNumber: val }));
+                      setPhoneNumberError(valid ? '' : 'Please enter a valid phone number.');
                     }}
+                    error={phoneNumberError}
                   />
                 </div>
               </div>
