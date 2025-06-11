@@ -15,9 +15,20 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<any>(null);
 
-  // Helper to check if a value is a valid E.164 number
-  const isValidE164 = (val: string) => {
-    return val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
+  // Helper to normalize US numbers
+  const normalizeUSNumber = (val: string) => {
+    // Remove all non-digit characters
+    const digits = val.replace(/\D/g, '');
+    // If 10 digits, assume US and prepend +1
+    if (digits.length === 10) {
+      return `+1${digits}`;
+    }
+    // If already starts with +1 and is 12 chars, return as is
+    if (/^\+1\d{10}$/.test(val)) {
+      return val;
+    }
+    // Otherwise, return original
+    return val;
   };
 
   // Initialize intl-tel-input once
@@ -36,19 +47,22 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       // Listen for country change, blur, and input
       const handleCountryChange = () => {
         if (itiRef.current) {
-          const e164 = itiRef.current.getNumber();
+          let e164 = itiRef.current.getNumber();
+          e164 = normalizeUSNumber(e164);
           onChange(e164);
         }
       };
       const handleBlur = () => {
         if (itiRef.current) {
-          const e164 = itiRef.current.getNumber();
+          let e164 = itiRef.current.getNumber();
+          e164 = normalizeUSNumber(e164);
           onChange(e164);
         }
       };
       const handleInput = () => {
         if (itiRef.current) {
-          const e164 = itiRef.current.getNumber();
+          let e164 = itiRef.current.getNumber();
+          e164 = normalizeUSNumber(e164);
           onChange(e164);
         }
       };
