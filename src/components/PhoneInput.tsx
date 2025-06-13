@@ -28,12 +28,14 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       // Set initial value if provided
       if (value) {
         itiRef.current.setNumber(value);
+        // Always call onChange with E.164 format on mount
+        const number = itiRef.current.getNumber();
+        onChange(number);
       }
 
       // Listen for country change, blur, and input
       const handleCountryChange = () => {
         if (itiRef.current) {
-          const isValid = itiRef.current.isValidNumber();
           const number = itiRef.current.getNumber();
           onChange(number);
         }
@@ -41,7 +43,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
 
       const handleBlur = () => {
         if (itiRef.current) {
-          const isValid = itiRef.current.isValidNumber();
           const number = itiRef.current.getNumber();
           onChange(number);
         }
@@ -49,7 +50,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
 
       const handleInput = () => {
         if (itiRef.current) {
-          const isValid = itiRef.current.isValidNumber();
           const number = itiRef.current.getNumber();
           onChange(number);
         }
@@ -67,6 +67,15 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       };
     }
   }, []);
+
+  // Also update the input if the value prop changes externally
+  useEffect(() => {
+    if (inputRef.current && itiRef.current && value) {
+      itiRef.current.setNumber(value);
+      const number = itiRef.current.getNumber();
+      onChange(number);
+    }
+  }, [value]);
 
   return (
     <div className="w-full">
