@@ -176,21 +176,26 @@ export default function SignupPage() {
       dateOfBirthValue = null;
     }
 
-    const validPhone = step2Data.phoneNumber && typeof step2Data.phoneNumber === 'string' && step2Data.phoneNumber.startsWith('+') && step2Data.phoneNumber.length > 5;
+    // Phone number validation
     if (!step2Data.phoneNumber) {
       setPhoneNumberError('Phone number is required');
       setError('Phone number is required');
       return;
     }
-    if (!validPhone) {
-      setPhoneNumberError('Please enter a valid phone number.');
-      setError('Please enter a valid phone number.');
+
+    // Basic validation for phone number format
+    if (!step2Data.phoneNumber.startsWith('+')) {
+      setPhoneNumberError('Please enter a valid international phone number starting with +');
+      setError('Please enter a valid international phone number starting with +');
       return;
     }
-    if (phoneNumberError) {
-      setError(phoneNumberError);
+
+    if (step2Data.phoneNumber.length < 8) {
+      setPhoneNumberError('Please enter a complete phone number');
+      setError('Please enter a complete phone number');
       return;
     }
+
     if (!dateOfBirthValue) {
       console.log('Validation failed: date of birth missing or invalid');
       setError('Date of birth is required');

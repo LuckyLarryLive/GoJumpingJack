@@ -15,22 +15,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   const inputRef = useRef<HTMLInputElement>(null);
   const itiRef = useRef<any>(null);
 
-  // Helper to normalize US numbers
-  const normalizeUSNumber = (val: string) => {
-    // Remove all non-digit characters
-    const digits = val.replace(/\D/g, '');
-    // If 10 digits, assume US and prepend +1
-    if (digits.length === 10) {
-      return `+1${digits}`;
-    }
-    // If already starts with +1 and is 12 chars, return as is
-    if (/^\+1\d{10}$/.test(val)) {
-      return val;
-    }
-    // Otherwise, return original
-    return val;
-  };
-
   // Initialize intl-tel-input once
   useEffect(() => {
     if (inputRef.current) {
@@ -40,35 +24,41 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
         formatOnDisplay: true,
         utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.0.10/build/js/utils.js',
       } as any);
-      // Set initial value only if valid
-      if (value && itiRef.current.isValidNumber && itiRef.current.isValidNumber()) {
+
+      // Set initial value if provided
+      if (value) {
         itiRef.current.setNumber(value);
       }
+
       // Listen for country change, blur, and input
       const handleCountryChange = () => {
         if (itiRef.current) {
-          let e164 = itiRef.current.getNumber();
-          e164 = normalizeUSNumber(e164);
-          onChange(e164);
+          const isValid = itiRef.current.isValidNumber();
+          const number = itiRef.current.getNumber();
+          onChange(number);
         }
       };
+
       const handleBlur = () => {
         if (itiRef.current) {
-          let e164 = itiRef.current.getNumber();
-          e164 = normalizeUSNumber(e164);
-          onChange(e164);
+          const isValid = itiRef.current.isValidNumber();
+          const number = itiRef.current.getNumber();
+          onChange(number);
         }
       };
+
       const handleInput = () => {
         if (itiRef.current) {
-          let e164 = itiRef.current.getNumber();
-          e164 = normalizeUSNumber(e164);
-          onChange(e164);
+          const isValid = itiRef.current.isValidNumber();
+          const number = itiRef.current.getNumber();
+          onChange(number);
         }
       };
+
       inputRef.current.addEventListener('countrychange', handleCountryChange);
       inputRef.current.addEventListener('blur', handleBlur);
       inputRef.current.addEventListener('input', handleInput);
+
       return () => {
         inputRef.current?.removeEventListener('countrychange', handleCountryChange);
         inputRef.current?.removeEventListener('blur', handleBlur);
@@ -77,9 +67,6 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
       };
     }
   }, []);
-
-  // On parent value change (reset), only setNumber if value is valid and not empty, and only on initial mount
-  // After mount, do not update the input value from React
 
   return (
     <div className="w-full">
