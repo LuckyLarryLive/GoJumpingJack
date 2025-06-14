@@ -460,9 +460,8 @@ export default function SignupPage() {
                     required
                     value={step2Data.phoneNumber || ''}
                     onChange={(val) => {
-                      const valid = val && typeof val === 'string' && val.startsWith('+') && val.length > 5;
                       setStep2Data(prev => ({ ...prev, phoneNumber: val }));
-                      setPhoneNumberError(valid ? '' : 'Please enter a valid phone number.');
+                      setPhoneNumberError('');
                     }}
                     error={phoneNumberError}
                   />
