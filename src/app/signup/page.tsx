@@ -183,19 +183,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Basic validation for phone number format
-    if (!step2Data.phoneNumber.startsWith('+')) {
-      setPhoneNumberError('Please enter a valid international phone number starting with +');
-      setError('Please enter a valid international phone number starting with +');
-      return;
-    }
-
-    if (step2Data.phoneNumber.length < 8) {
-      setPhoneNumberError('Please enter a complete phone number');
-      setError('Please enter a complete phone number');
-      return;
-    }
-
     if (!dateOfBirthValue) {
       console.log('Validation failed: date of birth missing or invalid');
       setError('Date of birth is required');
