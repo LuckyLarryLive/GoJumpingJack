@@ -13,6 +13,7 @@ import PhoneInput from '@/components/PhoneInput';
 export default function SignupPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
   const [step1Data, setStep1Data] = useState<SignupStep1>({
     email: '',
     password: '',
@@ -129,6 +130,10 @@ export default function SignupPage() {
         setError(result.error || 'Failed to create account');
         return;
       }
+      // Store userId for step 2
+      if (result.userId) {
+        setUserId(result.userId);
+      }
       setStep(2);
     } catch (err) {
       setError('Failed to create account');
@@ -211,7 +216,7 @@ export default function SignupPage() {
 
     try {
       console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
-      await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
+      await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode, userId });
       router.push('/account');
     } catch (err) {
       // Try to parse backend error for user-friendly display
