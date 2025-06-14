@@ -56,6 +56,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: true, userId: user.id });
     } else if (step === 2) {
+      // Convert dateOfBirth to Date if it's a string
+      if (typeof data.dateOfBirth === 'string') {
+        data.dateOfBirth = new Date(data.dateOfBirth);
+      }
       // Validate step 2 data
       const validatedData = signupStep2Schema.parse(data);
 
