@@ -51,10 +51,14 @@ export function useAuth(): AuthHook {
 
   const signup = useCallback(async (step: 1 | 2, data: any) => {
     try {
+      let body: any = { step, data };
+      if (step === 2 && data.userId) {
+        body.userId = data.userId;
+      }
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ step, data }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
