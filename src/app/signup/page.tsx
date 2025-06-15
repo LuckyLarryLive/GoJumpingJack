@@ -217,7 +217,7 @@ export default function SignupPage() {
     try {
       console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode, userId });
-      router.push('/account');
+      router.push('/');
     } catch (err) {
       // Try to parse backend error for user-friendly display
       let msg = 'Failed to complete profile';
@@ -482,9 +482,14 @@ export default function SignupPage() {
                     id="home-airport-search"
                     label="Search city or airport"
                     placeholder="Start typing a city or airport name"
-                    onAirportSelect={(iataCode, displayValue) => {
-                      setStep2Data(prev => ({ ...prev, homeAirportIataCode: iataCode }));
-                      setHomeAirportDisplay(displayValue);
+                    onAirportSelect={(iataCode, displayValue, selectionType, cityName) => {
+                      if (selectionType === 'city' && cityName) {
+                        setStep2Data(prev => ({ ...prev, homeAirportIataCode: cityName }));
+                        setHomeAirportDisplay(displayValue);
+                      } else {
+                        setStep2Data(prev => ({ ...prev, homeAirportIataCode: iataCode }));
+                        setHomeAirportDisplay(displayValue);
+                      }
                     }}
                     currentValue={homeAirportDisplay}
                   />
@@ -545,6 +550,25 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="defaultCabinClass" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  Preferred cabin class
+                </label>
+                <select
+                  id="defaultCabinClass"
+                  name="defaultCabinClass"
+                  value={step2Data.defaultCabinClass || ''}
+                  onChange={e => setStep2Data(prev => ({ ...prev, defaultCabinClass: e.target.value ? e.target.value as 'economy' | 'premium_economy' | 'business' | 'first' : null }))}
+                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                >
+                  <option value="">Select cabin class</option>
+                  <option value="economy">Economy</option>
+                  <option value="premium_economy">Premium Economy</option>
+                  <option value="business">Business</option>
+                  <option value="first">First</option>
+                </select>
               </div>
 
               <div>

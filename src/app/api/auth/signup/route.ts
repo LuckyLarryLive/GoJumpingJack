@@ -64,6 +64,11 @@ export async function POST(request: Request) {
       const validatedData = signupStep2Schema.parse(data);
 
       // Update user with profile information
+      let homeAirportValue = validatedData.homeAirportIataCode;
+      if (homeAirportValue && typeof homeAirportValue === 'string' && homeAirportValue.length !== 3) {
+        // Save city name as is if not a 3-letter IATA code
+        homeAirportValue = validatedData.homeAirportIataCode;
+      }
       const { error } = await supabase
         .from('users')
         .update({
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
           last_name: validatedData.lastName,
           date_of_birth: validatedData.dateOfBirth,
           phone_number: validatedData.phoneNumber,
-          home_airport_iata_code: validatedData.homeAirportIataCode,
+          home_airport_iata_code: homeAirportValue,
           avoided_airline_iata_codes: validatedData.avoidedAirlineIataCodes,
           default_cabin_class: validatedData.defaultCabinClass,
           default_adult_passengers: validatedData.defaultAdultPassengers,
