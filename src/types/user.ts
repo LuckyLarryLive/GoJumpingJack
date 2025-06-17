@@ -47,7 +47,7 @@ export const signupStep2Schema = z.object({
   lastName: z.string().min(1),
   dateOfBirth: z.date(),
   phoneNumber: z.string().min(1),
-  homeAirportIataCode: z.string().length(3).nullable(),
+  homeAirportIataCode: z.string().min(1).nullable(),
   avoidedAirlineIataCodes: z.array(z.string().length(2)).nullable(),
   defaultCabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).nullable(),
   defaultAdultPassengers: z.number().int().min(1).max(9).nullable(),
