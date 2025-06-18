@@ -217,7 +217,7 @@ export default function SignupPage() {
     try {
       console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode, userId });
-      router.push('/');
+      window.location.href = '/';
     } catch (err) {
       // Try to parse backend error for user-friendly display
       let msg = 'Failed to complete profile';
