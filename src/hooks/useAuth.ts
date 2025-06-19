@@ -30,9 +30,7 @@ export function useAuth(): AuthHook {
     const fetchUser = async () => {
       try {
         const response = await fetch('/api/user/profile', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-          },
+          credentials: 'include',
         });
 
         if (response.ok) {
