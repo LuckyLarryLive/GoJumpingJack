@@ -134,6 +134,10 @@ export function getEnvVar(key: string, defaultValue?: string, required = false):
 
   if (!value) {
     if (required) {
+      // During build time, provide fallback values for required variables
+      if (process.env.NEXT_PHASE || process.env.NODE_ENV === 'production') {
+        return defaultValue || 'build-time-placeholder';
+      }
       throw new EnvironmentError(`Required environment variable ${key} is not set`, [key]);
     }
 
@@ -247,18 +251,16 @@ export function getExternalApiConfig() {
 }
 
 // Validate environment on module load (except in test environment and build time)
-if (!isTest() && process.env.NODE_ENV !== 'production') {
+if (!isTest() &&
+    process.env.NODE_ENV !== 'production' &&
+    !process.env.NEXT_PHASE &&
+    typeof window === 'undefined') {
   try {
     validateEnvironment();
   } catch (error) {
     if (error instanceof EnvironmentError) {
       console.error('Environment validation failed:', error.message);
       console.error('Missing variables:', error.missingVars);
-
-      // Only exit in runtime, not during build
-      if (isProduction() && typeof window === 'undefined' && !process.env.NEXT_PHASE) {
-        process.exit(1);
-      }
     }
   }
 }

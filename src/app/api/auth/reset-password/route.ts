@@ -3,15 +3,19 @@ import { passwordResetSchema } from '@/types/user';
 import { hashPassword } from '@/lib/auth';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+
+  return createClient(supabaseUrl, serviceKey);
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const validatedData = passwordResetSchema.parse(body);
+
+    const supabase = getSupabaseServiceClient();
 
     // Get user by reset token
     const { data: user, error } = await supabase

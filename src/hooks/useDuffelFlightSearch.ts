@@ -251,7 +251,7 @@ export function useDuffelFlightSearch() {
           {
             body: {
               searchParams: {
-                ...job.search_params,
+                ...(job.search_params || {}),
                 ...opts,
               },
             },

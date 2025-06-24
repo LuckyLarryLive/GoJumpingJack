@@ -56,7 +56,7 @@ const TrendingDestinationsSection: React.FC = () => {
           .eq('country_code', dest.country_code)
           .limit(1);
         if (data && data.length > 0) {
-          cityImageMap[`${dest.city_name}_${dest.country_code}`] = data[0];
+          cityImageMap[`${dest.city_name}_${dest.country_code}`] = data[0] as unknown as CityImage;
         }
       }
       setCityImages(cityImageMap);

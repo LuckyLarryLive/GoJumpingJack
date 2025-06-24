@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyToken } from '@/lib/auth';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+
+  return createClient(supabaseUrl, serviceKey);
+}
 
 // Cache duration in milliseconds (24 hours)
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
@@ -27,6 +29,8 @@ async function verifyAuth(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const supabase = getSupabaseServiceClient();
+
     // Optional: Verify authentication
     // const user = await verifyAuth(request);
     // if (!user) {

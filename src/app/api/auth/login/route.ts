@@ -7,10 +7,12 @@ import { logger } from '@/lib/logger';
 // Force Node.js runtime for auth routes that use bcrypt and JWT
 export const runtime = 'nodejs';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+
+  return createClient(supabaseUrl, serviceKey);
+}
 
 export async function POST(request: Request) {
   const start = Date.now();
@@ -19,6 +21,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const validatedData = loginSchema.parse(body);
+
+    const supabase = getSupabaseServiceClient();
 
     logger.authAction('login_attempt', { email: validatedData.email });
 

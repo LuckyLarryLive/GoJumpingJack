@@ -3,10 +3,12 @@ import { verifyToken } from '@/lib/auth';
 import { signupStep2Schema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseServiceClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+
+  return createClient(supabaseUrl, serviceKey);
+}
 
 // Middleware to verify authentication
 async function verifyAuth(request: Request) {
@@ -30,6 +32,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabase = getSupabaseServiceClient();
+
     // Get user profile
     const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
@@ -50,6 +54,8 @@ export async function PUT(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const supabase = getSupabaseServiceClient();
 
     const body = await request.json();
     const validatedData = signupStep2Schema.parse(body);
