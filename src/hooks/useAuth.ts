@@ -29,17 +29,23 @@ export function useAuth(): AuthHook {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        console.log('🔍 Fetching user profile...');
         const response = await fetch('/api/user/profile', {
           credentials: 'include',
         });
 
+        console.log('📡 Profile response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('✅ User profile loaded:', data.profile?.firstName || 'No name');
           setState(prev => ({ ...prev, user: data.profile, loading: false }));
         } else {
+          console.log('❌ Profile fetch failed:', response.status);
           setState(prev => ({ ...prev, loading: false }));
         }
       } catch (error) {
+        console.log('💥 Profile fetch error:', error);
         setState(prev => ({ ...prev, loading: false }));
       }
     };
@@ -90,8 +96,10 @@ export function useAuth(): AuthHook {
         }
 
         const { user } = await response.json();
+        console.log('✅ Login successful, user:', user?.firstName || 'No name');
         setState(prev => ({ ...prev, user, error: null }));
         // Force a page reload to ensure the auth cookie is properly set
+        console.log('🔄 Redirecting to home page...');
         window.location.href = '/';
       } catch (error) {
         setState(prev => ({ ...prev, error: (error as Error).message }));

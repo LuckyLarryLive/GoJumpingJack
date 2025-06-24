@@ -48,6 +48,8 @@ export default function SignupPage() {
   const passwordConfirmInputRef = useRef<HTMLInputElement>(null);
   const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
   const [phoneNumberError, setPhoneNumberError] = useState('');
+  const [isSubmittingStep1, setIsSubmittingStep1] = useState(false);
+  const [isSubmittingStep2, setIsSubmittingStep2] = useState(false);
 
   // Password validation regex (same as schema)
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
@@ -92,13 +94,19 @@ export default function SignupPage() {
 
   const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent double submission
+    if (isSubmittingStep1) return;
+
     setError('');
     setPasswordTouched(true);
+    setIsSubmittingStep1(true);
 
     // Check password validity
     if (!validatePassword(step1Data.password)) {
       setPasswordError('Jack says your password needs attention');
       if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
+      setIsSubmittingStep1(false);
       return;
     } else {
       setPasswordError('');
@@ -111,6 +119,7 @@ export default function SignupPage() {
       if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
       if (passwordConfirmInputRef.current)
         passwordConfirmInputRef.current.classList.add('border-red-500');
+      setIsSubmittingStep1(false);
       return;
     } else {
       setError('');
@@ -135,9 +144,11 @@ export default function SignupPage() {
         if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
         if (passwordConfirmInputRef.current)
           passwordConfirmInputRef.current.classList.remove('border-red-500');
+        setIsSubmittingStep1(false);
         return;
       } else if (!res.ok) {
         setError(result.error || 'Failed to create account');
+        setIsSubmittingStep1(false);
         return;
       }
       // Store userId for step 2
@@ -145,8 +156,10 @@ export default function SignupPage() {
         setUserId(result.userId);
       }
       setStep(2);
+      setIsSubmittingStep1(false);
     } catch (err) {
       setError('Failed to create account');
+      setIsSubmittingStep1(false);
     }
   };
 
@@ -174,7 +187,12 @@ export default function SignupPage() {
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Prevent double submission
+    if (isSubmittingStep2) return;
+
     setError('');
+    setIsSubmittingStep2(true);
     console.log('Submitting form...');
 
     let dateOfBirthValue: Date | null = null;
@@ -250,6 +268,7 @@ export default function SignupPage() {
         }
       }
       setError(msg);
+      setIsSubmittingStep2(false);
     }
   };
 
@@ -449,9 +468,10 @@ export default function SignupPage() {
               <div>
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2"
+                  disabled={isSubmittingStep1}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  {isSubmittingStep1 ? 'Creating Account...' : 'Continue'}
                 </button>
               </div>
             </form>
@@ -727,9 +747,10 @@ export default function SignupPage() {
               <div>
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2"
+                  disabled={isSubmittingStep2}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base sm:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Complete signup
+                  {isSubmittingStep2 ? 'Completing Signup...' : 'Complete signup'}
                 </button>
               </div>
             </form>

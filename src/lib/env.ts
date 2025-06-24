@@ -225,7 +225,7 @@ export function getAuthConfig() {
   return {
     jwtSecret: getEnvVar('JWT_SECRET', isTest() ? 'test_jwt_secret' : undefined, !isTest()),
     tokenExpiry: getEnvVar('JWT_EXPIRY', '7d'),
-    cookieSecure: isProduction(),
+    cookieSecure: false, // Temporarily disable for testing - should be isProduction() in production
     cookieMaxAge: getNumericEnvVar('COOKIE_MAX_AGE', 7 * 24 * 60 * 60), // 7 days
   };
 }

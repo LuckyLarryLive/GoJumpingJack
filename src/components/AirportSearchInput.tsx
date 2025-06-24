@@ -122,7 +122,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       console.log(`Clearing local selection for ${id} because query changed from formatted value.`);
       setSelectedAirport(null);
     }
-    if (debouncedQuery.length < 3) {
+    if (debouncedQuery.length < 2) {
       setSuggestions([]);
       setIsDropdownOpen(false);
       return;
