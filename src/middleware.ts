@@ -31,18 +31,31 @@ export async function middleware(request: NextRequest) {
 
   // For protected paths, verify authentication
   if (isProtectedPath) {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Check for cookie-based authentication first
+    const authToken = request.cookies.get('auth_token')?.value;
+
+    if (authToken) {
+      try {
+        verifyToken(authToken);
+        return NextResponse.next();
+      } catch (error) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
-    const token = authHeader.split(' ')[1];
-    try {
-      verifyToken(token);
-      return NextResponse.next();
-    } catch (error) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Fallback to Authorization header for API calls
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        verifyToken(token);
+        return NextResponse.next();
+      } catch (error) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
+
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   return NextResponse.next();

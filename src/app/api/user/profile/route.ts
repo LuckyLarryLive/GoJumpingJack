@@ -10,15 +10,16 @@ function getSupabaseServiceClient() {
   return createClient(supabaseUrl, serviceKey);
 }
 
-// Middleware to verify authentication
+// Middleware to verify authentication using cookies
 async function verifyAuth(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.split(' ')[1];
   try {
+    const { getAuthToken, verifyToken } = await import('@/lib/auth');
+    const token = await getAuthToken();
+
+    if (!token) {
+      return null;
+    }
+
     return verifyToken(token);
   } catch (error) {
     return null;

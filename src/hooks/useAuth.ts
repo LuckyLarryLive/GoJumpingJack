@@ -56,6 +56,7 @@ export function useAuth(): AuthHook {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(body),
       });
 
@@ -65,9 +66,8 @@ export function useAuth(): AuthHook {
       }
 
       const result = await response.json();
-      if (step === 1) {
-        localStorage.setItem('auth_token', result.token);
-      }
+      // For step 1, the server sets the auth cookie automatically
+      // For step 2, we'll reload the page to get the updated user state
     } catch (error) {
       setState(prev => ({ ...prev, error: (error as Error).message }));
       throw error;
@@ -80,6 +80,7 @@ export function useAuth(): AuthHook {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ email, password }),
         });
 
@@ -102,8 +103,7 @@ export function useAuth(): AuthHook {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      localStorage.removeItem('auth_token');
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
       setState({ user: null, loading: false, error: null });
       router.push('/');
     } catch (error) {

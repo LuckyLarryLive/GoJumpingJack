@@ -12,16 +12,25 @@ function getSupabaseServiceClient() {
 // Cache duration in milliseconds (24 hours)
 const CACHE_DURATION = 24 * 60 * 60 * 1000;
 
-// Middleware to verify authentication
+// Middleware to verify authentication (supports both cookies and headers)
 async function verifyAuth(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
-  }
-
-  const token = authHeader.split(' ')[1];
   try {
-    return verifyToken(token);
+    // Try cookie-based auth first
+    const { getAuthToken } = await import('@/lib/auth');
+    const cookieToken = await getAuthToken();
+
+    if (cookieToken) {
+      return verifyToken(cookieToken);
+    }
+
+    // Fallback to Authorization header
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      return verifyToken(token);
+    }
+
+    return null;
   } catch (error) {
     return null;
   }
