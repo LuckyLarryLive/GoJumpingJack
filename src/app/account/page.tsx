@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { User } from '@/types/user';
-import AirlineSearchInput from '@/components/AirlineSearchInput';
+
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import PhoneInput from '@/components/PhoneInput';
 
@@ -13,9 +13,7 @@ export default function AccountPage() {
   const [formData, setFormData] = useState<Partial<User>>({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>(
-    []
-  );
+
 
   useEffect(() => {
     if (user) {
@@ -34,39 +32,7 @@ export default function AccountPage() {
         loyaltyPrograms: user.loyaltyPrograms,
       });
 
-      // Initialize avoided airlines if they exist
-      const avoidedAirlineIataCodes = user.avoidedAirlineIataCodes || [];
-      if (avoidedAirlineIataCodes.length > 0) {
-        // Fetch airline names for the IATA codes
-        const fetchAirlineNames = async () => {
-          try {
-            const response = await fetch('/api/duffel/airlines');
-            if (!response.ok) throw new Error('Failed to fetch airlines');
-            const data = await response.json();
 
-            const airlines = avoidedAirlineIataCodes.map(iataCode => {
-              const airline = data.airlines.find((a: any) => a.iataCode === iataCode);
-              return {
-                iataCode,
-                name: airline ? airline.name : iataCode,
-              };
-            });
-
-            setAvoidedAirlines(airlines);
-          } catch (error) {
-            console.error('Error fetching airline names:', error);
-            // Fallback to just IATA codes if we can't fetch names
-            setAvoidedAirlines(
-              avoidedAirlineIataCodes.map(iataCode => ({
-                iataCode,
-                name: iataCode,
-              }))
-            );
-          }
-        };
-
-        fetchAirlineNames();
-      }
     }
   }, [user]);
 
@@ -83,40 +49,7 @@ export default function AccountPage() {
     }
   };
 
-  const handleAirlineSelect = (iataCode: string | null, displayValue: string | null) => {
-    if (!iataCode || !displayValue) return;
 
-    // Check if airline is already in the list
-    if (avoidedAirlines.some(airline => airline.iataCode === iataCode)) {
-      return;
-    }
-
-    // Add new airline to the list
-    const newAirline = {
-      iataCode,
-      name: displayValue,
-    };
-    setAvoidedAirlines([...avoidedAirlines, newAirline]);
-
-    // Update form data
-    const newIataCodes = [...(formData.avoidedAirlineIataCodes || []), iataCode];
-    setFormData({
-      ...formData,
-      avoidedAirlineIataCodes: newIataCodes,
-    });
-  };
-
-  const handleRemoveAirline = (iataCode: string) => {
-    // Remove airline from the list
-    setAvoidedAirlines(avoidedAirlines.filter(airline => airline.iataCode !== iataCode));
-
-    // Update form data
-    const newIataCodes = (formData.avoidedAirlineIataCodes || []).filter(code => code !== iataCode);
-    setFormData({
-      ...formData,
-      avoidedAirlineIataCodes: newIataCodes,
-    });
-  };
 
   if (!user) {
     return null;
@@ -340,11 +273,11 @@ export default function AccountPage() {
                       id="defaultChildPassengers"
                       min="0"
                       max="9"
-                      value={formData.defaultChildPassengers || ''}
+                      value={formData.defaultChildPassengers ?? ''}
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          defaultChildPassengers: parseInt(e.target.value),
+                          defaultChildPassengers: e.target.value === '' ? 0 : parseInt(e.target.value),
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
@@ -364,11 +297,11 @@ export default function AccountPage() {
                       id="defaultInfantPassengers"
                       min="0"
                       max="9"
-                      value={formData.defaultInfantPassengers || ''}
+                      value={formData.defaultInfantPassengers ?? ''}
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          defaultInfantPassengers: parseInt(e.target.value),
+                          defaultInfantPassengers: e.target.value === '' ? 0 : parseInt(e.target.value),
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
@@ -376,53 +309,27 @@ export default function AccountPage() {
                   </div>
                 </div>
 
-                <div className="mt-6">
-                  <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                    Airlines to avoid
-                  </label>
-                  <div className="space-y-4">
-                    <AirlineSearchInput
-                      id="airline-search"
-                      label="Search airlines"
-                      placeholder="Search for an airline"
-                      onAirlineSelect={handleAirlineSelect}
-                    />
 
-                    {avoidedAirlines.length > 0 && (
-                      <div className="mt-4">
-                        <h3 className="text-base sm:text-sm font-medium text-gray-700 mb-2">
-                          Selected airlines:
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {avoidedAirlines.map(airline => (
-                            <div
-                              key={airline.iataCode}
-                              className="inline-flex items-center px-3 py-1 rounded-full text-base sm:text-sm font-medium bg-blue-100 text-blue-800"
-                            >
-                              {airline.name}
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveAirline(airline.iataCode)}
-                                className="ml-2 text-blue-600 hover:text-blue-800"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
-                <div className="mt-6">
-                  <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <div className="mt-6 relative">
+                  <label className="block text-base sm:text-sm font-medium text-gray-400 mb-2">
                     Loyalty Programs
                   </label>
-                  <LoyaltyProgramsInput
-                    value={formData.loyaltyPrograms || []}
-                    onChange={programs => setFormData({ ...formData, loyaltyPrograms: programs })}
-                  />
+                  <div className="relative">
+                    {/* Coming Soon Banner */}
+                    <div className="absolute inset-0 z-10 flex items-center justify-center">
+                      <div className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow-lg transform -rotate-12 font-bold text-lg">
+                        Coming Soon
+                      </div>
+                    </div>
+                    {/* Disabled/Greyed out content */}
+                    <div className="opacity-30 pointer-events-none">
+                      <LoyaltyProgramsInput
+                        value={formData.loyaltyPrograms || []}
+                        onChange={programs => setFormData({ ...formData, loyaltyPrograms: programs })}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
