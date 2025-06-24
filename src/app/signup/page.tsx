@@ -23,6 +23,7 @@ export default function SignupPage() {
     Omit<SignupStep2, 'dateOfBirth'> & { dateOfBirth: Date | null }
   >({
     firstName: '',
+    middleName: '',
     lastName: '',
     dateOfBirth: null,
     phoneNumber: '',
@@ -456,46 +457,85 @@ export default function SignupPage() {
             </form>
           ) : (
             <form onSubmit={handleStep2Submit} className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
-                <div>
-                  <label
-                    htmlFor="firstName"
-                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
-                  >
-                    First name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="firstName"
-                      name="firstName"
-                      type="text"
-                      autoComplete="given-name"
-                      required
-                      value={step2Data.firstName}
-                      onChange={e => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
-                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
-                    />
+              {/* Name fields with passport note */}
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-blue-700">
+                        <strong>Important:</strong> Please enter your name exactly as it appears on your passport or other travel identification documents.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="lastName"
-                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Last name
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="lastName"
-                      name="lastName"
-                      type="text"
-                      autoComplete="family-name"
-                      required
-                      value={step2Data.lastName}
-                      onChange={e => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
-                      className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
-                    />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
+                  <div>
+                    <label
+                      htmlFor="firstName"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      First Name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="firstName"
+                        name="firstName"
+                        type="text"
+                        autoComplete="given-name"
+                        required
+                        value={step2Data.firstName}
+                        onChange={e => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
+                        className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="middleName"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Middle Name
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="middleName"
+                        name="middleName"
+                        type="text"
+                        autoComplete="additional-name"
+                        value={step2Data.middleName || ''}
+                        onChange={e => setStep2Data(prev => ({ ...prev, middleName: e.target.value }))}
+                        className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="lastName"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Last Name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="lastName"
+                        name="lastName"
+                        type="text"
+                        autoComplete="family-name"
+                        required
+                        value={step2Data.lastName}
+                        onChange={e => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
+                        className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

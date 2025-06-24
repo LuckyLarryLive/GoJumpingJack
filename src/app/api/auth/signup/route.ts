@@ -81,6 +81,7 @@ export async function POST(request: Request) {
         .from('users')
         .update({
           first_name: validatedData.firstName,
+          middle_name: validatedData.middleName || null,
           last_name: validatedData.lastName,
           date_of_birth: validatedData.dateOfBirth,
           phone_number: validatedData.phoneNumber,

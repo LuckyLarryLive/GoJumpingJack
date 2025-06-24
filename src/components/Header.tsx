@@ -51,13 +51,20 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/account"
-                  className="text-sm font-medium text-gray-700 hover:text-blue-600"
+                  className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                 >
-                  Welcome, {user.firstName} ({user.siteRewardsTokens} Tokens)
+                  <span>Welcome, {user.firstName}</span>
+                  <div className="flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded-full">
+                    {/* Luggage/Suitcase icon */}
+                    <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2h3c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h3zm2-2v2h4V4h-4zm-5 6v8h14V10H5z"/>
+                    </svg>
+                    <span className="text-blue-600 font-semibold">{user.siteRewardsTokens || 0}</span>
+                  </div>
                 </Link>
                 <Link
                   href="/logout"
-                  className="text-sm font-medium text-gray-600 hover:text-blue-600"
+                  className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   Logout
                 </Link>

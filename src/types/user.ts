@@ -13,6 +13,7 @@ export const userSchema = z.object({
   email: z.string().email(),
   passwordHash: z.string(),
   firstName: z.string().min(1),
+  middleName: z.string().optional(),
   lastName: z.string().min(1),
   dateOfBirth: z.date(),
   phoneNumber: z.string().min(1),
@@ -49,6 +50,7 @@ export const signupStep1Schema = z
 // Signup Schema (Step 2)
 export const signupStep2Schema = z.object({
   firstName: z.string().min(1),
+  middleName: z.string().optional(),
   lastName: z.string().min(1),
   dateOfBirth: z.date(),
   phoneNumber: z.string().min(1),

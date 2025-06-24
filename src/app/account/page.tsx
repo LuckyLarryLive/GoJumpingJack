@@ -21,6 +21,7 @@ export default function AccountPage() {
     if (user) {
       setFormData({
         firstName: user.firstName,
+        middleName: user.middleName,
         lastName: user.lastName,
         dateOfBirth: user.dateOfBirth,
         phoneNumber: user.phoneNumber,
@@ -143,13 +144,13 @@ export default function AccountPage() {
             <form onSubmit={handleSubmit} className="space-y-8">
               <div className="bg-white shadow rounded-lg p-4 sm:p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Personal Information</h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
                   <div>
                     <label
                       htmlFor="firstName"
                       className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
                     >
-                      First name
+                      First Name
                     </label>
                     <input
                       type="text"
@@ -163,10 +164,28 @@ export default function AccountPage() {
 
                   <div>
                     <label
+                      htmlFor="middleName"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Middle Name
+                    </label>
+                    <input
+                      type="text"
+                      name="middleName"
+                      id="middleName"
+                      value={formData.middleName || ''}
+                      onChange={e => setFormData({ ...formData, middleName: e.target.value })}
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      placeholder="Optional"
+                    />
+                  </div>
+
+                  <div>
+                    <label
                       htmlFor="lastName"
                       className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
                     >
-                      Last name
+                      Last Name
                     </label>
                     <input
                       type="text"
@@ -177,7 +196,9 @@ export default function AccountPage() {
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 mt-6">
                   <div>
                     <label
                       htmlFor="email"

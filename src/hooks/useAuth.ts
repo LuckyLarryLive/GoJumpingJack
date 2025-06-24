@@ -88,10 +88,10 @@ export function useAuth(): AuthHook {
           throw new Error(error.error || 'Failed to login');
         }
 
-        const { user, token } = await response.json();
-        localStorage.setItem('auth_token', token);
+        const { user } = await response.json();
         setState(prev => ({ ...prev, user, error: null }));
-        router.push('/account');
+        // Force a page reload to ensure the auth cookie is properly set
+        window.location.href = '/';
       } catch (error) {
         setState(prev => ({ ...prev, error: (error as Error).message }));
         throw error;
