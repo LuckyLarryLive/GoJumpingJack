@@ -9,10 +9,9 @@ async function fetchAllDuffelAirports(DUFFEL_TOKEN: string) {
   do {
     const params = new URLSearchParams({ limit: limit.toString() });
     if (after) params.append('after', after);
-    const response = await axios.get(
-      `https://api.duffel.com/air/airports?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${DUFFEL_TOKEN}` } }
-    );
+    const response = await axios.get(`https://api.duffel.com/air/airports?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${DUFFEL_TOKEN}` },
+    });
     airports = airports.concat(response.data.data);
     after = response.data.meta?.after || null;
   } while (after);
@@ -36,9 +35,7 @@ async function upsertAirports(supabase: any, mapped: any[]) {
   const chunkSize = 500;
   for (let i = 0; i < mapped.length; i += chunkSize) {
     const chunk = mapped.slice(i, i + chunkSize);
-    const { error } = await supabase
-      .from('airports')
-      .upsert(chunk, { onConflict: 'iata_code' });
+    const { error } = await supabase.from('airports').upsert(chunk, { onConflict: 'iata_code' });
     if (error) {
       throw new Error(error.message);
     }
@@ -62,10 +59,14 @@ async function syncAirports(req: Request) {
     const duffelAirports = await fetchAllDuffelAirports(DUFFEL_TOKEN);
     const mapped = duffelAirports.map(mapDuffelToSupabase);
     await upsertAirports(supabase, mapped);
-    return new Response(JSON.stringify({ message: 'Sync complete', count: mapped.length }), { status: 200 });
+    return new Response(JSON.stringify({ message: 'Sync complete', count: mapped.length }), {
+      status: 200,
+    });
   } catch (err: any) {
     console.error('Error during sync:', err);
-    return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: err.message || 'Internal Server Error' }), {
+      status: 500,
+    });
   }
 }
 
@@ -75,4 +76,4 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   return syncAirports(req);
-} 
+}

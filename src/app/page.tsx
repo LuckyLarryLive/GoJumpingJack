@@ -26,42 +26,40 @@ export default function HomePage() {
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.
   const handleSearchSubmit = (paramsList: SearchParamsType[]) => {
-      console.log("HomePage received search params list:", paramsList);
-      // Update the state with the new search parameters array
-      setSearchParamsList(paramsList);
+    console.log('HomePage received search params list:', paramsList);
+    // Update the state with the new search parameters array
+    setSearchParamsList(paramsList);
 
-      // REMOVE: Scroll the flight results section into view smoothly after submission.
-      // setTimeout(() => {
-      //   const resultsElement = document.getElementById('flight-results');
-      //   const searchElement = document.getElementById('search');
-      //   if (resultsElement) {
-      //       resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      //   } else if (searchElement) {
-      //       searchElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      //   }
-      // }, 50);
+    // REMOVE: Scroll the flight results section into view smoothly after submission.
+    // setTimeout(() => {
+    //   const resultsElement = document.getElementById('flight-results');
+    //   const searchElement = document.getElementById('search');
+    //   if (resultsElement) {
+    //       resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    //   } else if (searchElement) {
+    //       searchElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    //   }
+    // }, 50);
   };
 
   // Render the sections of the homepage
   // The overall layout (Header, Footer, fonts, background) is handled by src/app/layout.tsx
   return (
-      <> {/* Using a React Fragment as the outermost container */}
-          {/* Search section - receives the submit handler and current search params */}
-          {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
-          <SearchSection
-               onSearchSubmit={handleSearchSubmit}
-               initialSearchParams={searchParamsList[0] || undefined}
-           />
-
-          {/* Flight results section - receives the current search params */}
-          {/* It will fetch and display flights based on these params */}
-          {searchParamsList.length > 0 && (
-            <FlightResults searchParams={searchParamsList} />
-          )}
-
-          {/* Static content sections */}
-          <TrendingDestinationsSection />
-          <HowItWorksSection />
-      </>
+    <>
+      {' '}
+      {/* Using a React Fragment as the outermost container */}
+      {/* Search section - receives the submit handler and current search params */}
+      {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
+      <SearchSection
+        onSearchSubmit={handleSearchSubmit}
+        initialSearchParams={searchParamsList[0] || undefined}
+      />
+      {/* Flight results section - receives the current search params */}
+      {/* It will fetch and display flights based on these params */}
+      {searchParamsList.length > 0 && <FlightResults searchParams={searchParamsList} />}
+      {/* Static content sections */}
+      <TrendingDestinationsSection />
+      <HowItWorksSection />
+    </>
   );
 }

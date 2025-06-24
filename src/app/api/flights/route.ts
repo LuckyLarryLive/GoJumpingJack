@@ -36,9 +36,15 @@ interface ProcessedFlight {
 }
 
 export async function GET() {
-  return NextResponse.json({ message: 'This endpoint is deprecated. Use /api/flights/initiate-search.' }, { status: 410 });
+  return NextResponse.json(
+    { message: 'This endpoint is deprecated. Use /api/flights/initiate-search.' },
+    { status: 410 }
+  );
 }
 
 export async function POST() {
-  return NextResponse.json({ message: 'This endpoint is deprecated. Use /api/flights/initiate-search.' }, { status: 410 });
+  return NextResponse.json(
+    { message: 'This endpoint is deprecated. Use /api/flights/initiate-search.' },
+    { status: 410 }
+  );
 }

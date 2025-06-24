@@ -38,16 +38,19 @@ function FlightsContent() {
   const cabinClass = searchParams.get('cabinClass');
 
   // Use allSearchParams if present, otherwise fallback to single param
-  const effectiveSearchParams = parsedSearchParams.length > 0 ? parsedSearchParams : [
-    {
-      originAirport: origin || '',
-      destinationAirport: destination || '',
-      departureDate: departureDate || '',
-      returnDate: returnDate || '',
-      adults: parseInt(adults || '1', 10),
-      cabinClass: cabinClass || 'economy'
-    }
-  ];
+  const effectiveSearchParams =
+    parsedSearchParams.length > 0
+      ? parsedSearchParams
+      : [
+          {
+            originAirport: origin || '',
+            destinationAirport: destination || '',
+            departureDate: departureDate || '',
+            returnDate: returnDate || '',
+            adults: parseInt(adults || '1', 10),
+            cabinClass: cabinClass || 'economy',
+          },
+        ];
 
   // Helper to get city names for summary
   const getSummaryString = useMemo(() => {
@@ -56,7 +59,11 @@ function FlightsContent() {
     let originLabel = '';
     if (first.fromCityNameForApi) {
       originLabel = first.fromCityNameForApi;
-    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+    } else if (
+      first.originAirport &&
+      first.originAirport.includes(',') &&
+      first.fromCityNameForApi
+    ) {
       originLabel = first.fromCityNameForApi;
     } else {
       originLabel = first.originAirport;
@@ -64,17 +71,26 @@ function FlightsContent() {
     let destinationLabel = '';
     if (first.toCityNameForApi) {
       destinationLabel = first.toCityNameForApi;
-    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+    } else if (
+      first.destinationAirport &&
+      first.destinationAirport.includes(',') &&
+      first.toCityNameForApi
+    ) {
       destinationLabel = first.toCityNameForApi;
     } else {
       destinationLabel = first.destinationAirport;
     }
-    const departureDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.departureDate)));
-    const returnDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.returnDate).filter(Boolean)));
+    const departureDates = Array.from(
+      new Set(effectiveSearchParams.map((p: any) => p.departureDate))
+    );
+    const returnDates = Array.from(
+      new Set(effectiveSearchParams.map((p: any) => p.returnDate).filter(Boolean))
+    );
     return [
-      String(`Flights from ${originLabel} to ${destinationLabel}`), <br key="br1" />,
+      String(`Flights from ${originLabel} to ${destinationLabel}`),
+      <br key="br1" />,
       departureDates.length === 1 ? <span key="dep">Departure: {departureDates[0]}</span> : null,
-      returnDates.length === 1 ? [<br key="br2" />, `Return: ${returnDates[0]}`] : null
+      returnDates.length === 1 ? [<br key="br2" />, `Return: ${returnDates[0]}`] : null,
     ] as React.ReactNode[];
   }, [effectiveSearchParams]);
 
@@ -100,7 +116,7 @@ function FlightsContent() {
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <FaFilter className="mr-2" /> Filters
             </h2>
-            
+
             {/* Price Filter */}
             <div className="mb-4">
               <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
@@ -109,7 +125,7 @@ function FlightsContent() {
               <input
                 type="number"
                 value={filters.maxPrice}
-                onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+                onChange={e => setFilters({ ...filters, maxPrice: e.target.value })}
                 className="w-full p-3 border rounded-lg text-base sm:text-sm"
                 placeholder="Enter max price"
               />
@@ -148,7 +164,11 @@ function FlightsContent() {
                     let originLabel = '';
                     if (first.fromCityNameForApi) {
                       originLabel = first.fromCityNameForApi;
-                    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+                    } else if (
+                      first.originAirport &&
+                      first.originAirport.includes(',') &&
+                      first.fromCityNameForApi
+                    ) {
                       originLabel = first.fromCityNameForApi;
                     } else {
                       originLabel = first.originAirport;
@@ -156,13 +176,21 @@ function FlightsContent() {
                     let destinationLabel = '';
                     if (first.toCityNameForApi) {
                       destinationLabel = first.toCityNameForApi;
-                    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+                    } else if (
+                      first.destinationAirport &&
+                      first.destinationAirport.includes(',') &&
+                      first.toCityNameForApi
+                    ) {
                       destinationLabel = first.toCityNameForApi;
                     } else {
                       destinationLabel = first.destinationAirport;
                     }
-                    const departureDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.departureDate)));
-                    const returnDates = Array.from(new Set((effectiveSearchParams).map((p: any) => p.returnDate).filter(Boolean)));
+                    const departureDates = Array.from(
+                      new Set(effectiveSearchParams.map((p: any) => p.departureDate))
+                    );
+                    const returnDates = Array.from(
+                      new Set(effectiveSearchParams.map((p: any) => p.returnDate).filter(Boolean))
+                    );
                     return getSummaryString;
                   })()}
                 </div>
@@ -170,7 +198,7 @@ function FlightsContent() {
               <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={e => setSortBy(e.target.value)}
                   className="p-3 border rounded-lg text-base sm:text-sm w-full sm:w-auto"
                 >
                   <option value="price">Price: Low to High</option>
@@ -214,4 +242,4 @@ export default function AllFlightsPage() {
       <FlightsContent />
     </Suspense>
   );
-} 
+}

@@ -1,9 +1,11 @@
 import { compare, hash } from 'bcryptjs';
-import { sign, verify } from 'jsonwebtoken';
+import { sign, verify, SignOptions } from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { User } from '@/types/user';
+import { getAuthConfig } from './env';
+import { logger } from './logger';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const authConfig = getAuthConfig();
 const SALT_ROUNDS = 12;
 
 export async function hashPassword(password: string): Promise<string> {
@@ -15,20 +17,28 @@ export async function comparePasswords(password: string, hashedPassword: string)
 }
 
 export function generateToken(user: Omit<User, 'passwordHash'>): string {
+  logger.debug('Generating JWT token', { userId: user.id, component: 'auth' });
+
   return sign(
     {
       id: user.id,
       email: user.email,
     },
-    JWT_SECRET,
-    { expiresIn: '7d' }
+    authConfig.jwtSecret,
+    { expiresIn: '7d' } // Use string literal instead of config for now
   );
 }
 
 export function verifyToken(token: string): { id: string; email: string } {
   try {
-    return verify(token, JWT_SECRET) as { id: string; email: string };
+    const decoded = verify(token, authConfig.jwtSecret) as { id: string; email: string };
+    logger.debug('JWT token verified successfully', { userId: decoded.id, component: 'auth' });
+    return decoded;
   } catch (error) {
+    logger.warn('JWT token verification failed', {
+      error: (error as Error).message,
+      component: 'auth',
+    });
     throw new Error('Invalid token');
   }
 }
@@ -40,11 +50,13 @@ export async function getAuthToken(): Promise<string | undefined> {
 
 export async function setAuthToken(token: string): Promise<void> {
   const cookieStore = await cookies();
+  logger.debug('Setting auth token cookie', { component: 'auth' });
+
   cookieStore.set('auth_token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: authConfig.cookieSecure,
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: authConfig.cookieMaxAge,
   });
 }
 
@@ -61,4 +73,4 @@ export function getResetTokenExpiry(): Date {
   const expiry = new Date();
   expiry.setHours(expiry.getHours() + 1); // Token expires in 1 hour
   return expiry;
-} 
+}

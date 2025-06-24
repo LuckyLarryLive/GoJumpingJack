@@ -74,28 +74,31 @@ export function useAuth(): AuthHook {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+  const login = useCallback(
+    async (email: string, password: string) => {
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to login');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to login');
+        }
+
+        const { user, token } = await response.json();
+        localStorage.setItem('auth_token', token);
+        setState(prev => ({ ...prev, user, error: null }));
+        router.push('/account');
+      } catch (error) {
+        setState(prev => ({ ...prev, error: (error as Error).message }));
+        throw error;
       }
-
-      const { user, token } = await response.json();
-      localStorage.setItem('auth_token', token);
-      setState(prev => ({ ...prev, user, error: null }));
-      router.push('/account');
-    } catch (error) {
-      setState(prev => ({ ...prev, error: (error as Error).message }));
-      throw error;
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -115,7 +118,7 @@ export function useAuth(): AuthHook {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify(data),
       });
@@ -154,23 +157,26 @@ export function useAuth(): AuthHook {
     }
   }, []);
 
-  const resetPassword = useCallback(async (token: string, password: string, passwordConfirmation: string) => {
-    try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, password, passwordConfirmation }),
-      });
+  const resetPassword = useCallback(
+    async (token: string, password: string, passwordConfirmation: string) => {
+      try {
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, password, passwordConfirmation }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to reset password');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to reset password');
+        }
+      } catch (error) {
+        setState(prev => ({ ...prev, error: (error as Error).message }));
+        throw error;
       }
-    } catch (error) {
-      setState(prev => ({ ...prev, error: (error as Error).message }));
-      throw error;
-    }
-  }, []);
+    },
+    []
+  );
 
   return {
     ...state,
@@ -181,4 +187,4 @@ export function useAuth(): AuthHook {
     requestPasswordReset,
     resetPassword,
   };
-} 
+}

@@ -8,22 +8,25 @@ import type { Airport } from '@/types/airport';
 
 // --- Date Formatting Utility ---
 const formatDate = (dateString: string | undefined): string => {
-    if (!dateString) return 'N/A';
-    try {
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) {
-            console.error(`Invalid date value encountered in formatDate: "${dateString}"`);
-            return 'Invalid Date';
-        }
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: 'numeric', minute: '2-digit',
-        });
-    } catch (e) {
-        console.error(`Error formatting date string "${dateString}":`, e);
-        return 'Invalid Date';
+  if (!dateString) return 'N/A';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.error(`Invalid date value encountered in formatDate: "${dateString}"`);
+      return 'Invalid Date';
     }
-}
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  } catch (e) {
+    console.error(`Error formatting date string "${dateString}":`, e);
+    return 'Invalid Date';
+  }
+};
 
 // --- Flight Card Component ---
 interface FlightCardProps {
@@ -44,7 +47,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     !flight.link ||
     !flight.outbound_segments[0].departure_at
   ) {
-    console.warn("Rendering FlightCard with incomplete data:", flight);
+    console.warn('Rendering FlightCard with incomplete data:', flight);
     return null; // Return null if essential data is missing
   }
 
@@ -55,7 +58,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const returnAt = flight.return_segments?.[0]?.departure_at;
 
   // Get base URL from environment variable
-  const baseUrl = process.env.NEXT_PUBLIC_FLIGHT_PROVIDER_BASE_URL || "";
+  const baseUrl = process.env.NEXT_PUBLIC_FLIGHT_PROVIDER_BASE_URL || '';
 
   // Construct the full external URL using TravelPayouts base URL
   const externalFlightUrl = `${baseUrl}${flight.link}`;
@@ -64,7 +67,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   };
 
@@ -72,7 +75,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -102,10 +105,10 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
 
   const getCabinClassLabel = (cabinClass: string) => {
     const labels: { [key: string]: string } = {
-      'economy': 'Economy',
-      'premium_economy': 'Premium Economy',
-      'business': 'Business',
-      'first': 'First Class'
+      economy: 'Economy',
+      premium_economy: 'Premium Economy',
+      business: 'Business',
+      first: 'First Class',
     };
     return labels[cabinClass] || cabinClass;
   };
@@ -170,20 +173,35 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           <div className="flex-1 w-full">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2 w-full">
               <div className="w-full">
-                <div className="font-bold flex items-center gap-2 max-w-full truncate text-base sm:text-lg" title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}>{getAirportDisplay(originAirport)} <span className="mx-1">→</span> {getAirportDisplay(destinationAirport)}</div>
+                <div
+                  className="font-bold flex items-center gap-2 max-w-full truncate text-base sm:text-lg"
+                  title={`${summaryOriginDisplay} → ${summaryDestinationDisplay}`}
+                >
+                  {getAirportDisplay(originAirport)} <span className="mx-1">→</span>{' '}
+                  {getAirportDisplay(destinationAirport)}
+                </div>
                 <div className="text-sm text-gray-500 max-w-full break-words">
                   {originAirport} → {destinationAirport}
                 </div>
                 <div className="text-sm text-gray-600 max-w-full break-words">
                   {formatDate(departureAt)} at {formatTime(departureAt)}
                   {returnAt && (
-                    <span> • Return: {formatDate(returnAt)} at {formatTime(returnAt)}</span>
+                    <span>
+                      {' '}
+                      • Return: {formatDate(returnAt)} at {formatTime(returnAt)}
+                    </span>
                   )}
                 </div>
               </div>
               <div className="text-right w-full sm:w-auto mt-2 sm:mt-0">
                 <div className="text-xl font-bold text-blue-600">
-                  <span style={{ whiteSpace: 'nowrap' }}>{flight.currency === 'USD' ? '$' : flight.currency}{flight.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {flight.currency === 'USD' ? '$' : flight.currency}
+                    {flight.price.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                 </div>
                 <div className="text-sm text-gray-600">
                   {flight.airline} • {flight.stops} {flight.stops === 1 ? 'stop' : 'stops'}
@@ -213,19 +231,25 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
             <div className="space-y-4 w-full">
               {/* Outbound Flight */}
               <div>
-                <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">Outbound Flight</h3>
+                <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">
+                  Outbound Flight
+                </h3>
                 <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                 {flight.outbound_segments.map((segment, index) => (
                   <div key={index} className="flex flex-col items-center mb-2 w-full">
                     <div className="flex items-center justify-center w-full">
-                      <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.departure_at)}</div>
+                      <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">
+                        {formatTime(segment.departure_at)}
+                      </div>
                       <div className="flex-1 px-2 sm:px-4 relative">
                         <div className="h-0.5 bg-gray-300 relative">
                           <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
                           <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
                         </div>
                       </div>
-                      <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                      <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">
+                        {formatTime(segment.arrival_at)}
+                      </div>
                     </div>
                     <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full">
                       <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
@@ -243,26 +267,35 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               {/* Return Flight */}
               {flight.return_segments && flight.return_segments.length > 0 && (
                 <div>
-                  <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">Return Flight</h3>
+                  <h3 className="text-base sm:text-sm font-semibold text-gray-700 mb-2 text-center">
+                    Return Flight
+                  </h3>
                   <div className="text-xs text-center text-gray-500 mb-2">{summaryDuration}</div>
                   {flight.return_segments.map((segment, index) => (
                     <div key={index} className="flex flex-col items-center mb-2 w-full">
                       <div className="flex items-center justify-center w-full">
-                        <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.departure_at)}</div>
+                        <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">
+                          {formatTime(segment.departure_at)}
+                        </div>
                         <div className="flex-1 px-2 sm:px-4 relative">
                           <div className="h-0.5 bg-gray-300 relative">
                             <div className="absolute -top-1.5 left-0 w-3 h-3 rounded-full bg-blue-500"></div>
                             <div className="absolute -top-1.5 right-0 w-3 h-3 rounded-full bg-blue-500"></div>
                           </div>
                         </div>
-                        <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">{formatTime(segment.arrival_at)}</div>
+                        <div className="w-20 sm:w-24 text-xs sm:text-sm text-center">
+                          {formatTime(segment.arrival_at)}
+                        </div>
                       </div>
                       <div className="flex justify-center text-xs text-gray-500 mt-1 items-center flex-wrap w-full">
                         <span className="mx-2" title={getAirportDisplay(segment.origin_airport)}>
                           {getAirportDisplay(segment.origin_airport)}
                         </span>
                         <span className="mx-1">✈️</span>
-                        <span className="mx-2" title={getAirportDisplay(segment.destination_airport)}>
+                        <span
+                          className="mx-2"
+                          title={getAirportDisplay(segment.destination_airport)}
+                        >
                           {getAirportDisplay(segment.destination_airport)}
                         </span>
                       </div>

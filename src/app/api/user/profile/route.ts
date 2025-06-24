@@ -27,18 +27,11 @@ export async function GET(request: Request) {
   try {
     const user = await verifyAuth(request);
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get user profile
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
 
     if (error) throw error;
 
@@ -47,10 +40,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ profile });
   } catch (error) {
     console.error('Get profile error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get profile' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get profile' }, { status: 500 });
   }
 }
 
@@ -58,10 +48,7 @@ export async function PUT(request: Request) {
   try {
     const user = await verifyAuth(request);
     if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -90,9 +77,6 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Update profile error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update profile' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
   }
-} 
+}

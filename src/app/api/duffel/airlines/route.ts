@@ -52,8 +52,8 @@ export async function GET(request: Request) {
     // Fetch from Duffel API
     const response = await fetch('https://api.duffel.com/air/airlines', {
       headers: {
-        'Authorization': `Bearer ${process.env.DUFFEL_API_KEY}`,
-        'Accept': 'application/json',
+        Authorization: `Bearer ${process.env.DUFFEL_API_KEY}`,
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         'Accept-Encoding': 'gzip',
       },
@@ -70,20 +70,15 @@ export async function GET(request: Request) {
     }));
 
     // Update cache
-    await supabase
-      .from('airline_cache')
-      .upsert({
-        id: 1, // We only need one cache entry
-        data: airlines,
-        updated_at: new Date().toISOString(),
-      });
+    await supabase.from('airline_cache').upsert({
+      id: 1, // We only need one cache entry
+      data: airlines,
+      updated_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ airlines });
   } catch (error) {
     console.error('Get airlines error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch airlines' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch airlines' }, { status: 500 });
   }
-} 
+}

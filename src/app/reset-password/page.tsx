@@ -29,7 +29,10 @@ function ResetPasswordInner() {
               The password reset link is invalid or has expired.
             </p>
             <div className="mt-4 text-center">
-              <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
                 Request a new password reset
               </Link>
             </div>
@@ -87,7 +90,10 @@ function ResetPasswordInner() {
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+              >
                 New Password
               </label>
               <input
@@ -99,12 +105,15 @@ function ResetPasswordInner() {
                 className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                 placeholder="New password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="confirm-password"
+                className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+              >
                 Confirm New Password
               </label>
               <input
@@ -116,7 +125,7 @@ function ResetPasswordInner() {
                 className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                 placeholder="Confirm new password"
                 value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                onChange={e => setConfirmPassword(e.target.value)}
               />
             </div>
           </div>
@@ -147,4 +156,4 @@ export default function ResetPasswordPage() {
       <ResetPasswordInner />
     </Suspense>
   );
-} 
+}

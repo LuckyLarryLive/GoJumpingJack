@@ -46,13 +46,14 @@ const AirlineSearchInput: React.FC<AirlineSearchInputProps> = ({
         const response = await fetch('/api/duffel/airlines');
         if (!response.ok) throw new Error('Failed to fetch airlines');
         const data = await response.json();
-        
+
         // Filter airlines based on query
-        const filteredAirlines = data.airlines.filter((airline: Airline) =>
-          airline.name.toLowerCase().includes(query.toLowerCase()) ||
-          airline.iataCode.toLowerCase().includes(query.toLowerCase())
+        const filteredAirlines = data.airlines.filter(
+          (airline: Airline) =>
+            airline.name.toLowerCase().includes(query.toLowerCase()) ||
+            airline.iataCode.toLowerCase().includes(query.toLowerCase())
         );
-        
+
         setSuggestions(filteredAirlines);
         setIsDropdownOpen(true);
       } catch (error) {
@@ -136,7 +137,7 @@ const AirlineSearchInput: React.FC<AirlineSearchInputProps> = ({
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={e => setQuery(e.target.value)}
           onFocus={handleFocus}
           placeholder={placeholder}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -170,4 +171,4 @@ const AirlineSearchInput: React.FC<AirlineSearchInputProps> = ({
   );
 };
 
-export default AirlineSearchInput; 
+export default AirlineSearchInput;

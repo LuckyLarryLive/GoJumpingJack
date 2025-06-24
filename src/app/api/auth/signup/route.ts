@@ -3,6 +3,9 @@ import { hashPassword, generateToken, setAuthToken } from '@/lib/auth';
 import { signupStep1Schema, signupStep2Schema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
 
+// Force Node.js runtime for auth routes that use bcrypt and JWT
+export const runtime = 'nodejs';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -25,10 +28,7 @@ export async function POST(request: Request) {
         .single();
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Email already registered' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Email already registered' }, { status: 400 });
       }
 
       // Hash password
@@ -65,7 +65,11 @@ export async function POST(request: Request) {
 
       // Update user with profile information
       let homeAirportValue = validatedData.homeAirportIataCode;
-      if (homeAirportValue && typeof homeAirportValue === 'string' && homeAirportValue.length !== 3) {
+      if (
+        homeAirportValue &&
+        typeof homeAirportValue === 'string' &&
+        homeAirportValue.length !== 3
+      ) {
         // Save city name as is if not a 3-letter IATA code
         homeAirportValue = validatedData.homeAirportIataCode;
       }
@@ -91,10 +95,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json(
-      { error: 'Invalid signup step' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid signup step' }, { status: 400 });
   } catch (error) {
     console.error('Signup error:', error);
     let errorMessage = 'Failed to create account';
@@ -103,9 +104,6 @@ export async function POST(request: Request) {
     } else if (typeof error === 'object') {
       errorMessage = JSON.stringify(error);
     }
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
-} 
+}

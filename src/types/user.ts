@@ -32,14 +32,19 @@ export const userSchema = z.object({
 });
 
 // Signup Schema (Step 1)
-export const signupStep1Schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(12).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/),
-  passwordConfirmation: z.string(),
-}).refine((data) => data.password === data.passwordConfirmation, {
-  message: "Passwords don't match",
-  path: ["passwordConfirmation"],
-});
+export const signupStep1Schema = z
+  .object({
+    email: z.string().email(),
+    password: z
+      .string()
+      .min(12)
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/),
+    passwordConfirmation: z.string(),
+  })
+  .refine(data => data.password === data.passwordConfirmation, {
+    message: "Passwords don't match",
+    path: ['passwordConfirmation'],
+  });
 
 // Signup Schema (Step 2)
 export const signupStep2Schema = z.object({
@@ -68,14 +73,19 @@ export const passwordResetRequestSchema = z.object({
 });
 
 // Password Reset Schema
-export const passwordResetSchema = z.object({
-  token: z.string(),
-  password: z.string().min(8).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
-  passwordConfirmation: z.string(),
-}).refine((data) => data.password === data.passwordConfirmation, {
-  message: "Passwords don't match",
-  path: ["passwordConfirmation"],
-});
+export const passwordResetSchema = z
+  .object({
+    token: z.string(),
+    password: z
+      .string()
+      .min(8)
+      .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
+    passwordConfirmation: z.string(),
+  })
+  .refine(data => data.password === data.passwordConfirmation, {
+    message: "Passwords don't match",
+    path: ['passwordConfirmation'],
+  });
 
 // Types
 export type User = z.infer<typeof userSchema>;
@@ -84,4 +94,4 @@ export type SignupStep2 = z.infer<typeof signupStep2Schema>;
 export type Login = z.infer<typeof loginSchema>;
 export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordReset = z.infer<typeof passwordResetSchema>;
-export type LoyaltyProgram = z.infer<typeof loyaltyProgramSchema>; 
+export type LoyaltyProgram = z.infer<typeof loyaltyProgramSchema>;

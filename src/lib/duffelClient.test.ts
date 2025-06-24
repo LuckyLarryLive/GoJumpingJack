@@ -19,7 +19,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should search flights with validation', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const searchParams = {
       origin: 'LHR',
       destination: 'JFK',
@@ -42,7 +42,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should validate passenger data for orders', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const passengers = [
       {
         type: 'adult' as const,
@@ -68,7 +68,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should handle rate limiting', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const searchParams = {
       origin: 'LHR',
       destination: 'JFK',
@@ -80,11 +80,11 @@ describe('EnhancedDuffelClient', () => {
     };
 
     const startTime = Date.now();
-    
+
     // Make multiple requests in quick succession
-    const promises = Array(3).fill(null).map(() => 
-      client.searchFlights(searchParams)
-    );
+    const promises = Array(3)
+      .fill(null)
+      .map(() => client.searchFlights(searchParams));
 
     try {
       await Promise.all(promises);
@@ -95,7 +95,7 @@ describe('EnhancedDuffelClient', () => {
 
     const endTime = Date.now();
     const duration = endTime - startTime;
-    
+
     // First request is immediate, subsequent requests are spaced by 1 second
     // For 3 requests, we expect at least 900ms total (allowing for timing variations)
     expect(duration).toBeGreaterThanOrEqual(900);
@@ -105,7 +105,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should handle request timeouts', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const searchParams = {
       origin: 'LHR',
       destination: 'JFK',
@@ -133,7 +133,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should cache results', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const searchParams = {
       origin: 'LHR',
       destination: 'JFK',
@@ -156,7 +156,7 @@ describe('EnhancedDuffelClient', () => {
 
   it('should clear cache', async () => {
     const client = getDuffelClient(mockConfig);
-    
+
     const searchParams = {
       origin: 'LHR',
       destination: 'JFK',
@@ -177,4 +177,4 @@ describe('EnhancedDuffelClient', () => {
       expect(error).toBeDefined();
     }
   });
-}); 
+});

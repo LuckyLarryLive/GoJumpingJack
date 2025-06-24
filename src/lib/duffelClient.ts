@@ -64,7 +64,10 @@ const FlightSearchParamsSchema = z.object({
   origin: z.string().length(3),
   destination: z.string().length(3),
   departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  returnDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   passengers: z.object({
     adults: z.number().min(1),
     children: z.number().min(0).optional(),
@@ -81,7 +84,8 @@ class RequestCache {
   private cache: Map<string, { data: any; timestamp: number }>;
   private ttl: number;
 
-  constructor(ttl = 5 * 60 * 1000) { // 5 minutes default TTL
+  constructor(ttl = 5 * 60 * 1000) {
+    // 5 minutes default TTL
     this.cache = new Map();
     this.ttl = ttl;
   }
@@ -153,7 +157,7 @@ export class EnhancedDuffelClient {
   // Request queue processing
   private async processQueue() {
     if (this.isProcessingQueue || this.requestQueue.length === 0) return;
-    
+
     this.isProcessingQueue = true;
     while (this.requestQueue.length > 0) {
       const request = this.requestQueue.shift();
@@ -194,7 +198,7 @@ export class EnhancedDuffelClient {
     if (cachedResult) return cachedResult;
 
     // Create timeout promise
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), REQUEST_TIMEOUT)
     );
 
@@ -203,7 +207,7 @@ export class EnhancedDuffelClient {
       return this.withRetry(async () => {
         return this.rateLimitedRequest(async () => {
           // Create offer request
-          const offerRequest = await Promise.race([
+          const offerRequest = (await Promise.race([
             this.client.offerRequests.create({
               slices: [
                 {
@@ -214,13 +218,15 @@ export class EnhancedDuffelClient {
                   departure_time: { from: '06:00', to: '22:00' },
                 },
                 ...(validatedParams.returnDate
-                  ? [{
-                      origin: validatedParams.destination,
-                      destination: validatedParams.origin,
-                      departure_date: validatedParams.returnDate,
-                      arrival_time: { from: '06:00', to: '22:00' },
-                      departure_time: { from: '06:00', to: '22:00' },
-                    }]
+                  ? [
+                      {
+                        origin: validatedParams.destination,
+                        destination: validatedParams.origin,
+                        departure_date: validatedParams.returnDate,
+                        arrival_time: { from: '06:00', to: '22:00' },
+                        departure_time: { from: '06:00', to: '22:00' },
+                      },
+                    ]
                   : []),
               ],
               passengers: [
@@ -230,19 +236,19 @@ export class EnhancedDuffelClient {
               ],
               cabin_class: validatedParams.cabinClass,
             }),
-            timeoutPromise
-          ]) as DuffelOfferRequest;
+            timeoutPromise,
+          ])) as DuffelOfferRequest;
 
           // List offers
-          const offers = await Promise.race([
+          const offers = (await Promise.race([
             this.client.offers.list({
               offer_request_id: offerRequest.data.id,
               limit: validatedParams.limit || 15,
               sort: validatedParams.sort?.replace('-', '') as 'total_amount' | 'total_duration',
               after: validatedParams.after,
             }),
-            timeoutPromise
-          ]) as DuffelOffers;
+            timeoutPromise,
+          ])) as DuffelOffers;
 
           return {
             data: offers.data,
@@ -309,4 +315,4 @@ export function getDuffelClient(config: DuffelConfig): EnhancedDuffelClient {
     duffelClientInstance = new EnhancedDuffelClient(config);
   }
   return duffelClientInstance;
-} 
+}

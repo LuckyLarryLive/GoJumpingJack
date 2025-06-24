@@ -8,7 +8,10 @@ interface AirportSearchProps {
   placeholder?: string;
 }
 
-export default function AirportSearch({ onSelect, placeholder = 'Search for a city or airport' }: AirportSearchProps) {
+export default function AirportSearch({
+  onSelect,
+  placeholder = 'Search for a city or airport',
+}: AirportSearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -28,11 +31,11 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
 
   const highlightText = (text: string, query: string): HighlightedText[] => {
     if (!query) return [{ text, highlight: false }];
-    
+
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
     return parts.map(part => ({
       text: part,
-      highlight: part.toLowerCase() === query.toLowerCase()
+      highlight: part.toLowerCase() === query.toLowerCase(),
     }));
   };
 
@@ -60,7 +63,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
     console.log('City map:', Object.fromEntries(cityMap));
 
     const formattedResults: SearchResult[] = [];
-    
+
     // Add city results first
     cityMap.forEach((airports, cityKey) => {
       if (airports.length > 0) {
@@ -71,7 +74,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
           city: airports[0].city,
           state: airports[0].state,
           country: airports[0].country,
-          airports: airports
+          airports: airports,
         });
       }
     });
@@ -86,7 +89,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
           name: `${airport.name} (${airport.code})`,
           city: airport.city,
           state: airport.state,
-          country: airport.country
+          country: airport.country,
         });
       }
     });
@@ -110,7 +113,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={e => handleSearch(e.target.value)}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -131,10 +134,7 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
                 <div>
                   <div className="font-medium">
                     {highlightText(result.name, query).map((part, i) => (
-                      <span
-                        key={i}
-                        className={part.highlight ? 'font-bold text-blue-600' : ''}
-                      >
+                      <span key={i} className={part.highlight ? 'font-bold text-blue-600' : ''}>
                         {part.text}
                       </span>
                     ))}
@@ -150,4 +150,4 @@ export default function AirportSearch({ onSelect, placeholder = 'Search for a ci
       )}
     </div>
   );
-} 
+}

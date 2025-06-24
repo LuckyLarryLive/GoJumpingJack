@@ -77,12 +77,10 @@ const LoyaltyProgramsInput: React.FC<LoyaltyProgramsInputProps> = ({ value, onCh
         <h3 className="text-lg font-medium text-gray-900 mb-4">
           {editingIndex !== null ? 'Edit Loyalty Program' : 'Add New Loyalty Program'}
         </h3>
-        
+
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Airline
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Airline</label>
             <AirlineSearchInput
               id="loyalty-airline-search"
               label="Search airlines"
@@ -100,7 +98,7 @@ const LoyaltyProgramsInput: React.FC<LoyaltyProgramsInputProps> = ({ value, onCh
               type="text"
               id="programName"
               value={newProgram.programName}
-              onChange={(e) => setNewProgram(prev => ({ ...prev, programName: e.target.value }))}
+              onChange={e => setNewProgram(prev => ({ ...prev, programName: e.target.value }))}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="e.g., Miles & More, SkyMiles"
             />
@@ -114,7 +112,7 @@ const LoyaltyProgramsInput: React.FC<LoyaltyProgramsInputProps> = ({ value, onCh
               type="text"
               id="accountNumber"
               value={newProgram.accountNumber}
-              onChange={(e) => setNewProgram(prev => ({ ...prev, accountNumber: e.target.value }))}
+              onChange={e => setNewProgram(prev => ({ ...prev, accountNumber: e.target.value }))}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               placeholder="Enter your loyalty program account number"
             />
@@ -199,4 +197,4 @@ const LoyaltyProgramsInput: React.FC<LoyaltyProgramsInputProps> = ({ value, onCh
   );
 };
 
-export default LoyaltyProgramsInput; 
+export default LoyaltyProgramsInput;

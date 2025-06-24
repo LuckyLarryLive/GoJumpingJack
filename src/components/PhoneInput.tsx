@@ -9,7 +9,14 @@ interface PhoneInputProps {
   error?: string;
 }
 
-const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, label, id = 'phone-input', error }) => (
+const PhoneInput: React.FC<PhoneInputProps> = ({
+  value,
+  onChange,
+  required,
+  label,
+  id = 'phone-input',
+  error,
+}) => (
   <div className="w-full">
     {label && (
       <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
@@ -30,4 +37,4 @@ const PhoneInput: React.FC<PhoneInputProps> = ({ value, onChange, required, labe
   </div>
 );
 
-export default PhoneInput; 
+export default PhoneInput;

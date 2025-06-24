@@ -14,12 +14,12 @@ interface AirportSearchInputProps {
     airportCode: string | null, // IATA for single, comma-separated for city
     displayValue: string | null, // Full string for display in input
     selectionType: 'airport' | 'city' | null, // Type of selection
-    cityNameForApi: string | null,    // Explicit city name for API call
+    cityNameForApi: string | null, // Explicit city name for API call
     countryCodeForApi: string | null, // Explicit country code for API call
-    regionForApi?: string | null      // Explicit region for API call (optional)
+    regionForApi?: string | null // Explicit region for API call (optional)
   ) => void;
   initialDisplayValue?: string | null;
-  currentValue?: string | null; 
+  currentValue?: string | null;
 }
 
 // --- Airport Search Input Component ---
@@ -52,23 +52,23 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Helper to format display string
   const getFormattedDisplay = useCallback((airport: Airport | null): string => {
     if (!airport) return '';
-    
+
     console.log('[AirportSearchInput] Formatting display for airport:', {
       name: airport.name,
       code: airport.code,
       city: airport.city,
       state: airport.state,
-      country: airport.country
+      country: airport.country,
     });
-    
+
     // Format: "Airport Name (IATA) - City, Region, Country"
     const parts = [
       `${airport.name} (${airport.code})`,
       airport.city || '',
       airport.state || '',
-      airport.country || ''
+      airport.country || '',
     ].filter(Boolean); // Remove empty strings
-    
+
     const formatted = parts.join(' - ');
     console.log('[AirportSearchInput] Formatted display:', formatted);
     return formatted;
@@ -77,13 +77,13 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Helper to condense display value for input field
   const getCondensedDisplay = useCallback((displayValue: string | null): string => {
     if (!displayValue) return '';
-    
+
     // If it's an "All Airports" selection, condense it
     if (displayValue.includes(' – All Airports')) {
       const cityName = displayValue.split(' – All Airports')[0];
       return `${cityName} (All Airports)`;
     }
-    
+
     return displayValue;
   }, []);
 
@@ -113,7 +113,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     const currentFormattedSelection = getFormattedDisplay(selectedAirport);
 
     if (selectedAirport && query === currentFormattedSelection) {
-      setSuggestions([]); setIsDropdownOpen(false); return;
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
     }
     // Clear local selection if query changes away from it
     if (selectedAirport && query !== currentFormattedSelection) {
@@ -121,7 +123,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       setSelectedAirport(null);
     }
     if (debouncedQuery.length < 3) {
-      setSuggestions([]); setIsDropdownOpen(false); return;
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+      return;
     }
 
     const fetchSuggestions = async () => {
@@ -130,7 +134,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/search-airports?q=${encodeURIComponent(debouncedQuery)}`);
+        const response = await fetch(
+          `/api/search-airports?q=${encodeURIComponent(debouncedQuery)}`
+        );
         console.log('[AirportSearchInput] Fetch response:', response);
         console.log('[AirportSearchInput] Response status:', response.status);
 
@@ -139,7 +145,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
           console.error('[AirportSearchInput] API Error:', {
             status: response.status,
             statusText: response.statusText,
-            errorData
+            errorData,
           });
           setSuggestions([]);
           setIsDropdownOpen(false);
@@ -165,7 +171,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         console.log('[AirportSearchInput] Suggestions state set to:', mapped);
 
         // --- GROUPING LOGIC START ---
-        const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
+        const grouped: { [city: string]: { cityInfo: Airport; airports: Airport[] } } = {};
         mapped.forEach((airport: Airport) => {
           const cityKey = airport.city || `airport_${airport.code}`; // Use airport code if city is NULL
           if (!grouped[cityKey]) {
@@ -181,14 +187,17 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         });
         // --- GROUPING LOGIC END ---
 
-         if (query === debouncedQuery) {
-            setSuggestions(mapped);
-            setIsDropdownOpen(mapped.length > 0 && query !== currentFormattedSelection && query.length > 0);
-            setActiveIndex(-1);
-         }
+        if (query === debouncedQuery) {
+          setSuggestions(mapped);
+          setIsDropdownOpen(
+            mapped.length > 0 && query !== currentFormattedSelection && query.length > 0
+          );
+          setActiveIndex(-1);
+        }
       } catch (error) {
         console.error('[AirportSearchInput] Fetch error:', error);
-        setSuggestions([]); setIsDropdownOpen(false);
+        setSuggestions([]);
+        setIsDropdownOpen(false);
       } finally {
         if (query === debouncedQuery) setIsLoading(false);
       }
@@ -197,11 +206,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     if (query !== '' && query !== currentFormattedSelection) {
       fetchSuggestions();
     } else {
-        setSuggestions([]);
-        setIsDropdownOpen(false);
+      setSuggestions([]);
+      setIsDropdownOpen(false);
     }
   }, [debouncedQuery, query, selectedAirport, getFormattedDisplay]);
-
 
   // Outside click handler
   useEffect(() => {
@@ -213,7 +221,6 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
 
   // Handle Input Change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,13 +235,22 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // Update handleSuggestionClick to handle city selections
   const handleSuggestionClick = (airport: Airport) => {
     const displayValue = getFormattedDisplay(airport);
-    onAirportSelect(airport.code, displayValue, 'airport', airport.city, airport.country, airport.state);
+    onAirportSelect(
+      airport.code,
+      displayValue,
+      'airport',
+      airport.city,
+      airport.country,
+      airport.state
+    );
     setQuery(displayValue);
     setSelectedAirport(airport);
     setIsDropdownOpen(false);
     setSuggestions([]);
     setActiveIndex(-1);
-    setTimeout(() => { isInteracting.current = false; }, 100);
+    setTimeout(() => {
+      isInteracting.current = false;
+    }, 100);
     console.log('[AirportSearchInput] Airport selected:', displayValue);
   };
 
@@ -245,36 +261,40 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     const joinedAirportCodes = airportCodes.join(',');
     const cityNameForApi = cityName;
     const countryCodeForApi = firstAirport ? firstAirport.country : null;
-    const regionForApi = (firstAirport && firstAirport.state && firstAirport.state !== firstAirport.country) ? firstAirport.state : null;
+    const regionForApi =
+      firstAirport && firstAirport.state && firstAirport.state !== firstAirport.country
+        ? firstAirport.state
+        : null;
     onAirportSelect(
-      joinedAirportCodes, 
-      displayValue, 
-      'city', 
-      cityNameForApi, 
+      joinedAirportCodes,
+      displayValue,
+      'city',
+      cityNameForApi,
       countryCodeForApi,
       regionForApi
     );
     setQuery(displayValue);
-    setIsDropdownOpen(false); 
+    setIsDropdownOpen(false);
     setSuggestions([]);
     setActiveIndex(-1);
-    setTimeout(() => { isInteracting.current = false; }, 100);
+    setTimeout(() => {
+      isInteracting.current = false;
+    }, 100);
     console.log('[AirportSearchInput] City selected:', displayValue);
   };
 
-   // Handle Focus
-   const handleFocus = () => {
-    isInteracting.current = true; 
+  // Handle Focus
+  const handleFocus = () => {
+    isInteracting.current = true;
 
     // Only clear if there's no selected airport and no query
     if (!selectedAirport && !query) {
       setQuery('');
       onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
-      setSuggestions([]); 
-      setIsDropdownOpen(false); 
+      setSuggestions([]);
+      setIsDropdownOpen(false);
     }
   };
-
 
   // Handle Keyboard Navigation
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -284,32 +304,34 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
-        setActiveIndex((prevIndex) => (prevIndex + 1) % suggestions.length);
+        setActiveIndex(prevIndex => (prevIndex + 1) % suggestions.length);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        setActiveIndex((prevIndex) => (prevIndex - 1 + suggestions.length) % suggestions.length);
+        setActiveIndex(prevIndex => (prevIndex - 1 + suggestions.length) % suggestions.length);
         break;
       case 'Enter':
-         event.preventDefault();
-         if (activeIndex >= 0 && activeIndex < suggestions.length) {
-           handleSuggestionClick(suggestions[activeIndex]);
-         } else if (suggestions.length === 1) {
-           handleSuggestionClick(suggestions[0]); // Select the only one
-         } else {
-           setIsDropdownOpen(false); // Close dropdown if Enter pressed with no selection highlighted
-         }
-         break;
+        event.preventDefault();
+        if (activeIndex >= 0 && activeIndex < suggestions.length) {
+          handleSuggestionClick(suggestions[activeIndex]);
+        } else if (suggestions.length === 1) {
+          handleSuggestionClick(suggestions[0]); // Select the only one
+        } else {
+          setIsDropdownOpen(false); // Close dropdown if Enter pressed with no selection highlighted
+        }
+        break;
       case 'Escape':
-        setIsDropdownOpen(false); setActiveIndex(-1);
+        setIsDropdownOpen(false);
+        setActiveIndex(-1);
         break;
       default: // Allow other keys like Tab, Shift, etc.
         break;
     }
     // Set interacting false slightly later, except maybe for enter/escape?
-    setTimeout(() => { isInteracting.current = false; }, 100);
+    setTimeout(() => {
+      isInteracting.current = false;
+    }, 100);
   };
-
 
   // Scroll active item into view - Modified to be more stable
   useEffect(() => {
@@ -329,18 +351,23 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     }
   }, [activeIndex]);
 
-
   // Helper to highlight matching text
   const highlightMatch = (text: string, query: string) => {
     if (!query) return [text];
     const regex = new RegExp(`(${query})`, 'ig');
     return text.split(regex).map((part, i) =>
-      regex.test(part) ? <b key={i} className="font-bold text-blue-700">{part}</b> : part
+      regex.test(part) ? (
+        <b key={i} className="font-bold text-blue-700">
+          {part}
+        </b>
+      ) : (
+        part
+      )
     );
   };
 
   // Group suggestions by city for rendering
-  const grouped: { [city: string]: { cityInfo: Airport, airports: Airport[] } } = {};
+  const grouped: { [city: string]: { cityInfo: Airport; airports: Airport[] } } = {};
   suggestions.forEach((airport: Airport) => {
     const cityKey = airport.city || `airport_${airport.code}`;
     if (!grouped[cityKey]) {
@@ -359,7 +386,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped)
     .map(([city, { cityInfo, airports }]) => ({
       city: cityInfo,
-      airports
+      airports,
     }))
     .filter(group => {
       // Only include groups that have a valid city name and multiple airports
@@ -377,7 +404,9 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   // --- Render ---
   return (
     <div ref={containerRef} className="relative w-full">
-      <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">{label}</label>
+      <label htmlFor={id} className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
       <input
         type="text"
         id={id}
@@ -388,7 +417,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
         onBlur={() => {
-          setTimeout(() => { 
+          setTimeout(() => {
             if (containerRef.current && !containerRef.current.contains(document.activeElement)) {
               setIsDropdownOpen(false);
               isInteracting.current = false;
@@ -398,9 +427,14 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out bg-white/25 backdrop-blur-sm text-base sm:text-sm"
         autoComplete="off"
       />
-      {isLoading && <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>}
+      {isLoading && (
+        <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
+      )}
       {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
-        <ul ref={listRef} className="absolute z-20 mt-1 max-h-72 w-full min-w-0 max-w-full sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg">
+        <ul
+          ref={listRef}
+          className="absolute z-20 mt-1 max-h-72 w-full min-w-0 max-w-full sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg"
+        >
           {/* Render grouped city suggestions (multiple airports) */}
           {groupedSuggestions.map((group, groupIdx) => (
             <li key={group.city.city + '-group'} className="">
@@ -408,43 +442,58 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                 <div
                   className="flex items-center px-4 py-3 cursor-pointer hover:bg-blue-100 font-semibold text-gray-900 border-b border-gray-200 bg-gray-50 break-words max-w-full"
                   tabIndex={0}
-                  onMouseDown={() => handleCitySelection(group.city.city, group.airports.map(a => a.code))}
+                  onMouseDown={() =>
+                    handleCitySelection(
+                      group.city.city,
+                      group.airports.map(a => a.code)
+                    )
+                  }
                   onKeyDown={e => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      handleCitySelection(group.city.city, group.airports.map(a => a.code));
+                      handleCitySelection(
+                        group.city.city,
+                        group.airports.map(a => a.code)
+                      );
                     }
                   }}
                 >
                   <FaCity className="mr-2 text-blue-500" />
-                  <span className="break-words max-w-full">{highlightMatch(`${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`, query)}</span>
+                  <span className="break-words max-w-full">
+                    {highlightMatch(
+                      `${group.city.city} – All Airports (${group.airports.map(a => a.code).join(', ')})`,
+                      query
+                    )}
+                  </span>
                 </div>
               )}
               {group.airports.map((airport: Airport) => (
-                <div 
+                <div
                   key={airport.code}
-                  onMouseDown={(e) => {
-                    e.preventDefault(); 
+                  onMouseDown={e => {
+                    e.preventDefault();
                     console.log('[AirportSearchInput] Airport suggestion clicked:', {
                       code: airport.code,
                       name: airport.name,
                       city: airport.city,
                       country: airport.country,
                       state: airport.state,
-                      raw: airport
+                      raw: airport,
                     });
-                    
+
                     const displayValue = getFormattedDisplay(airport);
                     console.log('[AirportSearchInput] Formatted display value:', displayValue);
-                    
+
                     console.log('[AirportSearchInput] Will call parent with:', {
                       airportCode: airport.code,
                       city: airport.city,
-                      displayValue
+                      displayValue,
                     });
-                    
+
                     handleSuggestionClick(airport);
                   }}
-                  onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
+                  onMouseEnter={() =>
+                    handleItemHover(suggestions.findIndex(a => a.code === airport.code))
+                  }
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
@@ -454,8 +503,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                     </div>
                     <div className="text-xs text-gray-500 break-words max-w-full">
                       {airport.city ? airport.city : ''}
-                      {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
-                      {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}
+                      {airport.city && airport.state
+                        ? `, ${airport.state}`
+                        : !airport.city && airport.state
+                          ? airport.state
+                          : ''}
+                      {(airport.city || airport.state) && airport.country
+                        ? ` – ${airport.country}`
+                        : !airport.city && !airport.state && airport.country
+                          ? airport.country
+                          : ''}
                     </div>
                   </div>
                 </div>
@@ -466,28 +523,30 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
           {suggestions
             .filter(a => !groupedSuggestions.some(g => g.airports.some(ga => ga.code === a.code)))
             .map((airport: Airport) => (
-              <div 
+              <div
                 key={airport.code}
-                onMouseDown={(e) => {
-                  e.preventDefault(); 
+                onMouseDown={e => {
+                  e.preventDefault();
                   console.log('[AirportSearchInput] Airport suggestion clicked:', {
                     code: airport.code,
                     name: airport.name,
                     city: airport.city,
                     country: airport.country,
                     state: airport.state,
-                    raw: airport
+                    raw: airport,
                   });
                   const displayValue = getFormattedDisplay(airport);
                   console.log('[AirportSearchInput] Formatted display value:', displayValue);
                   console.log('[AirportSearchInput] Will call parent with:', {
                     airportCode: airport.code,
                     city: airport.city,
-                    displayValue
+                    displayValue,
                   });
                   handleSuggestionClick(airport);
                 }}
-                onMouseEnter={() => handleItemHover(suggestions.findIndex(a => a.code === airport.code))}
+                onMouseEnter={() =>
+                  handleItemHover(suggestions.findIndex(a => a.code === airport.code))
+                }
                 className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
               >
                 <FaPlane className="mt-1 mr-2 text-blue-400" />
@@ -497,8 +556,16 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   </div>
                   <div className="text-xs text-gray-500 break-words max-w-full">
                     {airport.city ? airport.city : ''}
-                    {airport.city && airport.state ? `, ${airport.state}` : (!airport.city && airport.state ? airport.state : '')}
-                    {(airport.city || airport.state) && airport.country ? ` – ${airport.country}` : (!airport.city && !airport.state && airport.country ? airport.country : '')}
+                    {airport.city && airport.state
+                      ? `, ${airport.state}`
+                      : !airport.city && airport.state
+                        ? airport.state
+                        : ''}
+                    {(airport.city || airport.state) && airport.country
+                      ? ` – ${airport.country}`
+                      : !airport.city && !airport.state && airport.country
+                        ? airport.country
+                        : ''}
                   </div>
                 </div>
               </div>

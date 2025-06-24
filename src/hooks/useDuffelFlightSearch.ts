@@ -16,7 +16,9 @@ export function useDuffelFlightSearch() {
   const [jobId, setJobId] = useState<string | null>(null);
   const [offers, setOffers] = useState<any[]>([]);
   const [meta, setMeta] = useState<any>(null);
-  const [status, setStatus] = useState<'idle' | 'searching' | 'pending' | 'processing' | 'complete' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    'idle' | 'searching' | 'pending' | 'processing' | 'complete' | 'error'
+  >('idle');
   const [error, setError] = useState<string | null>(null);
   const duffelInitiateUrl = process.env.NEXT_PUBLIC_DUFFEL_INITIATE_FUNCTION_URL!;
 
@@ -29,9 +31,12 @@ export function useDuffelFlightSearch() {
     setJobId(null);
 
     try {
-      const { data, error: supabaseError } = await supabase.functions.invoke('initiate-duffel-search', {
-        body: { searchParams: params }
-      });
+      const { data, error: supabaseError } = await supabase.functions.invoke(
+        'initiate-duffel-search',
+        {
+          body: { searchParams: params },
+        }
+      );
 
       if (supabaseError) throw new Error(supabaseError.message);
       if (!data) throw new Error('No data received from search initiation');
@@ -64,9 +69,12 @@ export function useDuffelFlightSearch() {
           table: 'duffel_jobs',
           filter: `id=eq.${jobId}`,
         },
-        (payload) => {
-          console.log('[useDuffelFlightSearch] REALTIME CALLBACK TRIGGERED. Raw payload:', JSON.stringify(payload, null, 2));
-          
+        payload => {
+          console.log(
+            '[useDuffelFlightSearch] REALTIME CALLBACK TRIGGERED. Raw payload:',
+            JSON.stringify(payload, null, 2)
+          );
+
           try {
             if (!payload) {
               throw new Error('Received empty payload from Realtime');
@@ -82,13 +90,15 @@ export function useDuffelFlightSearch() {
               status: job.status,
               hasResultsData: !!job.results_data,
               resultsDataKeys: job.results_data ? Object.keys(job.results_data) : [],
-              resultsDataStructure: job.results_data ? {
-                hasData: !!job.results_data.data,
-                dataLength: job.results_data.data?.length,
-                hasMeta: !!job.results_data.meta,
-                metaKeys: job.results_data.meta ? Object.keys(job.results_data.meta) : []
-              } : null,
-              rawResultsData: job.results_data // Log the raw data for debugging
+              resultsDataStructure: job.results_data
+                ? {
+                    hasData: !!job.results_data.data,
+                    dataLength: job.results_data.data?.length,
+                    hasMeta: !!job.results_data.meta,
+                    metaKeys: job.results_data.meta ? Object.keys(job.results_data.meta) : [],
+                  }
+                : null,
+              rawResultsData: job.results_data, // Log the raw data for debugging
             });
 
             switch (job.status) {
@@ -99,12 +109,12 @@ export function useDuffelFlightSearch() {
               case 'completed':
                 console.log('[useDuffelFlightSearch] Job completed, processing results');
                 setStatus('complete');
-                
+
                 // Check if results_data exists and is an object
                 if (!job.results_data || typeof job.results_data !== 'object') {
                   console.error('[useDuffelFlightSearch] Invalid results_data:', {
                     type: typeof job.results_data,
-                    value: job.results_data
+                    value: job.results_data,
                   });
                   setError('Invalid results data received');
                   setStatus('error');
@@ -115,7 +125,7 @@ export function useDuffelFlightSearch() {
                 if (!Array.isArray(job.results_data.data)) {
                   console.error('[useDuffelFlightSearch] Invalid data array:', {
                     type: typeof job.results_data.data,
-                    value: job.results_data.data
+                    value: job.results_data.data,
                   });
                   setError('Invalid offers data received');
                   setStatus('error');
@@ -127,7 +137,7 @@ export function useDuffelFlightSearch() {
                   const transformedOffers = job.results_data.data.map((offer: any) => {
                     const outboundSegments = offer.slices?.[0]?.segments || [];
                     const returnSegments = offer.slices?.[1]?.segments || [];
-                    
+
                     // Helper function to create a segment with proper field names
                     const createSegment = (segment: any) => ({
                       origin_airport: segment.origin?.iata_code || '',
@@ -135,10 +145,15 @@ export function useDuffelFlightSearch() {
                       departure_at: segment.departing_at || '',
                       arrival_at: segment.arriving_at || '',
                       duration: segment.duration || '',
-                      airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
-                      flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+                      airline:
+                        segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
+                      flight_number:
+                        segment.operating_carrier_flight_number ||
+                        segment.marketing_carrier_flight_number ||
+                        '',
                       aircraft: segment.aircraft || '',
-                      cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
+                      cabin_class:
+                        segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy',
                     });
 
                     return {
@@ -155,13 +170,15 @@ export function useDuffelFlightSearch() {
 
                   console.log('[useDuffelFlightSearch] Setting transformed offers:', {
                     count: transformedOffers.length,
-                    firstOffer: transformedOffers[0] ? {
-                      airline: transformedOffers[0].airline,
-                      price: transformedOffers[0].price,
-                      stops: transformedOffers[0].stops,
-                      outbound_segments: transformedOffers[0].outbound_segments.length,
-                      return_segments: transformedOffers[0].return_segments.length
-                    } : 'missing'
+                    firstOffer: transformedOffers[0]
+                      ? {
+                          airline: transformedOffers[0].airline,
+                          price: transformedOffers[0].price,
+                          stops: transformedOffers[0].stops,
+                          outbound_segments: transformedOffers[0].outbound_segments.length,
+                          return_segments: transformedOffers[0].return_segments.length,
+                        }
+                      : 'missing',
                   });
 
                   setOffers(transformedOffers);
@@ -175,7 +192,7 @@ export function useDuffelFlightSearch() {
                 if (job.results_data.meta && typeof job.results_data.meta === 'object') {
                   console.log('[useDuffelFlightSearch] Setting meta:', {
                     metaKeys: Object.keys(job.results_data.meta),
-                    metaData: job.results_data.meta
+                    metaData: job.results_data.meta,
                   });
                   setMeta(job.results_data.meta);
                 } else {
@@ -198,7 +215,7 @@ export function useDuffelFlightSearch() {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         console.log('[useDuffelFlightSearch] Subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('[useDuffelFlightSearch] Successfully subscribed to channel:', channelName);
@@ -229,14 +246,17 @@ export function useDuffelFlightSearch() {
 
         if (jobError) throw jobError;
 
-        const { data, error: supabaseError } = await supabase.functions.invoke('initiate-duffel-search', {
-          body: {
-            searchParams: {
-              ...job.search_params,
-              ...opts,
+        const { data, error: supabaseError } = await supabase.functions.invoke(
+          'initiate-duffel-search',
+          {
+            body: {
+              searchParams: {
+                ...job.search_params,
+                ...opts,
+              },
             },
           }
-        });
+        );
 
         if (supabaseError) throw new Error(supabaseError.message);
         if (!data) throw new Error('No data received from search initiation');
@@ -260,4 +280,4 @@ export function useDuffelFlightSearch() {
     fetchPage,
     jobId,
   };
-} 
+}

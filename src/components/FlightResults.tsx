@@ -23,14 +23,14 @@ interface FlightResultsProps {
 const JACK_VIDEO_PATH = '/Jack_Finding_Flights.mp4';
 
 // --- Flight Results Component ---
-const FlightResults: React.FC<FlightResultsProps> = ({ 
-  searchParams, 
+const FlightResults: React.FC<FlightResultsProps> = ({
+  searchParams,
   apiUrl,
-  showPagination = false, 
-  onPageChange, 
+  showPagination = false,
+  onPageChange,
   currentPage = 1,
   filterFlights,
-  sortBy = 'price' // Default to price sorting
+  sortBy = 'price', // Default to price sorting
 }) => {
   const router = useRouter();
   const [allOffers, setAllOffers] = useState<any[]>([]);
@@ -80,9 +80,11 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Helper: Filter valid flights (not partial, has outbound segments)
   function filterValidFlights(flights: any[]): Flight[] {
-    return flights.filter(flight =>
-      !flight.partial &&
-      Array.isArray(flight.outbound_segments) && flight.outbound_segments.length > 0
+    return flights.filter(
+      flight =>
+        !flight.partial &&
+        Array.isArray(flight.outbound_segments) &&
+        flight.outbound_segments.length > 0
     );
   }
 
@@ -130,7 +132,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           table: 'duffel_jobs',
           filter: `id=eq.${jobId}`,
         },
-        (payload) => {
+        payload => {
           if (payload?.new?.results_data?.data) {
             onOffers(payload.new.results_data.data);
           }
@@ -182,9 +184,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         arrival_at: segment.arriving_at || '',
         duration: segment.duration || '',
         airline: segment.operating_carrier?.name || segment.marketing_carrier?.name || '',
-        flight_number: segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
+        flight_number:
+          segment.operating_carrier_flight_number || segment.marketing_carrier_flight_number || '',
         aircraft: segment.aircraft || '',
-        cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy'
+        cabin_class: segment.passengers?.[0]?.cabin_class || offer.cabin_class || 'economy',
       });
 
       return {
@@ -195,7 +198,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         cabin_class: flightCabinClass,
         currency: offer.total_currency || 'USD',
         outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
-        return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1]))
+        return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1])),
       };
     } catch (err) {
       console.error('Error transforming Duffel offer:', err);
@@ -207,14 +210,14 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const buildResultsLink = useCallback((params: SearchParamsType | null): string => {
     if (!params) return '#';
     const query = new URLSearchParams({
-        originAirport: params.originAirport,
-        destinationAirport: params.destinationAirport,
-        departureDate: params.departureDate,
-        adults: params.adults.toString(),
-        cabinClass: params.cabinClass || 'economy',
+      originAirport: params.originAirport,
+      destinationAirport: params.destinationAirport,
+      departureDate: params.departureDate,
+      adults: params.adults.toString(),
+      cabinClass: params.cabinClass || 'economy',
     });
     if (params.returnDate) {
-        query.set('returnDate', params.returnDate);
+      query.set('returnDate', params.returnDate);
     }
     return `/flights?${query.toString()}`;
   }, []);
@@ -239,7 +242,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
   // Filtering, sorting, and pagination logic (client-side)
   let sortedFlights = Array.isArray(allOffers) ? [...allOffers] : [];
-  
+
   // Apply sorting based on sortBy value
   sortedFlights.sort((a, b) => {
     switch (sortBy) {
@@ -259,7 +262,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   const displayedFlights = showPagination ? sortedFlights : sortedFlights.slice(0, 3);
   const totalResults = sortedFlights.length;
   const totalPages = Math.ceil(totalResults / 10);
-  console.log('[FlightResults] searchParams.length:', searchParams.length, 'allOffers.length:', allOffers.length, 'displayedFlights.length:', displayedFlights.length, 'showPagination:', showPagination);
+  console.log(
+    '[FlightResults] searchParams.length:',
+    searchParams.length,
+    'allOffers.length:',
+    allOffers.length,
+    'displayedFlights.length:',
+    displayedFlights.length,
+    'showPagination:',
+    showPagination
+  );
 
   // Helper to summarize origins/destinations for display
   function getSummaryString() {
@@ -268,7 +280,11 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     let originLabel = '';
     if (first.fromCityNameForApi) {
       originLabel = first.fromCityNameForApi;
-    } else if (first.originAirport && first.originAirport.includes(',') && first.fromCityNameForApi) {
+    } else if (
+      first.originAirport &&
+      first.originAirport.includes(',') &&
+      first.fromCityNameForApi
+    ) {
       originLabel = first.fromCityNameForApi;
     } else {
       originLabel = first.originAirport;
@@ -276,13 +292,21 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     let destinationLabel = '';
     if (first.toCityNameForApi) {
       destinationLabel = first.toCityNameForApi;
-    } else if (first.destinationAirport && first.destinationAirport.includes(',') && first.toCityNameForApi) {
+    } else if (
+      first.destinationAirport &&
+      first.destinationAirport.includes(',') &&
+      first.toCityNameForApi
+    ) {
       destinationLabel = first.toCityNameForApi;
     } else {
       destinationLabel = first.destinationAirport;
     }
-    const departureDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.departureDate)));
-    const returnDates = Array.from(new Set((searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean)));
+    const departureDates = Array.from(
+      new Set((searchParams as SearchParamsType[]).map(p => p.departureDate))
+    );
+    const returnDates = Array.from(
+      new Set((searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean))
+    );
     return `Flights from ${originLabel} to ${destinationLabel}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
   }
 
@@ -311,16 +335,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     (async () => {
       try {
         await Promise.all(
-          searchParams.map(async (params) => {
+          searchParams.map(async params => {
             try {
               if (isCancelled) return;
-              
+
               const flightParams = toFlightSearchParams(params);
               // Call initiateSearch and get jobId
               const { data, error } = await supabase.functions.invoke('initiate-duffel-search', {
-                body: { searchParams: flightParams }
+                body: { searchParams: flightParams },
               });
-              
+
               if (error) {
                 console.error('Error initiating search:', error);
                 completedJobs++;
@@ -333,7 +357,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                 }
                 return;
               }
-              
+
               if (!data?.job_id) {
                 console.error('No job ID returned from search');
                 completedJobs++;
@@ -349,7 +373,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
 
               const jobId = data.job_id;
               // Subscribe to this job's results
-              const unsubscribe = subscribeToJob(jobId, (offers) => {
+              const unsubscribe = subscribeToJob(jobId, offers => {
                 if (isCancelled) return;
                 for (const offer of offers) {
                   const transformedFlight = duffelOfferToFlight(offer);
@@ -358,7 +382,10 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                   }
                 }
                 setAllOffers(Array.from(allOffersMap.values()));
-                console.log('[FlightResults] setAllOffers called. allOffersMap size:', allOffersMap.size);
+                console.log(
+                  '[FlightResults] setAllOffers called. allOffersMap size:',
+                  allOffersMap.size
+                );
                 completedJobs++;
                 if (completedJobs === totalJobs) {
                   clearTimeout(safetyTimeout);
@@ -369,7 +396,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
             } catch (err: any) {
               if (err?.response?.status === 400) {
                 console.error('400 Bad Request:', err);
-                setError('There was a problem with your search. Please check your airport selections and try again.');
+                setError(
+                  'There was a problem with your search. Please check your airport selections and try again.'
+                );
               } else {
                 console.error('Error fetching flight results:', err);
               }
@@ -390,7 +419,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return () => {
       isCancelled = true;
       clearTimeout(safetyTimeout);
-      unsubscribers.forEach((unsub) => unsub());
+      unsubscribers.forEach(unsub => unsub());
     };
   }, [searchParams]);
 
@@ -440,7 +469,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         <div className="container mx-auto px-4">
           <div className="text-center text-gray-600 py-10 bg-gray-50 rounded-lg max-w-lg mx-auto">
             <p className="text-xl mb-2 font-medium">No flights found matching your criteria.</p>
-            <p className="text-sm">Consider adjusting your dates or airports in the search above.</p>
+            <p className="text-sm">
+              Consider adjusting your dates or airports in the search above.
+            </p>
           </div>
         </div>
       </section>
@@ -454,12 +485,14 @@ const FlightResults: React.FC<FlightResultsProps> = ({
           {showPagination ? 'All Flight Deals' : 'Top Flight Deals Found'}
         </h2>
         <div className="space-y-4 max-w-4xl mx-auto">
-          {Array.isArray(displayedFlights) && displayedFlights.length > 0 ? displayedFlights.map((flight, index) => (
-            <FlightCard
-              key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
-              flight={flight}
-            />
-          )) : (
+          {Array.isArray(displayedFlights) && displayedFlights.length > 0 ? (
+            displayedFlights.map((flight, index) => (
+              <FlightCard
+                key={flight.link ? `${flight.link}-${index}` : `flight-home-${index}`}
+                flight={flight}
+              />
+            ))
+          ) : (
             <div className="text-center text-gray-600 py-10">No flights to display.</div>
           )}
 
@@ -471,8 +504,18 @@ const FlightResults: React.FC<FlightResultsProps> = ({
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
               >
                 See All {totalResults} Flights
-                <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg
+                  className="ml-2 -mr-1 w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </div>

@@ -46,7 +46,10 @@ export default function LoginPage() {
           )}
           <div className="rounded-lg shadow-sm space-y-4">
             <div>
-              <label htmlFor="email" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+              >
                 Email address
               </label>
               <input
@@ -58,11 +61,14 @@ export default function LoginPage() {
                 className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                 placeholder="Email address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+              >
                 Password
               </label>
               <input
@@ -74,14 +80,17 @@ export default function LoginPage() {
                 className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                 placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between mt-2">
             <div className="text-base sm:text-sm">
-              <Link href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link
+                href="/forgot-password"
+                className="font-medium text-blue-600 hover:text-blue-500"
+              >
                 Forgot your password?
               </Link>
             </div>
@@ -99,4 +108,4 @@ export default function LoginPage() {
       </div>
     </div>
   );
-} 
+}

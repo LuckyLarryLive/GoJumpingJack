@@ -2,10 +2,7 @@ import { Duffel } from '@duffel/api';
 
 // Mode switch: 'live' or 'test' (default to 'test')
 const mode = process.env.DUFFEL_MODE || 'test';
-const duffelToken =
-  mode === 'live'
-    ? process.env.DUFFEL_LIVE_TOKEN
-    : process.env.DUFFEL_TEST_TOKEN;
+const duffelToken = mode === 'live' ? process.env.DUFFEL_LIVE_TOKEN : process.env.DUFFEL_TEST_TOKEN;
 
 if (!duffelToken) {
   throw new Error('Duffel API token is not defined in environment variables');
@@ -51,7 +48,7 @@ interface OfferRequestSlice {
 export async function searchFlights(params: FlightSearchParams) {
   try {
     console.log('Duffel searchFlights: Starting search with params:', params);
-    
+
     // Simplify time range to reduce complexity
     const timeRange: TimeRange = {
       from: '06:00',
@@ -59,14 +56,14 @@ export async function searchFlights(params: FlightSearchParams) {
     };
 
     // Create a timeout promise that rejects after 10 seconds
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Request timed out')), 10000)
     );
 
     console.log('Duffel searchFlights: Creating offer request...');
     let offerRequest;
     try {
-      offerRequest = await Promise.race([
+      offerRequest = (await Promise.race([
         duffel.offerRequests.create({
           slices: [
             {
@@ -101,26 +98,32 @@ export async function searchFlights(params: FlightSearchParams) {
           ],
           cabin_class: params.cabinClass,
         }),
-        timeoutPromise
-      ]) as any;
-      console.log('Duffel searchFlights: Offer request full response:', JSON.stringify(offerRequest, null, 2));
-      console.log('Duffel searchFlights: Offer request created successfully:', offerRequest.data.id);
+        timeoutPromise,
+      ])) as any;
+      console.log(
+        'Duffel searchFlights: Offer request full response:',
+        JSON.stringify(offerRequest, null, 2)
+      );
+      console.log(
+        'Duffel searchFlights: Offer request created successfully:',
+        offerRequest.data.id
+      );
     } catch (offerRequestError) {
       console.error('Duffel searchFlights: Error creating offer request:', offerRequestError);
       throw offerRequestError;
     }
-    
+
     console.log('Duffel searchFlights: Fetching offers...');
-    const offers = await Promise.race([
+    const offers = (await Promise.race([
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
         limit: params.limit || 15, // Default to 15 results per page
         sort: (params.sort || 'total_amount') as any, // Type assertion to allow negative sort values
         after: params.after, // Use cursor for pagination
       }),
-      timeoutPromise
-    ]) as any;
-    
+      timeoutPromise,
+    ])) as any;
+
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
     return {
       data: offers.data,
@@ -133,20 +136,24 @@ export async function searchFlights(params: FlightSearchParams) {
       status: error.status,
       errors: error.errors,
       meta: error.meta,
-      stack: error.stack
+      stack: error.stack,
     });
-    
+
     // Check for specific error types
     if (error.message?.includes('timed out')) {
-      throw new Error('The flight search request timed out. Please try again with a simpler search or different dates.');
+      throw new Error(
+        'The flight search request timed out. Please try again with a simpler search or different dates.'
+      );
     } else if (error.status === 504) {
-      throw new Error('The flight search request timed out. Please try again with different dates or airports.');
+      throw new Error(
+        'The flight search request timed out. Please try again with different dates or airports.'
+      );
     } else if (error.status === 401) {
       throw new Error('Authentication error with flight search provider. Please contact support.');
     } else if (error.status === 429) {
       throw new Error('Too many requests. Please try again in a few minutes.');
     }
-    
+
     throw error;
   }
 }
@@ -191,13 +198,15 @@ export async function createOfferRequest(params: FlightSearchParams) {
         departure_time: timeRange,
       },
       ...(params.returnDate
-        ? [{
-            origin: params.destination,
-            destination: params.origin,
-            departure_date: params.returnDate,
-            arrival_time: timeRange,
-            departure_time: timeRange,
-          }]
+        ? [
+            {
+              origin: params.destination,
+              destination: params.origin,
+              departure_date: params.returnDate,
+              arrival_time: timeRange,
+              departure_time: timeRange,
+            },
+          ]
         : []),
     ],
     passengers: [
@@ -207,12 +216,20 @@ export async function createOfferRequest(params: FlightSearchParams) {
     ],
     cabin_class: params.cabinClass,
   });
-  console.log('Duffel createOfferRequest: Offer request full response:', JSON.stringify(offerRequest, null, 2));
+  console.log(
+    'Duffel createOfferRequest: Offer request full response:',
+    JSON.stringify(offerRequest, null, 2)
+  );
   return offerRequest.data.id;
 }
 
 // Helper: List Offers for an Offer Request (async flow)
-export async function listOffers({ offerRequestId, sort = 'total_amount', limit = 15, after }: {
+export async function listOffers({
+  offerRequestId,
+  sort = 'total_amount',
+  limit = 15,
+  after,
+}: {
   offerRequestId: string;
   sort?: 'total_amount' | '-total_amount' | 'total_duration' | '-total_duration';
   limit?: number;
@@ -242,4 +259,4 @@ export async function listOffers({ offerRequestId, sort = 'total_amount', limit 
     }
     throw error;
   }
-} 
+}

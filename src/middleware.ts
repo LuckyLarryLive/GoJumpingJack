@@ -3,10 +3,7 @@ import type { NextRequest } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
 // Add paths that require authentication
-const protectedPaths = [
-  '/api/user',
-  '/account',
-];
+const protectedPaths = ['/api/user', '/account'];
 
 // Add paths that should be accessible without authentication
 const publicPaths = [
@@ -36,10 +33,7 @@ export async function middleware(request: NextRequest) {
   if (isProtectedPath) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const token = authHeader.split(' ')[1];
@@ -47,10 +41,7 @@ export async function middleware(request: NextRequest) {
       verifyToken(token);
       return NextResponse.next();
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
   }
 
@@ -66,4 +57,4 @@ export const config = {
     '/forgot-password',
     '/reset-password',
   ],
-}; 
+};

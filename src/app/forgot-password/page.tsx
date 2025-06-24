@@ -17,7 +17,9 @@ export default function ForgotPasswordPage() {
 
     try {
       await requestPasswordReset(email);
-      setSuccess('If an account exists with that email, you will receive password reset instructions.');
+      setSuccess(
+        'If an account exists with that email, you will receive password reset instructions.'
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to request password reset');
     }
@@ -49,7 +51,10 @@ export default function ForgotPasswordPage() {
           )}
 
           <div>
-            <label htmlFor="email" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+            >
               Email address
             </label>
             <input
@@ -61,7 +66,7 @@ export default function ForgotPasswordPage() {
               className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
               placeholder="Email address"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={e => setEmail(e.target.value)}
             />
           </div>
 
@@ -83,4 +88,4 @@ export default function ForgotPasswordPage() {
       </div>
     </div>
   );
-} 
+}

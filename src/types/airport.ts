@@ -25,4 +25,4 @@ export interface SearchResult {
 export interface HighlightedText {
   text: string;
   highlight: boolean;
-} 
+}

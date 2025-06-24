@@ -19,7 +19,9 @@ export default function SignupPage() {
     password: '',
     passwordConfirmation: '',
   });
-  const [step2Data, setStep2Data] = useState<Omit<SignupStep2, 'dateOfBirth'> & { dateOfBirth: Date | null }>({
+  const [step2Data, setStep2Data] = useState<
+    Omit<SignupStep2, 'dateOfBirth'> & { dateOfBirth: Date | null }
+  >({
     firstName: '',
     lastName: '',
     dateOfBirth: null,
@@ -32,7 +34,9 @@ export default function SignupPage() {
     defaultInfantPassengers: 0,
     loyaltyPrograms: null,
   });
-  const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>([]);
+  const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>(
+    []
+  );
   const { signup } = useAuthContext();
   const router = useRouter();
   const [passwordError, setPasswordError] = useState('');
@@ -54,7 +58,7 @@ export default function SignupPage() {
   const handlePasswordBlur = () => {
     setPasswordTouched(true);
     if (!validatePassword(step1Data.password)) {
-      setPasswordError("Jack says your password needs attention");
+      setPasswordError('Jack says your password needs attention');
     } else {
       setPasswordError('');
     }
@@ -64,7 +68,7 @@ export default function SignupPage() {
     setStep1Data({ ...step1Data, password: e.target.value });
     if (passwordTouched) {
       if (!validatePassword(e.target.value)) {
-        setPasswordError("Jack says your password needs attention");
+        setPasswordError('Jack says your password needs attention');
       } else {
         setPasswordError('');
       }
@@ -73,13 +77,15 @@ export default function SignupPage() {
 
   const handlePasswordConfirmBlur = () => {
     if (step1Data.password !== step1Data.passwordConfirmation) {
-      setError("Jack says your passwords need to match");
+      setError('Jack says your passwords need to match');
       if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
-      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.add('border-red-500');
+      if (passwordConfirmInputRef.current)
+        passwordConfirmInputRef.current.classList.add('border-red-500');
     } else {
       setError('');
       if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
-      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+      if (passwordConfirmInputRef.current)
+        passwordConfirmInputRef.current.classList.remove('border-red-500');
     }
   };
 
@@ -90,7 +96,7 @@ export default function SignupPage() {
 
     // Check password validity
     if (!validatePassword(step1Data.password)) {
-      setPasswordError("Jack says your password needs attention");
+      setPasswordError('Jack says your password needs attention');
       if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
       return;
     } else {
@@ -100,14 +106,16 @@ export default function SignupPage() {
 
     // Check passwords match
     if (step1Data.password !== step1Data.passwordConfirmation) {
-      setError("Jack says your passwords need to match");
+      setError('Jack says your passwords need to match');
       if (passwordInputRef.current) passwordInputRef.current.classList.add('border-red-500');
-      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.add('border-red-500');
+      if (passwordConfirmInputRef.current)
+        passwordConfirmInputRef.current.classList.add('border-red-500');
       return;
     } else {
       setError('');
       if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
-      if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+      if (passwordConfirmInputRef.current)
+        passwordConfirmInputRef.current.classList.remove('border-red-500');
     }
 
     // Check if email already exists
@@ -124,7 +132,8 @@ export default function SignupPage() {
         setPasswordError('');
         setPasswordTouched(false);
         if (passwordInputRef.current) passwordInputRef.current.classList.remove('border-red-500');
-        if (passwordConfirmInputRef.current) passwordConfirmInputRef.current.classList.remove('border-red-500');
+        if (passwordConfirmInputRef.current)
+          passwordConfirmInputRef.current.classList.remove('border-red-500');
         return;
       } else if (!res.ok) {
         setError(result.error || 'Failed to create account');
@@ -215,7 +224,11 @@ export default function SignupPage() {
     }
 
     try {
-      console.log('Signup payload:', { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode });
+      console.log('Signup payload:', {
+        ...step2Data,
+        dateOfBirth: dateOfBirthValue,
+        homeAirportIataCode,
+      });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode, userId });
       window.location.href = '/';
     } catch (err) {
@@ -250,7 +263,7 @@ export default function SignupPage() {
     // Add new airline to the list
     const newAirline = {
       iataCode,
-      name: displayValue
+      name: displayValue,
     };
     setAvoidedAirlines([...avoidedAirlines, newAirline]);
 
@@ -264,7 +277,9 @@ export default function SignupPage() {
     setAvoidedAirlines(avoidedAirlines.filter(airline => airline.iataCode !== iataCode));
 
     // Update form data
-    const newIataCodes = (step2Data.avoidedAirlineIataCodes || []).filter(code => code !== iataCode);
+    const newIataCodes = (step2Data.avoidedAirlineIataCodes || []).filter(
+      code => code !== iataCode
+    );
     setStep2Data(prev => ({ ...prev, avoidedAirlineIataCodes: newIataCodes }));
   };
 
@@ -287,7 +302,10 @@ export default function SignupPage() {
           {step === 1 ? (
             <form onSubmit={handleStep1Submit} className="space-y-5">
               <div>
-                <label htmlFor="email" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Email address
                 </label>
                 <div className="mt-1">
@@ -298,7 +316,7 @@ export default function SignupPage() {
                     autoComplete="email"
                     required
                     value={step1Data.email}
-                    onChange={(e) => {
+                    onChange={e => {
                       setStep1Data({ ...step1Data, email: e.target.value });
                       if (error === 'Jack says this email is already registered.') setError('');
                     }}
@@ -308,7 +326,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Password
                 </label>
                 {passwordError && (
@@ -338,19 +359,38 @@ export default function SignupPage() {
                     onMouseUp={() => setShowPassword(false)}
                     onMouseLeave={() => setShowPassword(false)}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                      />
                     </svg>
                   </button>
                 </div>
                 <p className="text-xs sm:text-xs text-gray-500 mt-2 max-w-full break-words">
-                  Password must be at least 12 characters and include uppercase, lowercase, a number, and a special character.
+                  Password must be at least 12 characters and include uppercase, lowercase, a
+                  number, and a special character.
                 </p>
               </div>
 
               <div>
-                <label htmlFor="passwordConfirmation" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="passwordConfirmation"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Confirm password
                 </label>
                 {error === 'Jack says your passwords need to match' && (
@@ -367,7 +407,9 @@ export default function SignupPage() {
                     required
                     ref={passwordConfirmInputRef}
                     value={step1Data.passwordConfirmation}
-                    onChange={(e) => setStep1Data({ ...step1Data, passwordConfirmation: e.target.value })}
+                    onChange={e =>
+                      setStep1Data({ ...step1Data, passwordConfirmation: e.target.value })
+                    }
                     onBlur={handlePasswordConfirmBlur}
                     className={`appearance-none block w-full px-4 py-3 border ${error === 'Jack says your passwords need to match' ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm`}
                   />
@@ -380,9 +422,24 @@ export default function SignupPage() {
                     onMouseUp={() => setShowPasswordConfirm(false)}
                     onMouseLeave={() => setShowPasswordConfirm(false)}
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={1.5}
+                      stroke="currentColor"
+                      className="w-5 h-5"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -401,7 +458,10 @@ export default function SignupPage() {
             <form onSubmit={handleStep2Submit} className="space-y-5">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
                 <div>
-                  <label htmlFor="firstName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="firstName"
+                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                  >
                     First name
                   </label>
                   <div className="mt-1">
@@ -412,14 +472,17 @@ export default function SignupPage() {
                       autoComplete="given-name"
                       required
                       value={step2Data.firstName}
-                      onChange={(e) => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
+                      onChange={e => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
                       className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="lastName"
+                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                  >
                     Last name
                   </label>
                   <div className="mt-1">
@@ -430,7 +493,7 @@ export default function SignupPage() {
                       autoComplete="family-name"
                       required
                       value={step2Data.lastName}
-                      onChange={(e) => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
+                      onChange={e => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
                       className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -438,7 +501,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="dateOfBirth" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="dateOfBirth"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Date of birth
                 </label>
                 <div className="mt-1">
@@ -447,15 +513,25 @@ export default function SignupPage() {
                     name="dateOfBirth"
                     type="date"
                     required
-                    value={step2Data.dateOfBirth ? step2Data.dateOfBirth.toISOString().split('T')[0] : ''}
-                    onChange={(e) => setStep2Data(prev => ({ ...prev, dateOfBirth: e.target.value ? new Date(e.target.value) : null }))}
+                    value={
+                      step2Data.dateOfBirth ? step2Data.dateOfBirth.toISOString().split('T')[0] : ''
+                    }
+                    onChange={e =>
+                      setStep2Data(prev => ({
+                        ...prev,
+                        dateOfBirth: e.target.value ? new Date(e.target.value) : null,
+                      }))
+                    }
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="phoneNumber" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="phoneNumber"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Phone number
                 </label>
                 <div className="mt-1">
@@ -464,7 +540,7 @@ export default function SignupPage() {
                     label=""
                     required
                     value={step2Data.phoneNumber || ''}
-                    onChange={(val) => {
+                    onChange={val => {
                       setStep2Data(prev => ({ ...prev, phoneNumber: val }));
                       setPhoneNumberError('');
                     }}
@@ -474,7 +550,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="homeAirportIataCode" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="homeAirportIataCode"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Home City / Airport
                 </label>
                 <div className="mt-1">
@@ -498,7 +577,10 @@ export default function SignupPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-6">
                 <div>
-                  <label htmlFor="defaultAdultPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="defaultAdultPassengers"
+                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                  >
                     Default adults
                   </label>
                   <div className="mt-1">
@@ -509,14 +591,22 @@ export default function SignupPage() {
                       min="1"
                       max="9"
                       value={step2Data.defaultAdultPassengers || ''}
-                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultAdultPassengers: parseInt(e.target.value) }))}
+                      onChange={e =>
+                        setStep2Data(prev => ({
+                          ...prev,
+                          defaultAdultPassengers: parseInt(e.target.value),
+                        }))
+                      }
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="defaultChildPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="defaultChildPassengers"
+                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                  >
                     Default children
                   </label>
                   <div className="mt-1">
@@ -527,14 +617,22 @@ export default function SignupPage() {
                       min="0"
                       max="9"
                       value={step2Data.defaultChildPassengers ?? 0}
-                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultChildPassengers: parseInt(e.target.value) }))}
+                      onChange={e =>
+                        setStep2Data(prev => ({
+                          ...prev,
+                          defaultChildPassengers: parseInt(e.target.value),
+                        }))
+                      }
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="defaultInfantPassengers" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="defaultInfantPassengers"
+                    className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                  >
                     Default infants
                   </label>
                   <div className="mt-1">
@@ -545,7 +643,12 @@ export default function SignupPage() {
                       min="0"
                       max="9"
                       value={step2Data.defaultInfantPassengers ?? 0}
-                      onChange={(e) => setStep2Data(prev => ({ ...prev, defaultInfantPassengers: parseInt(e.target.value) }))}
+                      onChange={e =>
+                        setStep2Data(prev => ({
+                          ...prev,
+                          defaultInfantPassengers: parseInt(e.target.value),
+                        }))
+                      }
                       className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
@@ -553,14 +656,24 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label htmlFor="defaultCabinClass" className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="defaultCabinClass"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
                   Preferred cabin class
                 </label>
                 <select
                   id="defaultCabinClass"
                   name="defaultCabinClass"
                   value={step2Data.defaultCabinClass || ''}
-                  onChange={e => setStep2Data(prev => ({ ...prev, defaultCabinClass: e.target.value ? e.target.value as 'economy' | 'premium_economy' | 'business' | 'first' : null }))}
+                  onChange={e =>
+                    setStep2Data(prev => ({
+                      ...prev,
+                      defaultCabinClass: e.target.value
+                        ? (e.target.value as 'economy' | 'premium_economy' | 'business' | 'first')
+                        : null,
+                    }))
+                  }
                   className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                 >
                   <option value="">Select cabin class</option>
@@ -608,4 +721,4 @@ export default function SignupPage() {
       </div>
     </div>
   );
-} 
+}

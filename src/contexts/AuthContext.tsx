@@ -21,11 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const auth = useAuth();
 
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 
 export function useAuthContext() {
@@ -34,4 +30,4 @@ export function useAuthContext() {
     throw new Error('useAuthContext must be used within an AuthProvider');
   }
   return context;
-} 
+}

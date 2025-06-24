@@ -1,10 +1,10 @@
-export interface Airport { 
-    airport_code: string; 
-    airport_name: string; 
-    city_code: string; 
-    city_name: string;
-    country_code?: string;
-    region?: string;
+export interface Airport {
+  airport_code: string;
+  airport_name: string;
+  city_code: string;
+  city_name: string;
+  country_code?: string;
+  region?: string;
 }
 
 export interface FlightSegment {
@@ -27,28 +27,28 @@ export interface Flight {
 }
 
 export interface FlightApiResponse {
-    data: Flight[]; 
-} 
+  data: Flight[];
+}
 
 export interface SearchParamsType {
-    originAirport: string; 
-    destinationAirport: string; 
-    departureDate: string; 
-    returnDate?: string; 
-    adults: number;
-    children?: number;
-    infants?: number;
-    cabinClass?: string;
-    currency?: string;
-    maxConnections?: number;
-    fromDisplayValue?: string;
-    toDisplayValue?: string;
-    fromCityNameForApi?: string;
-    fromCountryCodeForApi?: string;
-    fromRegionForApi?: string;
-    fromSelectionType?: 'airport' | 'city' | null;
-    toCityNameForApi?: string;
-    toCountryCodeForApi?: string;
-    toRegionForApi?: string;
-    toSelectionType?: 'airport' | 'city' | null;
+  originAirport: string;
+  destinationAirport: string;
+  departureDate: string;
+  returnDate?: string;
+  adults: number;
+  children?: number;
+  infants?: number;
+  cabinClass?: string;
+  currency?: string;
+  maxConnections?: number;
+  fromDisplayValue?: string;
+  toDisplayValue?: string;
+  fromCityNameForApi?: string;
+  fromCountryCodeForApi?: string;
+  fromRegionForApi?: string;
+  fromSelectionType?: 'airport' | 'city' | null;
+  toCityNameForApi?: string;
+  toCountryCodeForApi?: string;
+  toRegionForApi?: string;
+  toSelectionType?: 'airport' | 'city' | null;
 }
