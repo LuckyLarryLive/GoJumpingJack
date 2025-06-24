@@ -8,7 +8,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 // REMOVED: No need to import or instantiate Lobster font here
 
 const Header: React.FC = () => {
-  const { user } = useAuthContext();
+  const { user, logout } = useAuthContext();
   const logoSize = 96; // Maintain consistent sizing variable if desired
   const headerHeightClass = 'h-24'; // Consistent header height
   const logoHeightClass = 'h-20'; // Logo height within header
@@ -62,12 +62,18 @@ const Header: React.FC = () => {
                     <span className="text-blue-600 font-semibold">{user.siteRewardsTokens || 0}</span>
                   </div>
                 </Link>
-                <Link
-                  href="/logout"
+                <button
+                  onClick={async () => {
+                    try {
+                      await logout();
+                    } catch (error) {
+                      console.error('Logout error:', error);
+                    }
+                  }}
                   className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
                 >
                   Logout
-                </Link>
+                </button>
               </div>
             ) : (
               <div className="flex items-center space-x-4">

@@ -43,8 +43,51 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    // Remove sensitive fields
-    const { password_hash, reset_password_token, reset_password_expires, ...profile } = data;
+    // Remove sensitive fields and transform to camelCase
+    const {
+      password_hash,
+      reset_password_token,
+      reset_password_expires,
+      first_name,
+      middle_name,
+      last_name,
+      date_of_birth,
+      phone_number,
+      site_rewards_tokens,
+      home_airport_iata_code,
+      avoided_airline_iata_codes,
+      default_cabin_class,
+      default_adult_passengers,
+      default_child_passengers,
+      default_infant_passengers,
+      loyalty_programs,
+      created_at,
+      updated_at,
+      email_verified,
+      ...otherFields
+    } = data;
+
+    // Transform to camelCase for frontend
+    const profile = {
+      ...otherFields,
+      firstName: first_name,
+      middleName: middle_name,
+      lastName: last_name,
+      dateOfBirth: date_of_birth ? new Date(date_of_birth) : null,
+      phoneNumber: phone_number,
+      siteRewardsTokens: site_rewards_tokens || 0,
+      homeAirportIataCode: home_airport_iata_code,
+      avoidedAirlineIataCodes: avoided_airline_iata_codes,
+      defaultCabinClass: default_cabin_class,
+      defaultAdultPassengers: default_adult_passengers,
+      defaultChildPassengers: default_child_passengers,
+      defaultInfantPassengers: default_infant_passengers,
+      loyaltyPrograms: loyalty_programs,
+      createdAt: created_at ? new Date(created_at) : null,
+      updatedAt: updated_at ? new Date(updated_at) : null,
+      emailVerified: email_verified,
+    };
+
     return NextResponse.json({ profile });
   } catch (error) {
     console.error('Get profile error:', error);
