@@ -83,6 +83,7 @@ export async function POST(request: Request) {
           first_name: validatedData.firstName,
           middle_name: validatedData.middleName || null,
           last_name: validatedData.lastName,
+          preferred_name: validatedData.preferredName || null,
           date_of_birth: validatedData.dateOfBirth,
           phone_number: validatedData.phoneNumber,
           home_airport_iata_code: homeAirportValue,

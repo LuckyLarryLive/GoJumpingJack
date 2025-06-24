@@ -51,9 +51,9 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/account"
-                  className="flex items-center space-x-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                  className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
                 >
-                  <span>Welcome, {user.firstName}</span>
+                  <span>Welcome, <span className="font-bold">{user.preferredName || user.firstName}</span>!</span>
                   <div className="flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded-full">
                     {/* Luggage/Suitcase icon */}
                     <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24">

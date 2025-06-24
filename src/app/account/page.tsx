@@ -21,10 +21,11 @@ export default function AccountPage() {
         firstName: user.firstName,
         middleName: user.middleName,
         lastName: user.lastName,
+        preferredName: user.preferredName,
         dateOfBirth: user.dateOfBirth,
         phoneNumber: user.phoneNumber,
         homeAirportIataCode: user.homeAirportIataCode,
-        avoidedAirlineIataCodes: user.avoidedAirlineIataCodes,
+        avoidedAirlineIataCodes: user.avoidedAirlineIataCodes || null,
         defaultCabinClass: user.defaultCabinClass,
         defaultAdultPassengers: user.defaultAdultPassengers,
         defaultChildPassengers: user.defaultChildPassengers,
@@ -162,6 +163,27 @@ export default function AccountPage() {
                       required
                       value={formData.phoneNumber || ''}
                       onChange={val => setFormData({ ...formData, phoneNumber: val })}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="preferredName"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Preferred Name
+                      <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                        💡 This is what others will see
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      name="preferredName"
+                      id="preferredName"
+                      value={formData.preferredName || ''}
+                      onChange={e => setFormData({ ...formData, preferredName: e.target.value })}
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                      placeholder="e.g. Mike, Liz, etc."
                     />
                   </div>
 

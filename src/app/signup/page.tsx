@@ -25,6 +25,7 @@ export default function SignupPage() {
     firstName: '',
     middleName: '',
     lastName: '',
+    preferredName: '',
     dateOfBirth: null,
     phoneNumber: '',
     homeAirportIataCode: null,
@@ -605,6 +606,29 @@ export default function SignupPage() {
                       setPhoneNumberError('');
                     }}
                     error={phoneNumberError}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="preferredName"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
+                  Preferred Name
+                  <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    💡 This is what others will see (not used for official purposes)
+                  </span>
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="preferredName"
+                    name="preferredName"
+                    type="text"
+                    value={step2Data.preferredName || ''}
+                    onChange={e => setStep2Data(prev => ({ ...prev, preferredName: e.target.value }))}
+                    className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                    placeholder="e.g. Mike, Liz, etc."
                   />
                 </div>
               </div>
