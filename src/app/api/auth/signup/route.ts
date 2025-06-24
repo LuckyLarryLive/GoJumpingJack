@@ -24,11 +24,11 @@ export async function POST(request: Request) {
       // Validate step 1 data
       const validatedData = signupStep1Schema.parse(data);
 
-      // Check if email already exists
+      // Check if email already exists (case-insensitive)
       const { data: existingUser } = await supabase
         .from('users')
         .select('id')
-        .eq('email', validatedData.email)
+        .ilike('email', validatedData.email.toLowerCase())
         .single();
 
       if (existingUser) {
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         .from('users')
         .insert([
           {
-            email: validatedData.email,
+            email: validatedData.email.toLowerCase(),
             password_hash: passwordHash,
             site_rewards_tokens: 0,
             email_verified: false,
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
       // Generate token and set cookie
       const token = generateToken(user);
-      setAuthToken(token);
+      await setAuthToken(token);
 
       return NextResponse.json({ success: true, userId: user.id });
     } else if (step === 2) {

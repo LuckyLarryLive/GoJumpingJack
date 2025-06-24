@@ -26,11 +26,11 @@ export async function POST(request: Request) {
 
     logger.authAction('login_attempt', { email: validatedData.email });
 
-    // Get user by email
+    // Get user by email (case-insensitive)
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', validatedData.email)
+      .ilike('email', validatedData.email.toLowerCase())
       .single();
 
     if (error || !user) {
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
     // Generate token and set cookie
     const token = generateToken(user);
-    setAuthToken(token);
+    await setAuthToken(token);
 
     logger.authAction('login_success', {
       userId: user.id,

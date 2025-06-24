@@ -118,8 +118,8 @@ export function useAuth(): AuthHook {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 

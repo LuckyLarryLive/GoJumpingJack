@@ -18,7 +18,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/account');
+      // The login function will handle the redirect to home page
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to login');
     }

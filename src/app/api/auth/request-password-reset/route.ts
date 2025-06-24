@@ -17,11 +17,11 @@ export async function POST(request: Request) {
 
     const supabase = getSupabaseServiceClient();
 
-    // Get user by email
+    // Get user by email (case-insensitive)
     const { data: user, error } = await supabase
       .from('users')
       .select('id, email')
-      .eq('email', validatedData.email)
+      .ilike('email', validatedData.email.toLowerCase())
       .single();
 
     if (error || !user) {

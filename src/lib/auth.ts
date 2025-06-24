@@ -45,19 +45,33 @@ export function verifyToken(token: string): { id: string; email: string } {
 
 export async function getAuthToken(): Promise<string | undefined> {
   const cookieStore = await cookies();
-  return cookieStore.get('auth_token')?.value;
+  const token = cookieStore.get('auth_token')?.value;
+  logger.debug('Getting auth token from cookies', {
+    hasToken: !!token,
+    tokenLength: token?.length || 0,
+    component: 'auth'
+  });
+  return token;
 }
 
 export async function setAuthToken(token: string): Promise<void> {
   const cookieStore = await cookies();
-  logger.debug('Setting auth token cookie', { component: 'auth' });
+  logger.debug('Setting auth token cookie', {
+    tokenLength: token.length,
+    secure: authConfig.cookieSecure,
+    maxAge: authConfig.cookieMaxAge,
+    component: 'auth'
+  });
 
   cookieStore.set('auth_token', token, {
     httpOnly: true,
     secure: authConfig.cookieSecure,
     sameSite: 'lax',
     maxAge: authConfig.cookieMaxAge,
+    path: '/',
   });
+
+  logger.debug('Auth token cookie set successfully', { component: 'auth' });
 }
 
 export async function removeAuthToken(): Promise<void> {
