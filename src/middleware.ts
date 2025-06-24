@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth';
 
-// Add paths that require authentication
-const protectedPaths = ['/api/user', '/account'];
+// Add paths that require authentication (handled by individual API routes)
+const protectedPaths = ['/account'];
 
 // Add paths that should be accessible without authentication
 const publicPaths = [
@@ -29,33 +28,27 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // For protected paths, verify authentication
+  // For protected paths, check if auth token exists (detailed verification in API routes)
   if (isProtectedPath) {
     // Check for cookie-based authentication first
     const authToken = request.cookies.get('auth_token')?.value;
 
     if (authToken) {
-      try {
-        verifyToken(authToken);
-        return NextResponse.next();
-      } catch (error) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      return NextResponse.next();
     }
 
     // Fallback to Authorization header for API calls
     const authHeader = request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      try {
-        verifyToken(token);
-        return NextResponse.next();
-      } catch (error) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+      return NextResponse.next();
     }
 
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Redirect to login for page routes, return 401 for API routes
+    if (request.nextUrl.pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    } else {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
   }
 
   return NextResponse.next();
