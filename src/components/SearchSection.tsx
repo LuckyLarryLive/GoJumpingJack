@@ -563,7 +563,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             </div>
 
             {/* Passengers */}
-            <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-end">
+            <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-start">
               <div className="flex flex-col flex-1">
                 <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
                   Adults
@@ -593,6 +593,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     +
                   </button>
                 </div>
+                {/* Placeholder for alignment */}
+                <div className="h-5 mt-1"></div>
               </div>
               <div className="flex flex-col flex-1">
                 <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
@@ -623,6 +625,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     +
                   </button>
                 </div>
+                {/* Placeholder for alignment */}
+                <div className="h-5 mt-1"></div>
               </div>
               <div className="flex flex-col flex-1">
                 <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
@@ -656,6 +660,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                     +
                   </button>
                 </div>
+                {/* Disclosure text - positioned to not affect alignment */}
                 <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
               </div>
             </div>

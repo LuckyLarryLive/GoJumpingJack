@@ -204,7 +204,10 @@ export default function AccountPage() {
                           : ''
                       }
                       onChange={e =>
-                        setFormData({ ...formData, dateOfBirth: new Date(e.target.value) })
+                        setFormData({
+                          ...formData,
+                          dateOfBirth: e.target.value ? new Date(e.target.value) : undefined
+                        })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
