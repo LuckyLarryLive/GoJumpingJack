@@ -17,6 +17,7 @@ export default function AccountPage() {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [lastResendTime, setLastResendTime] = useState<number | null>(null);
   const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
+  const [homeAirportInitialValue, setHomeAirportInitialValue] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -42,8 +43,9 @@ export default function AccountPage() {
         setLastResendTime(Date.now());
       }
 
-      // Set home airport display value
-      if (user.homeAirportIataCode) {
+      // Set home airport display value - use the stored value as the initial display
+      if (user.homeAirportIataCode && !homeAirportInitialValue) {
+        setHomeAirportInitialValue(user.homeAirportIataCode);
         setHomeAirportDisplay(user.homeAirportIataCode);
       }
     }
@@ -311,18 +313,18 @@ export default function AccountPage() {
                     <div className="mt-1">
                       <AirportSearchInput
                         id="home-airport-search"
-                        label="Search city or airport"
+                        label=""
                         placeholder="Start typing a city or airport name"
                         onAirportSelect={(iataCode, displayValue, selectionType, cityName) => {
+                          // Store the full display value for better UX
                           if (selectionType === 'city' && cityName) {
-                            setFormData(prev => ({ ...prev, homeAirportIataCode: cityName }));
-                            setHomeAirportDisplay(displayValue);
+                            setFormData(prev => ({ ...prev, homeAirportIataCode: displayValue }));
                           } else {
-                            setFormData(prev => ({ ...prev, homeAirportIataCode: iataCode }));
-                            setHomeAirportDisplay(displayValue);
+                            setFormData(prev => ({ ...prev, homeAirportIataCode: displayValue }));
                           }
+                          setHomeAirportDisplay(displayValue);
                         }}
-                        currentValue={homeAirportDisplay}
+                        initialDisplayValue={homeAirportInitialValue}
                       />
                     </div>
                   </div>

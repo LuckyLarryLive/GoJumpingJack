@@ -51,7 +51,7 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/account"
-                  className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="flex items-center space-x-2 text-sm font-medium text-black hover:text-gray-800 transition-colors"
                 >
                   <span>Welcome, <span className="font-bold">{user.preferredName || user.firstName}</span>!</span>
                   <div className="flex items-center space-x-1 bg-blue-50 px-2 py-1 rounded-full">

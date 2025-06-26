@@ -286,7 +286,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     return (
       <section
         id="search"
-        className="py-6 bg-blue-600"
+        className="py-6 bg-blue-200"
       >
         <div className="container mx-auto px-2 sm:px-4">
           <div
@@ -350,7 +350,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   return (
     <section
       id="search"
-      className="py-6 bg-blue-600 scroll-mt-24"
+      className="py-6 bg-blue-200 scroll-mt-24"
     >
       <div className="container mx-auto px-2 sm:px-4">
         <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg mx-auto w-full">
