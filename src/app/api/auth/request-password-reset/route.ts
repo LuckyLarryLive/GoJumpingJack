@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { passwordResetRequestSchema } from '@/types/user';
 import { generateResetToken, getResetTokenExpiry } from '@/lib/auth';
 import { createClient } from '@supabase/supabase-js';
+import { sendPasswordResetEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 function getSupabaseServiceClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -20,12 +22,16 @@ export async function POST(request: Request) {
     // Get user by email (case-insensitive)
     const { data: user, error } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, first_name, last_name')
       .ilike('email', validatedData.email.toLowerCase())
       .single();
 
     if (error || !user) {
       // Return success even if user doesn't exist to prevent email enumeration
+      logger.warn('Password reset requested for non-existent email', {
+        email: validatedData.email,
+        component: 'password-reset',
+      });
       return NextResponse.json({ success: true });
     }
 
@@ -44,10 +50,27 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    // TODO: Send password reset email
-    // This would typically involve calling your email service provider
-    // For now, we'll just log the token (in production, you'd send an email)
-    console.log('Password reset token:', resetToken);
+    // Send password reset email
+    try {
+      const userName = user.first_name && user.last_name
+        ? `${user.first_name} ${user.last_name}`
+        : user.first_name || 'User';
+
+      await sendPasswordResetEmail(user.email, userName, resetToken);
+
+      logger.info('Password reset email sent', {
+        userId: user.id,
+        email: user.email,
+        component: 'password-reset',
+      });
+    } catch (emailError) {
+      logger.error('Failed to send password reset email', emailError as Error, {
+        userId: user.id,
+        email: user.email,
+        component: 'password-reset',
+      });
+      // Don't fail the request if email fails, but log the error
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

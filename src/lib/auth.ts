@@ -88,3 +88,21 @@ export function getResetTokenExpiry(): Date {
   expiry.setHours(expiry.getHours() + 1); // Token expires in 1 hour
   return expiry;
 }
+
+/**
+ * Generates a cryptographically secure email verification token
+ */
+export function generateEmailVerificationToken(): string {
+  // Generate a secure random token using crypto
+  const crypto = require('crypto');
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Gets the expiry time for email verification token (24 hours from now)
+ */
+export function getEmailVerificationTokenExpiry(): Date {
+  const expiry = new Date();
+  expiry.setHours(expiry.getHours() + 24); // Token expires in 24 hours
+  return expiry;
+}

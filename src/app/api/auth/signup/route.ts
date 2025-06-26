@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { hashPassword, generateToken, setAuthToken } from '@/lib/auth';
+import { hashPassword, generateToken, setAuthToken, generateEmailVerificationToken, getEmailVerificationTokenExpiry } from '@/lib/auth';
 import { signupStep1Schema, signupStep2Schema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
+import { sendVerificationEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 // Force Node.js runtime for auth routes that use bcrypt and JWT
 export const runtime = 'nodejs';
@@ -38,6 +40,10 @@ export async function POST(request: Request) {
       // Hash password
       const passwordHash = await hashPassword(validatedData.password);
 
+      // Generate email verification token
+      const emailVerificationToken = generateEmailVerificationToken();
+      const emailVerificationTokenExpiresAt = getEmailVerificationTokenExpiry();
+
       // Create user with basic info
       const { data: user, error } = await supabase
         .from('users')
@@ -47,12 +53,35 @@ export async function POST(request: Request) {
             password_hash: passwordHash,
             site_rewards_tokens: 0,
             email_verified: false,
+            email_verification_token: emailVerificationToken,
+            email_verification_token_expires_at: emailVerificationTokenExpiresAt,
           },
         ])
         .select()
         .single();
 
       if (error) throw error;
+
+      // Send verification email
+      try {
+        await sendVerificationEmail(
+          user.email,
+          'New User', // We don't have the name yet in step 1
+          emailVerificationToken
+        );
+        logger.info('Verification email sent', {
+          userId: user.id,
+          email: user.email,
+          component: 'signup',
+        });
+      } catch (emailError) {
+        logger.error('Failed to send verification email', emailError as Error, {
+          userId: user.id,
+          email: user.email,
+          component: 'signup',
+        });
+        // Don't fail the signup if email fails, but log the error
+      }
 
       // Generate token and set cookie
       const token = generateToken(user);

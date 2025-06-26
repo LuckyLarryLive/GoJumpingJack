@@ -52,6 +52,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    // Check if email is verified
+    if (!user.email_verified) {
+      logger.authAction('login_failed', {
+        userId: user.id,
+        email: validatedData.email,
+        reason: 'email_not_verified',
+      });
+      return NextResponse.json(
+        {
+          error: 'Your email address is not verified. Please check your email for a verification link.',
+          emailNotVerified: true,
+          email: user.email
+        },
+        { status: 403 }
+      );
+    }
+
     // Generate token and set cookie
     const token = generateToken(user);
     await setAuthToken(token);

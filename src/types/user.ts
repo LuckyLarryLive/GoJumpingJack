@@ -29,6 +29,8 @@ export const userSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
   emailVerified: z.boolean().default(false),
+  emailVerificationToken: z.string().nullable(),
+  emailVerificationTokenExpiresAt: z.date().nullable(),
   resetPasswordToken: z.string().nullable(),
   resetPasswordExpires: z.date().nullable(),
 });

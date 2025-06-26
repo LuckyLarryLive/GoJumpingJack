@@ -1,26 +1,75 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '@/contexts/AuthContext';
 
-export default function LoginPage() {
+function LoginPageInner() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
   const { login } = useAuthContext();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Check if user was redirected after successful email verification
+    if (searchParams.get('verified') === 'true') {
+      setSuccess('Your email has been verified! You can now log in.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
+    setShowResendVerification(false);
 
     try {
       await login(email, password);
       // The login function will handle the redirect to home page
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to login');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to login';
+      setError(errorMessage);
+
+      // Check if the error is due to unverified email
+      if (errorMessage.includes('email address is not verified')) {
+        setShowResendVerification(true);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Please enter your email address first.');
+      return;
+    }
+
+    setResendingVerification(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setSuccess('A new verification email has been sent to your email address.');
+        setShowResendVerification(false);
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to resend verification email.');
+      }
+    } catch (err) {
+      setError('Failed to resend verification email. Please try again.');
+    } finally {
+      setResendingVerification(false);
     }
   };
 
@@ -42,6 +91,24 @@ export default function LoginPage() {
           {error && (
             <div className="rounded-lg bg-red-50 p-4 max-w-full break-words">
               <div className="text-base sm:text-sm text-red-700">{error}</div>
+              {showResendVerification && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification}
+                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {success && (
+            <div className="rounded-lg bg-green-50 p-4 max-w-full break-words">
+              <div className="text-base sm:text-sm text-green-700">{success}</div>
             </div>
           )}
           <div className="rounded-lg shadow-sm space-y-4">
@@ -107,5 +174,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageInner />
+    </Suspense>
   );
 }

@@ -48,6 +48,8 @@ export async function GET(request: Request) {
       password_hash,
       reset_password_token,
       reset_password_expires,
+      email_verification_token,
+      email_verification_token_expires_at,
       first_name,
       middle_name,
       last_name,
@@ -88,6 +90,8 @@ export async function GET(request: Request) {
       createdAt: created_at ? new Date(created_at) : null,
       updatedAt: updated_at ? new Date(updated_at) : null,
       emailVerified: email_verified,
+      emailVerificationToken: null, // Never expose this to frontend
+      emailVerificationTokenExpiresAt: null, // Never expose this to frontend
     };
 
     return NextResponse.json({ profile });

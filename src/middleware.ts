@@ -10,11 +10,14 @@ const publicPaths = [
   '/api/auth/login',
   '/api/auth/request-password-reset',
   '/api/auth/reset-password',
+  '/api/auth/verify-email',
+  '/api/auth/resend-verification',
   '/api/duffel/airlines',
   '/login',
   '/signup',
   '/forgot-password',
   '/reset-password',
+  '/verify-email',
 ];
 
 export async function middleware(request: NextRequest) {

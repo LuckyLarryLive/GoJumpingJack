@@ -25,9 +25,10 @@ const envConfig: EnvConfig = {
     LOG_LEVEL: 'info',
     NODE_ENV: 'development',
     DUFFEL_MODE: 'test',
+    NEXT_PUBLIC_BASE_URL: 'http://localhost:3000',
   },
   development: ['DUFFEL_TOKEN'],
-  production: ['DUFFEL_TOKEN', 'VERCEL_CRON_SECRET'],
+  production: ['DUFFEL_TOKEN', 'VERCEL_CRON_SECRET', 'MAILERSEND_PROD_TOKEN', 'VERIFICATION_EMAIL_FROM'],
   test: [
     // Test environment can work with minimal config
   ],
@@ -247,6 +248,21 @@ export function getExternalApiConfig() {
       nextSigningKey: getEnvVar('QSTASH_NEXT_SIGNING_KEY'),
       token: getEnvVar('QSTASH_TOKEN'),
     },
+    mailersend: {
+      apiKey: getEnvVar('MAILERSEND_PROD_TOKEN'),
+      fromEmail: getEnvVar('VERIFICATION_EMAIL_FROM'),
+    },
+  };
+}
+
+/**
+ * Gets email service configuration
+ */
+export function getEmailConfig() {
+  return {
+    mailersendApiKey: getEnvVar('MAILERSEND_PROD_TOKEN'),
+    fromEmail: getEnvVar('VERIFICATION_EMAIL_FROM', 'noreply@gojumpingjack.com'),
+    baseUrl: getEnvVar('NEXT_PUBLIC_BASE_URL', isProduction() ? 'https://www.gojumpingjack.com' : 'http://localhost:3000'),
   };
 }
 

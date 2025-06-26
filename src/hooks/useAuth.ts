@@ -15,6 +15,7 @@ interface AuthHook extends AuthState {
   updateProfile: (data: Partial<User>) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string, passwordConfirmation: string) => Promise<void>;
+  resendVerificationEmail: (email: string) => Promise<void>;
 }
 
 export function useAuth(): AuthHook {
@@ -92,6 +93,10 @@ export function useAuth(): AuthHook {
 
         if (!response.ok) {
           const error = await response.json();
+          // Handle email verification error specifically
+          if (response.status === 403 && error.emailNotVerified) {
+            throw new Error(error.error || 'Email not verified');
+          }
           throw new Error(error.error || 'Failed to login');
         }
 
@@ -186,6 +191,24 @@ export function useAuth(): AuthHook {
     []
   );
 
+  const resendVerificationEmail = useCallback(async (email: string) => {
+    try {
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to resend verification email');
+      }
+    } catch (error) {
+      setState(prev => ({ ...prev, error: (error as Error).message }));
+      throw error;
+    }
+  }, []);
+
   return {
     ...state,
     signup,
@@ -194,5 +217,6 @@ export function useAuth(): AuthHook {
     updateProfile,
     requestPasswordReset,
     resetPassword,
+    resendVerificationEmail,
   };
 }
