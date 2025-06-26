@@ -119,10 +119,10 @@ export default function BackgroundSection({
     >
       <div className="container mx-auto px-2 sm:px-4">
         <div className="text-center text-white">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.8)' }}>
+          <h1 className="text-5xl md:text-7xl font-bold mb-5" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.8)' }}>
             Find Your Perfect Flight
           </h1>
-          <p className="text-xl md:text-2xl mb-8" style={{ textShadow: '2px 2px 6px rgba(0, 0, 0, 0.8)' }}>
+          <p className="text-2xl md:text-3xl mb-9" style={{ textShadow: '2px 2px 6px rgba(0, 0, 0, 0.8)' }}>
             Discover amazing destinations at unbeatable prices
           </p>
         </div>

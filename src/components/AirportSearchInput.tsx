@@ -428,7 +428,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         autoComplete="off"
       />
       {isLoading && (
-        <div className="absolute right-2 top-[34px] h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
       )}
       {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
         <ul
