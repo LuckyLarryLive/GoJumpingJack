@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'; // Import useState and useEf
 
 // --- Component Imports ---
 // Import all the components extracted into the components directory
+import BackgroundSection from '@/components/BackgroundSection';
 import SearchSection from '@/components/SearchSection';
 import FlightResults from '@/components/FlightResults';
 import TrendingDestinationsSection from '@/components/TrendingDestinationsSection';
@@ -18,6 +19,10 @@ import type { SearchParamsType } from '@/types';
 export default function HomePage() {
   // Remove defaultSearchParams. Start with an empty array.
   const [searchParamsList, setSearchParamsList] = useState<SearchParamsType[]>([]);
+  const [destinationInfo, setDestinationInfo] = useState<{
+    cityName?: string;
+    countryCode?: string;
+  }>({});
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -25,10 +30,16 @@ export default function HomePage() {
 
   // Callback function passed to SearchSection.
   // Triggered when the user submits the search form.
-  const handleSearchSubmit = (paramsList: SearchParamsType[]) => {
+  const handleSearchSubmit = (paramsList: SearchParamsType[], destinationCityName?: string, destinationCountryCode?: string) => {
     console.log('HomePage received search params list:', paramsList);
     // Update the state with the new search parameters array
     setSearchParamsList(paramsList);
+
+    // Update destination info for background
+    setDestinationInfo({
+      cityName: destinationCityName,
+      countryCode: destinationCountryCode,
+    });
 
     // REMOVE: Scroll the flight results section into view smoothly after submission.
     // setTimeout(() => {
@@ -48,6 +59,11 @@ export default function HomePage() {
     <>
       {' '}
       {/* Using a React Fragment as the outermost container */}
+      {/* Background section with dynamic destination images */}
+      <BackgroundSection
+        destinationCityNameForApi={destinationInfo.cityName}
+        destinationCountryCodeForApi={destinationInfo.countryCode}
+      />
       {/* Search section - receives the submit handler and current search params */}
       {/* `initialSearchParams` is used by SearchSection to reset/prefill itself */}
       <SearchSection

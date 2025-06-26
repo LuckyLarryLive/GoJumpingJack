@@ -25,7 +25,7 @@ const DUFFEL_CONSTRAINTS = {
 
 // --- Component Props Interface ---
 interface SearchSectionProps {
-  onSearchSubmit: (searchParams: SearchParamsType[]) => void;
+  onSearchSubmit: (searchParams: SearchParamsType[], destinationCityName?: string, destinationCountryCode?: string) => void;
   initialSearchParams?: SearchParamsType;
 }
 
@@ -51,13 +51,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [currency, setCurrency] = useState<string>('USD');
   const [maxConnections, setMaxConnections] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [backgroundImage, setBackgroundImage] = useState('/default_background.png');
-  const [attribution, setAttribution] = useState<{
-    name: string;
-    profileUrl: string;
-    unsplashUrl: string;
-  } | null>(null);
-  const [isFading, setIsFading] = useState(false);
+
   const [destinationSelectionType, setDestinationSelectionType] = useState<
     'airport' | 'city' | null
   >(null);
@@ -104,107 +98,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     }
   }, [initialSearchParams]);
 
-  // Update the useEffect for fetching Unsplash image
-  useEffect(() => {
-    // The value of backgroundImage at the time this effect is triggered.
-    const currentImageOnEffectTrigger = backgroundImage;
 
-    if (destinationCityNameForApi && destinationCountryCodeForApi) {
-      console.log('[SearchSection] useEffect Unsplash: Checking for image update for', {
-        city: destinationCityNameForApi,
-        country: destinationCountryCodeForApi,
-        region: destinationRegionForApi,
-        currentBg: currentImageOnEffectTrigger,
-      });
-
-      let imageWillActuallyChange = false;
-
-      fetch(
-        `/api/get-unsplash-image?${new URLSearchParams({
-          city_name: destinationCityNameForApi,
-          country_code: destinationCountryCodeForApi,
-          ...(destinationRegionForApi && { region: destinationRegionForApi }),
-        }).toString()}`
-      )
-        .then(res => res.json())
-        .then(data => {
-          const newImageUrl = data.imageUrl || '/default_background.png';
-          const newAttribution = data.imageUrl
-            ? {
-                name: data.photographerName,
-                profileUrl: data.photographerProfileUrl,
-                unsplashUrl: data.unsplashUrl,
-              }
-            : null;
-
-          if (newImageUrl !== currentImageOnEffectTrigger) {
-            console.log(
-              `[SearchSection] Image will change from ${currentImageOnEffectTrigger} to ${newImageUrl}. Initiating fade.`
-            );
-            imageWillActuallyChange = true;
-            setIsFading(true); // Start fade-out of the current backgroundImage
-
-            // Set the new image and attribution. This happens while opacity is 0 (or transitioning to 0).
-            setBackgroundImage(newImageUrl);
-            setAttribution(newAttribution);
-          } else {
-            console.log(
-              `[SearchSection] New image URL (${newImageUrl}) is same as current. No visual change needed for image itself.`
-            );
-            // Image is the same. Update attribution if it changed, and ensure not fading.
-            if (JSON.stringify(attribution) !== JSON.stringify(newAttribution)) {
-              setAttribution(newAttribution);
-            }
-            if (isFading) {
-              setIsFading(false); // If it was fading for some other reason, snap back.
-            }
-            imageWillActuallyChange = false;
-          }
-        })
-        .catch(err => {
-          console.error('[SearchSection] Error fetching Unsplash image:', err);
-          // If an error occurs, revert to default background if not already default
-          if (currentImageOnEffectTrigger !== '/default_background.png') {
-            imageWillActuallyChange = true;
-            setIsFading(true);
-            setBackgroundImage('/default_background.png');
-            setAttribution(null);
-          } else {
-            if (isFading) setIsFading(false);
-            imageWillActuallyChange = false;
-          }
-        })
-        .finally(() => {
-          if (imageWillActuallyChange) {
-            // If an image change was processed and fade-out started (setIsFading(true)),
-            // now trigger the fade-in of the new image.
-            console.log(
-              '[SearchSection] finally: an image change occurred, ensuring fade-in starts.'
-            );
-            setIsFading(false);
-          } else {
-            console.log(
-              '[SearchSection] finally: no actual image change, or fade already corrected.'
-            );
-          }
-        });
-    } else {
-      // No destination selected, ensure default background is set if not already.
-      if (currentImageOnEffectTrigger !== '/default_background.png') {
-        console.log('[SearchSection] No destination, changing to default background.');
-        setIsFading(true);
-        setBackgroundImage('/default_background.png');
-        setAttribution(null);
-        // The setIsFading(false) will make the default image appear with a fade.
-        // This needs to be handled carefully if isFading can be triggered by other means.
-        // For simplicity, we assume this effect is the main driver of background and fading.
-        // The subsequent setIsFading(false) ensures the default background becomes visible.
-        setTimeout(() => setIsFading(false), 50); // Small delay to ensure fade-out starts, then fade-in default.
-      } else {
-        if (isFading) setIsFading(false); // Was already default, ensure not fading.
-      }
-    }
-  }, [destinationCityNameForApi, destinationCountryCodeForApi, destinationRegionForApi]); // Dependencies that trigger the image fetch
 
   // --- Handler for From Airport Selection ---
   const handleFromAirportSelect = useCallback(
@@ -348,8 +242,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
       searchParamsList.push(searchParams);
     }
 
-    // Call onSearchSubmit with the list of search params
-    onSearchSubmit(searchParamsList);
+    // Call onSearchSubmit with the list of search params and destination info
+    onSearchSubmit(
+      searchParamsList,
+      destinationCityNameForApi || undefined,
+      destinationCountryCodeForApi || undefined
+    );
     setIsMinimized(true);
   };
 
@@ -388,14 +286,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     return (
       <section
         id="search"
-        className="py-6 bg-gray-50"
-        style={{
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          transition: 'opacity 1.75s ease-in-out',
-          opacity: isFading ? 0 : 1,
-        }}
+        className="py-6 bg-blue-600"
       >
         <div className="container mx-auto px-2 sm:px-4">
           <div
@@ -459,14 +350,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   return (
     <section
       id="search"
-      className="py-6 bg-gray-50 scroll-mt-24"
-      style={{
-        backgroundImage: `url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        transition: 'opacity 1.75s ease-in-out',
-        opacity: isFading ? 0 : 1,
-      }}
+      className="py-6 bg-blue-600 scroll-mt-24"
     >
       <div className="container mx-auto px-2 sm:px-4">
         <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg mx-auto w-full">
@@ -562,108 +446,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
               />
             </div>
 
-            {/* Passengers */}
-            <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-start">
-              <div className="flex flex-col flex-1">
-                <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                  Adults
-                </label>
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange('adults', Math.max(1, passengers.adults - 1))
-                    }
-                    disabled={passengers.adults <= 1}
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-semibold text-base sm:text-sm">
-                    {passengers.adults}
-                  </span>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange('adults', Math.min(9, passengers.adults + 1))
-                    }
-                    disabled={passengers.adults >= 9}
-                  >
-                    +
-                  </button>
-                </div>
-                {/* Placeholder for alignment */}
-                <div className="h-5 mt-1"></div>
-              </div>
-              <div className="flex flex-col flex-1">
-                <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                  Children
-                </label>
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange('children', Math.max(0, passengers.children - 1))
-                    }
-                    disabled={passengers.children <= 0}
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-semibold text-base sm:text-sm">
-                    {passengers.children}
-                  </span>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange('children', Math.min(8, passengers.children + 1))
-                    }
-                    disabled={passengers.children >= 8}
-                  >
-                    +
-                  </button>
-                </div>
-                {/* Placeholder for alignment */}
-                <div className="h-5 mt-1"></div>
-              </div>
-              <div className="flex flex-col flex-1">
-                <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
-                  Infants
-                </label>
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange('infants', Math.max(0, passengers.infants - 1))
-                    }
-                    disabled={passengers.infants <= 0}
-                  >
-                    -
-                  </button>
-                  <span className="w-8 text-center font-semibold text-base sm:text-sm">
-                    {passengers.infants}
-                  </span>
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
-                    onClick={() =>
-                      handlePassengerChange(
-                        'infants',
-                        Math.min(passengers.adults, passengers.infants + 1)
-                      )
-                    }
-                    disabled={passengers.infants >= passengers.adults}
-                  >
-                    +
-                  </button>
-                </div>
-                {/* Disclosure text - positioned to not affect alignment */}
-                <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
-              </div>
-            </div>
+
 
             {/* Advanced Options Toggle */}
             <div className="md:col-span-2 lg:col-span-4">
@@ -692,6 +475,109 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
             {/* Advanced Options */}
             {showAdvancedOptions && (
               <>
+                {/* Passengers */}
+                <div className="md:col-span-2 lg:col-span-4 flex gap-4 items-start">
+                  <div className="flex flex-col flex-1">
+                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                      Adults
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange('adults', Math.max(1, passengers.adults - 1))
+                        }
+                        disabled={passengers.adults <= 1}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-semibold text-base sm:text-sm">
+                        {passengers.adults}
+                      </span>
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange('adults', Math.min(9, passengers.adults + 1))
+                        }
+                        disabled={passengers.adults >= 9}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {/* Placeholder for alignment */}
+                    <div className="h-5 mt-1"></div>
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                      Children
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange('children', Math.max(0, passengers.children - 1))
+                        }
+                        disabled={passengers.children <= 0}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-semibold text-base sm:text-sm">
+                        {passengers.children}
+                      </span>
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange('children', Math.min(8, passengers.children + 1))
+                        }
+                        disabled={passengers.children >= 8}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {/* Placeholder for alignment */}
+                    <div className="h-5 mt-1"></div>
+                  </div>
+                  <div className="flex flex-col flex-1">
+                    <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
+                      Infants
+                    </label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange('infants', Math.max(0, passengers.infants - 1))
+                        }
+                        disabled={passengers.infants <= 0}
+                      >
+                        -
+                      </button>
+                      <span className="w-8 text-center font-semibold text-base sm:text-sm">
+                        {passengers.infants}
+                      </span>
+                      <button
+                        type="button"
+                        className="px-3 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-base sm:text-sm"
+                        onClick={() =>
+                          handlePassengerChange(
+                            'infants',
+                            Math.min(passengers.adults, passengers.infants + 1)
+                          )
+                        }
+                        disabled={passengers.infants >= passengers.adults}
+                      >
+                        +
+                      </button>
+                    </div>
+                    {/* Disclosure text - positioned to not affect alignment */}
+                    <p className="mt-1 text-xs text-gray-500">Max 1 infant per adult</p>
+                  </div>
+                </div>
+
                 {/* Cabin Class */}
                 <div>
                   <label className="block text-base sm:text-sm font-medium text-gray-700 mb-2">
@@ -771,18 +657,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
           </form>
         </div>
       </div>
-      {attribution && (
-        <div className="text-center text-sm text-gray-500 mt-2">
-          Photo by{' '}
-          <a href={attribution.profileUrl} target="_blank" rel="noopener noreferrer">
-            {attribution.name}
-          </a>{' '}
-          on{' '}
-          <a href={attribution.unsplashUrl} target="_blank" rel="noopener noreferrer">
-            Unsplash
-          </a>
-        </div>
-      )}
+
     </section>
   );
 };

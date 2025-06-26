@@ -55,13 +55,7 @@ export default function AccountPage() {
     setSuccess('');
 
     try {
-      // Ensure dateOfBirth is a Date object if it exists
-      const profileData = {
-        ...formData,
-        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined
-      };
-
-      await updateProfile(profileData);
+      await updateProfile(formData);
       setSuccess('Profile updated successfully');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');

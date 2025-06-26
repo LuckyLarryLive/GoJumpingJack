@@ -18,6 +18,7 @@ const publicPaths = [
   '/forgot-password',
   '/reset-password',
   '/verify-email',
+  '/verify-email-required',
 ];
 
 export async function middleware(request: NextRequest) {

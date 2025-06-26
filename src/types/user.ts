@@ -93,6 +93,23 @@ export const passwordResetSchema = z
     path: ['passwordConfirmation'],
   });
 
+// Profile Update Schema (accepts date strings from forms)
+export const profileUpdateSchema = z.object({
+  firstName: z.string().min(1),
+  middleName: z.string().optional(),
+  lastName: z.string().min(1),
+  preferredName: z.string().optional(),
+  dateOfBirth: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  phoneNumber: z.string().min(1),
+  homeAirportIataCode: z.string().min(1).nullable(),
+  avoidedAirlineIataCodes: z.array(z.string().length(2)).nullable(),
+  defaultCabinClass: z.enum(['economy', 'premium_economy', 'business', 'first']).nullable(),
+  defaultAdultPassengers: z.number().int().min(1).max(9).nullable(),
+  defaultChildPassengers: z.number().int().min(0).max(9).nullable(),
+  defaultInfantPassengers: z.number().int().min(0).max(9).nullable(),
+  loyaltyPrograms: z.array(loyaltyProgramSchema).nullable(),
+});
+
 // Types
 export type User = z.infer<typeof userSchema>;
 export type SignupStep1 = z.infer<typeof signupStep1Schema>;
@@ -100,4 +117,5 @@ export type SignupStep2 = z.infer<typeof signupStep2Schema>;
 export type Login = z.infer<typeof loginSchema>;
 export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
 export type PasswordReset = z.infer<typeof passwordResetSchema>;
+export type ProfileUpdate = z.infer<typeof profileUpdateSchema>;
 export type LoyaltyProgram = z.infer<typeof loyaltyProgramSchema>;

@@ -250,7 +250,7 @@ export default function SignupPage() {
         homeAirportIataCode,
       });
       await signup(2, { ...step2Data, dateOfBirth: dateOfBirthValue, homeAirportIataCode, userId });
-      window.location.href = '/';
+      window.location.href = '/verify-email-required';
     } catch (err) {
       // Try to parse backend error for user-friendly display
       let msg = 'Failed to complete profile';

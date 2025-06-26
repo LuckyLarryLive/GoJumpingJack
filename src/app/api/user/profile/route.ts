@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
-import { signupStep2Schema } from '@/types/user';
+import { signupStep2Schema, profileUpdateSchema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
 
 // Force Node.js runtime for JWT and crypto operations
@@ -111,7 +111,7 @@ export async function PUT(request: Request) {
     const supabase = getSupabaseServiceClient();
 
     const body = await request.json();
-    const validatedData = signupStep2Schema.parse(body);
+    const validatedData = profileUpdateSchema.parse(body);
 
     // Update user profile
     const { error } = await supabase
