@@ -9,10 +9,12 @@ import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import PhoneInput from '@/components/PhoneInput';
 
 export default function AccountPage() {
-  const { user, updateProfile } = useAuthContext();
+  const { user, updateProfile, resendVerificationEmail } = useAuthContext();
   const [formData, setFormData] = useState<Partial<User>>({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [lastResendTime, setLastResendTime] = useState<number | null>(null);
 
 
   useEffect(() => {
@@ -48,6 +50,47 @@ export default function AccountPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
     }
+  };
+
+  const handleResendVerification = async () => {
+    if (!user?.email) return;
+
+    // Check if 10 minutes have passed since last resend
+    const now = Date.now();
+    if (lastResendTime && (now - lastResendTime) < 10 * 60 * 1000) {
+      const remainingMinutes = Math.ceil((10 * 60 * 1000 - (now - lastResendTime)) / (60 * 1000));
+      setError(`Please wait ${remainingMinutes} more minute(s) before requesting another verification email.`);
+      return;
+    }
+
+    setResendingVerification(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await resendVerificationEmail(user.email);
+      setSuccess('Verification email sent! Please check your inbox.');
+      setLastResendTime(now);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send verification email');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
+  const canResendVerification = () => {
+    if (!lastResendTime) return true;
+    const now = Date.now();
+    return (now - lastResendTime) >= 10 * 60 * 1000; // 10 minutes
+  };
+
+  const getResendCooldownText = () => {
+    if (!lastResendTime) return '';
+    const now = Date.now();
+    const remainingMs = 10 * 60 * 1000 - (now - lastResendTime);
+    if (remainingMs <= 0) return '';
+    const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
+    return `(${remainingMinutes} min remaining)`;
   };
 
 
@@ -140,14 +183,44 @@ export default function AccountPage() {
                     >
                       Email
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={user.email}
-                      disabled
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 bg-gray-50 text-gray-500 text-base sm:text-sm"
-                    />
+                    <div className="relative">
+                      <input
+                        type="email"
+                        name="email"
+                        id="email"
+                        value={user.email}
+                        disabled
+                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 bg-gray-50 text-gray-500 text-base sm:text-sm pr-24"
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        {user.emailVerified ? (
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            <span className="text-xs text-green-600 font-medium">Verified</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                            <span className="text-xs text-yellow-600 font-medium">Unverified</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {!user.emailVerified && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          disabled={resendingVerification || !canResendVerification()}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {resendingVerification ? 'Sending...' : `Resend Verification ${getResendCooldownText()}`}
+                        </button>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Please verify your email to ensure account security and receive important notifications.
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
