@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface VerificationPageProps {
   params: Promise<{
@@ -16,6 +17,7 @@ export default function VerifyEmailPage({ params }: VerificationPageProps) {
   const [userInfo, setUserInfo] = useState<{ firstName?: string; lastName?: string; email?: string } | null>(null);
   const [token, setToken] = useState<string>('');
   const router = useRouter();
+  const { user } = useAuthContext();
 
   useEffect(() => {
     const initializeToken = async () => {
@@ -41,14 +43,26 @@ export default function VerifyEmailPage({ params }: VerificationPageProps) {
           if (data.alreadyVerified) {
             setStatus('already-verified');
             setMessage('Your email address has already been verified.');
+            // If user is logged in, redirect to home, otherwise to login
+            setTimeout(() => {
+              if (user) {
+                router.push('/');
+              } else {
+                router.push('/login?verified=true');
+              }
+            }, 2000);
           } else {
             setStatus('success');
             setMessage('Your email address has been successfully verified!');
             setUserInfo(data.user);
-            
-            // Redirect to login page after 3 seconds
+
+            // If user is logged in, redirect to home, otherwise to login
             setTimeout(() => {
-              router.push('/login?verified=true');
+              if (user) {
+                router.push('/');
+              } else {
+                router.push('/login?verified=true');
+              }
             }, 3000);
           }
         } else {
@@ -142,14 +156,14 @@ export default function VerifyEmailPage({ params }: VerificationPageProps) {
                 </p>
               )}
               <p className="text-base sm:text-sm text-gray-500">
-                You will be redirected to the login page in a few seconds...
+                {user ? 'You will be redirected to the home page in a few seconds...' : 'You will be redirected to the login page in a few seconds...'}
               </p>
               <div className="mt-4">
                 <Link
-                  href="/login"
+                  href={user ? "/" : "/login"}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-base sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Go to Login
+                  {user ? 'Go to Home' : 'Go to Login'}
                 </Link>
               </div>
             </div>
@@ -180,10 +194,10 @@ export default function VerifyEmailPage({ params }: VerificationPageProps) {
               </p>
               <div className="mt-4">
                 <Link
-                  href="/login"
+                  href={user ? "/" : "/login"}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-base sm:text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Go to Login
+                  {user ? 'Go to Home' : 'Go to Login'}
                 </Link>
               </div>
             </div>

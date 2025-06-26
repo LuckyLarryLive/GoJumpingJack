@@ -7,6 +7,7 @@ import { User } from '@/types/user';
 
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import PhoneInput from '@/components/PhoneInput';
+import AirportSearchInput from '@/components/AirportSearchInput';
 
 export default function AccountPage() {
   const { user, updateProfile, resendVerificationEmail } = useAuthContext();
@@ -15,6 +16,7 @@ export default function AccountPage() {
   const [success, setSuccess] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
   const [lastResendTime, setLastResendTime] = useState<number | null>(null);
+  const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -35,9 +37,17 @@ export default function AccountPage() {
         loyaltyPrograms: user.loyaltyPrograms,
       });
 
+      // Set initial timer for unverified emails (assuming verification email was sent at account creation)
+      if (!user.emailVerified && !lastResendTime) {
+        setLastResendTime(Date.now());
+      }
 
+      // Set home airport display value
+      if (user.homeAirportIataCode) {
+        setHomeAirportDisplay(user.homeAirportIataCode);
+      }
     }
-  }, [user]);
+  }, [user, lastResendTime]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +55,13 @@ export default function AccountPage() {
     setSuccess('');
 
     try {
-      await updateProfile(formData);
+      // Ensure dateOfBirth is a Date object if it exists
+      const profileData = {
+        ...formData,
+        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined
+      };
+
+      await updateProfile(profileData);
       setSuccess('Profile updated successfully');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
@@ -296,18 +312,25 @@ export default function AccountPage() {
                       htmlFor="homeAirportIataCode"
                       className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
                     >
-                      Home airport
+                      Home Airport or City
                     </label>
-                    <input
-                      type="text"
-                      name="homeAirportIataCode"
-                      id="homeAirportIataCode"
-                      value={formData.homeAirportIataCode || ''}
-                      onChange={e =>
-                        setFormData({ ...formData, homeAirportIataCode: e.target.value })
-                      }
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
-                    />
+                    <div className="mt-1">
+                      <AirportSearchInput
+                        id="home-airport-search"
+                        label="Search city or airport"
+                        placeholder="Start typing a city or airport name"
+                        onAirportSelect={(iataCode, displayValue, selectionType, cityName) => {
+                          if (selectionType === 'city' && cityName) {
+                            setFormData(prev => ({ ...prev, homeAirportIataCode: cityName }));
+                            setHomeAirportDisplay(displayValue);
+                          } else {
+                            setFormData(prev => ({ ...prev, homeAirportIataCode: iataCode }));
+                            setHomeAirportDisplay(displayValue);
+                          }
+                        }}
+                        currentValue={homeAirportDisplay}
+                      />
+                    </div>
                   </div>
 
                   <div>
