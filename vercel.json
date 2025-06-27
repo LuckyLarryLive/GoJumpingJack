@@ -2,6 +2,12 @@
   "functions": {
     "app/api/flights/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/flights/offers/[offer_id]/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/flights/offers/[offer_id]/seat_map/route.ts": {
+      "maxDuration": 30
     }
   }
-} 
+}

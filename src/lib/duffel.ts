@@ -1,17 +1,21 @@
 import { Duffel } from '@duffel/api';
 
-// Mode switch: 'live' or 'test' (default to 'test')
-const mode = process.env.DUFFEL_MODE || 'test';
-const duffelToken = mode === 'live' ? process.env.DUFFEL_LIVE_TOKEN : process.env.DUFFEL_TEST_TOKEN;
+// Function to get Duffel client instance
+function getDuffelClient() {
+  // Mode switch: 'live' or 'test' (default to 'test')
+  const mode = process.env.DUFFEL_MODE || 'test';
+  const duffelToken =
+    mode === 'live' ? process.env.DUFFEL_LIVE_TOKEN : process.env.DUFFEL_TEST_TOKEN;
 
-if (!duffelToken) {
-  throw new Error('Duffel API token is not defined in environment variables');
+  if (!duffelToken) {
+    throw new Error('Duffel API token is not defined in environment variables');
+  }
+
+  // Initialize the Duffel client (Duffel-Version will be set via DUFFEL_VERSION env variable)
+  return new Duffel({
+    token: duffelToken,
+  });
 }
-
-// Initialize the Duffel client (Duffel-Version will be set via DUFFEL_VERSION env variable)
-const duffel = new Duffel({
-  token: duffelToken,
-});
 
 // Types for our flight search
 export interface FlightSearchParams {
@@ -36,16 +40,9 @@ interface TimeRange {
   to: string;
 }
 
-interface OfferRequestSlice {
-  origin: string;
-  destination: string;
-  departure_date: string;
-  arrival_time: TimeRange;
-  departure_time: TimeRange;
-}
-
 // Function to search for flights
 export async function searchFlights(params: FlightSearchParams) {
+  const duffel = getDuffelClient();
   try {
     console.log('Duffel searchFlights: Starting search with params:', params);
 
@@ -99,7 +96,7 @@ export async function searchFlights(params: FlightSearchParams) {
           cabin_class: params.cabinClass,
         }),
         timeoutPromise,
-      ])) as any;
+      ])) as { data: { id: string } };
       console.log(
         'Duffel searchFlights: Offer request full response:',
         JSON.stringify(offerRequest, null, 2)
@@ -118,18 +115,18 @@ export async function searchFlights(params: FlightSearchParams) {
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
         limit: params.limit || 15, // Default to 15 results per page
-        sort: (params.sort || 'total_amount') as any, // Type assertion to allow negative sort values
+        sort: (params.sort || 'total_amount') as string, // Type assertion to allow negative sort values
         after: params.after, // Use cursor for pagination
       }),
       timeoutPromise,
-    ])) as any;
+    ])) as { data: unknown[]; meta: unknown };
 
     console.log('Duffel searchFlights: Offers fetched successfully. Count:', offers.data.length);
     return {
       data: offers.data,
       meta: offers.meta, // Contains pagination cursors and total count
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Duffel searchFlights: Error details:', {
       message: error.message,
       code: error.code,
@@ -160,6 +157,7 @@ export async function searchFlights(params: FlightSearchParams) {
 
 // Function to get offer details
 export async function getOfferDetails(offerId: string) {
+  const duffel = getDuffelClient();
   try {
     const offer = await duffel.offers.get(offerId);
     return offer.data;
@@ -170,7 +168,8 @@ export async function getOfferDetails(offerId: string) {
 }
 
 // Function to create an order (booking)
-export async function createOrder(offerId: string, passengers: any[]) {
+export async function createOrder(offerId: string, passengers: unknown[]) {
+  const duffel = getDuffelClient();
   try {
     const order = await duffel.orders.create({
       type: 'instant',
@@ -184,8 +183,44 @@ export async function createOrder(offerId: string, passengers: any[]) {
   }
 }
 
+// Function to get seat maps for an offer
+export async function getSeatMaps(offerId: string) {
+  try {
+    console.log('Duffel getSeatMaps: Fetching seat maps for offer:', offerId);
+
+    // Use direct HTTP call since the SDK method might not be available
+    const response = await fetch(`https://api.duffel.com/air/seat_maps?offer_id=${offerId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${process.env.DUFFEL_TOKEN}`,
+        'Duffel-Version': 'v2',
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Seat maps not available for this offer
+        return [];
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(
+      'Duffel getSeatMaps: Seat maps fetched successfully. Count:',
+      data.data?.length || 0
+    );
+    return data.data || [];
+  } catch (error) {
+    console.error('Error getting seat maps:', error);
+    throw error;
+  }
+}
+
 // Helper: Create Offer Request (async flow)
 export async function createOfferRequest(params: FlightSearchParams) {
+  const duffel = getDuffelClient();
   // (Reuse the offerRequests.create logic, but return only the offer_request_id)
   const timeRange: TimeRange = { from: '06:00', to: '22:00' };
   const offerRequest = await duffel.offerRequests.create({
@@ -243,13 +278,14 @@ export async function listOffers({
     throw new Error('Invalid limit parameter');
   }
   // Only include defined properties
-  const params: any = {
+  const params: Record<string, unknown> = {
     offer_request_id: offerRequestId,
     limit,
   };
   if (after !== undefined) params.after = after;
   if (sort && typeof sort === 'string') params.sort = sort;
   console.log('[listOffers] Final params to duffel.offers.list:', params);
+  const duffel = getDuffelClient();
   try {
     return await duffel.offers.list(params);
   } catch (error: unknown) {

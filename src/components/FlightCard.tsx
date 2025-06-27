@@ -1,8 +1,7 @@
 // src/components/FlightCard.tsx
 import React, { useState } from 'react';
-import Link from 'next/link'; // Link import might not be needed if only using <a> for external links
+import { useRouter } from 'next/navigation';
 import type { Flight } from '@/types';
-import FlightTimeline from './FlightTimeline';
 import { airports } from '@/lib/airports';
 import type { Airport } from '@/types/airport';
 
@@ -35,6 +34,7 @@ interface FlightCardProps {
 
 const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const [showTimeline, setShowTimeline] = useState(false);
+  const router = useRouter();
 
   // Defensive: Ensure outbound_segments is an array with at least one element and required properties
   if (
@@ -57,11 +57,11 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const departureAt = flight.outbound_segments[0]?.departure_at;
   const returnAt = flight.return_segments?.[0]?.departure_at;
 
-  // Get base URL from environment variable
-  const baseUrl = process.env.NEXT_PUBLIC_FLIGHT_PROVIDER_BASE_URL || '';
-
-  // Construct the full external URL using TravelPayouts base URL
-  const externalFlightUrl = `${baseUrl}${flight.link}`;
+  // Handle click to navigate to offer details
+  const handleOfferClick = () => {
+    // The flight.link contains the offer_id from Duffel
+    router.push(`/flights/offer/${flight.link}`);
+  };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
@@ -69,48 +69,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
       minute: '2-digit',
       hour12: true,
     });
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  // Helper function to get airport name from code
-  const getAirportName = (code: string) => {
-    const airport = airports.find((a: Airport) => a.code === code);
-    return airport ? airport.name : code;
-  };
-
-  // Helper function to get airport city from code
-  const getAirportCity = (code: string) => {
-    const airport = airports.find((a: Airport) => a.code === code);
-    return airport ? airport.city : code;
-  };
-
-  // Helper function to get segment duration in hours/minutes using UTC
-  const getSegmentDuration = (departure: string, arrival: string) => {
-    const start = new Date(departure);
-    const end = new Date(arrival);
-    let durationMs = end.getTime() - start.getTime();
-    if (durationMs < 0) durationMs = 0;
-    const totalMinutes = Math.floor(durationMs / 60000);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${hours}h ${minutes}m`;
-  };
-
-  const getCabinClassLabel = (cabinClass: string) => {
-    const labels: { [key: string]: string } = {
-      economy: 'Economy',
-      premium_economy: 'Premium Economy',
-      business: 'Business',
-      first: 'First Class',
-    };
-    return labels[cabinClass] || cabinClass;
   };
 
   // Calculate total duration from segments
@@ -128,33 +86,6 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   };
 
   const summaryDuration = calculateTotalDuration();
-
-  // Calculate flight path width based on duration
-  const getFlightPathWidth = (departure: string, arrival: string) => {
-    const start = new Date(departure);
-    const end = new Date(arrival);
-    const durationMs = end.getTime() - start.getTime();
-    const hours = durationMs / (1000 * 60 * 60);
-    // Base width on hours, with min and max constraints
-    return Math.min(Math.max(hours * 50, 100), 300);
-  };
-
-  const departureTime = formatTime(departureAt);
-  const returnTime = returnAt ? formatTime(returnAt) : '';
-  const departureDate = formatDate(departureAt);
-  const flightPathWidth = getFlightPathWidth(departureAt, returnAt || departureAt);
-
-  // Helper function to get airport/city display name
-  const getDisplayName = (code: string) => {
-    if (!code) return '';
-    // If code is a 3-letter airport code, show airport name
-    if (code.length === 3 && code.toUpperCase() === code) {
-      const airport = airports.find((a: Airport) => a.code === code);
-      return airport ? airport.name : code;
-    }
-    // Otherwise, treat as city name
-    return code;
-  };
 
   // Helper to get display string for an airport code
   const getAirportDisplay = (code: string) => {
@@ -211,20 +142,33 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
           </div>
         </div>
 
-        <button
-          onClick={() => setShowTimeline(!showTimeline)}
-          className="w-full mt-3 text-blue-600 hover:text-blue-800 text-base sm:text-sm font-medium flex items-center justify-center py-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all"
-        >
-          {showTimeline ? 'Hide Details' : 'View Details'}
-          <svg
-            className={`ml-1 w-4 h-4 transform transition-transform ${showTimeline ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="mt-3 space-y-2">
+          <button
+            onClick={handleOfferClick}
+            className="w-full text-white bg-blue-600 hover:bg-blue-700 text-base sm:text-sm font-medium flex items-center justify-center py-3 rounded-lg transition-all"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+            View Full Details & Book
+          </button>
+          <button
+            onClick={() => setShowTimeline(!showTimeline)}
+            className="w-full text-blue-600 hover:text-blue-800 text-base sm:text-sm font-medium flex items-center justify-center py-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all"
+          >
+            {showTimeline ? 'Hide Timeline' : 'Show Timeline'}
+            <svg
+              className={`ml-1 w-4 h-4 transform transition-transform ${showTimeline ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
 
         {showTimeline && (
           <div className="mt-4 border-t pt-4 w-full">
