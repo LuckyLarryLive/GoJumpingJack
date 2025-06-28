@@ -73,7 +73,7 @@ const SeatMapModal: React.FC<SeatMapModalProps> = ({
     sectionIndex: number,
     elementIndex: number
   ) => {
-    if (!seatElement.available || seatElement.type !== 'seat') return;
+    if (!seatElement.available || seatElement.type !== 'seat' || !seatElement.id) return;
 
     const seatId = seatElement.id;
     const designator =
