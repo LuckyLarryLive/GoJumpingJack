@@ -50,7 +50,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [cabinClass, setCabinClass] = useState<string>('economy');
   const [currency, setCurrency] = useState<string>('USD');
   const [maxConnections, setMaxConnections] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
 
   const [destinationSelectionType, setDestinationSelectionType] = useState<
     'airport' | 'city' | null
@@ -182,7 +182,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const searchParamsList: SearchParamsType[] = [];
 
     // If either origin or destination is a city (has multiple airports)
-    if (originAirports.length > 1 || destinationAirports.length > 1) {
+    if (Array.isArray(originAirports) && Array.isArray(destinationAirports) && (originAirports.length > 1 || destinationAirports.length > 1)) {
       // Create a search for each airport combination
       originAirports.forEach(origin => {
         destinationAirports.forEach(destination => {

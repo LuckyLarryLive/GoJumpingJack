@@ -3,7 +3,7 @@
 import { useState, Suspense, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FlightResults from '@/components/FlightResults';
-import { FaFilter, FaSort } from 'react-icons/fa';
+import { FaFilter } from 'react-icons/fa';
 
 // Create a client component for the main content
 function FlightsContent() {
@@ -22,11 +22,11 @@ function FlightsContent() {
 
   // Extract search parameters
   const allSearchParamsRaw = searchParams.get('allSearchParams');
-  let parsedSearchParams: any[] = [];
+  let parsedSearchParams: unknown[] = [];
   if (allSearchParamsRaw) {
     try {
       parsedSearchParams = JSON.parse(decodeURIComponent(allSearchParamsRaw));
-    } catch (e) {
+    } catch {
       parsedSearchParams = [];
     }
   }
@@ -81,10 +81,10 @@ function FlightsContent() {
       destinationLabel = first.destinationAirport;
     }
     const departureDates = Array.from(
-      new Set(effectiveSearchParams.map((p: any) => p.departureDate))
+      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: unknown) => (p as { departureDate: string }).departureDate) : [])
     );
     const returnDates = Array.from(
-      new Set(effectiveSearchParams.map((p: any) => p.returnDate).filter(Boolean))
+      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: unknown) => (p as { returnDate?: string }).returnDate).filter(Boolean) : [])
     );
     return [
       String(`Flights from ${originLabel} to ${destinationLabel}`),
@@ -95,8 +95,8 @@ function FlightsContent() {
   }, [effectiveSearchParams]);
 
   // Filtering logic for flights
-  const filterFlightsByStops = (flights: any[]) => {
-    if (!filters.maxStops) return flights;
+  const filterFlightsByStops = (flights: unknown[]) => {
+    if (!Array.isArray(flights) || !filters.maxStops) return flights || [];
     const maxStops = filters.maxStops;
     return flights.filter(flight => {
       if (maxStops === '0') return flight.stops === 0;
@@ -185,13 +185,7 @@ function FlightsContent() {
                     } else {
                       destinationLabel = first.destinationAirport;
                     }
-                    const departureDates = Array.from(
-                      new Set(effectiveSearchParams.map((p: any) => p.departureDate))
-                    );
-                    const returnDates = Array.from(
-                      new Set(effectiveSearchParams.map((p: any) => p.returnDate).filter(Boolean))
-                    );
-                    return getSummaryString;
+                    return `Flights from ${originLabel} to ${destinationLabel}`;
                   })()}
                 </div>
               </div>

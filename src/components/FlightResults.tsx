@@ -1,22 +1,19 @@
 'use client'; // Required for useState, useEffect
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
-import type { SearchParamsType, Flight } from '@/types'; // Import shared types
+import type { SearchParamsType } from '@/types'; // Import shared types
 import type { FlightSearchParams } from '@/hooks/useDuffelFlightSearch';
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
 import { useRouter } from 'next/navigation';
-import { FaPlane, FaArrowRight, FaClock, FaMoneyBillWave } from 'react-icons/fa';
 import { supabase } from '@/lib/supabaseClient';
 
 // --- Component Props Interface ---
 interface FlightResultsProps {
   searchParams: SearchParamsType[];
-  apiUrl?: string;
   showPagination?: boolean;
   onPageChange?: (page: number) => void;
   currentPage?: number;
-  filterFlights?: (flights: any[]) => any[];
+  filterFlights?: (flights: unknown[]) => unknown[];
   sortBy?: string; // Add sortBy prop
 }
 
@@ -25,7 +22,6 @@ const JACK_VIDEO_PATH = '/Jack_Finding_Flights.mp4';
 // --- Flight Results Component ---
 const FlightResults: React.FC<FlightResultsProps> = ({
   searchParams,
-  apiUrl,
   showPagination = false,
   onPageChange,
   currentPage = 1,
@@ -79,29 +75,29 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   };
 
   // Helper: Filter valid flights (not partial, has outbound segments)
-  function filterValidFlights(flights: any[]): Flight[] {
-    return flights.filter(
-      flight =>
-        !flight.partial &&
-        Array.isArray(flight.outbound_segments) &&
-        flight.outbound_segments.length > 0
-    );
-  }
+  // function filterValidFlights(flights: unknown[]): unknown[] {
+  //   return flights.filter(
+  //     flight =>
+  //       !flight.partial &&
+  //       Array.isArray(flight.outbound_segments) &&
+  //       flight.outbound_segments.length > 0
+  //   );
+  // }
 
   // Helper: Adjust date by days
-  function adjustDate(dateStr: string, days: number): string {
-    const date = new Date(dateStr);
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
-  }
+  // function adjustDate(dateStr: string, days: number): string {
+  //   const date = new Date(dateStr);
+  //   date.setDate(date.getDate() + days);
+  //   return date.toISOString().split('T')[0];
+  // }
 
   // Helper: Get all cabin classes
-  const CABIN_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
+  // const CABIN_CLASSES = ['economy', 'premium_economy', 'business', 'first'];
 
   // Helper: Try city search (if not already city)
-  function isAirportCode(code: string) {
-    return code && code.length === 3 && code.toUpperCase() === code;
-  }
+  // function isAirportCode(code: string) {
+  //   return code && code.length === 3 && code.toUpperCase() === code;
+  // }
 
   // Helper to map SearchParamsType to FlightSearchParams
   function toFlightSearchParams(params: SearchParamsType): FlightSearchParams {
@@ -145,15 +141,17 @@ const FlightResults: React.FC<FlightResultsProps> = ({
   // Helper: Get the most common or lowest cabin class from all segments
   function deriveCabinClass(slices: any[]): string {
     const allCabins: string[] = [];
-    slices.forEach(slice => {
-      if (Array.isArray(slice.segments)) {
-        slice.segments.forEach((segment: any) => {
-          if (Array.isArray(segment.passengers) && segment.passengers[0]?.cabin_class) {
-            allCabins.push(segment.passengers[0].cabin_class);
-          }
-        });
-      }
-    });
+    if (Array.isArray(slices)) {
+      slices.forEach(slice => {
+        if (Array.isArray(slice?.segments)) {
+          slice.segments.forEach((segment: any) => {
+            if (Array.isArray(segment?.passengers) && segment.passengers[0]?.cabin_class) {
+              allCabins.push(segment.passengers[0].cabin_class);
+            }
+          });
+        }
+      });
+    }
     if (allCabins.length === 0) return 'unknown';
     const uniqueCabins = Array.from(new Set(allCabins));
     if (uniqueCabins.length === 1) return uniqueCabins[0];
@@ -302,16 +300,16 @@ const FlightResults: React.FC<FlightResultsProps> = ({
       destinationLabel = first.destinationAirport;
     }
     const departureDates = Array.from(
-      new Set((searchParams as SearchParamsType[]).map(p => p.departureDate))
+      new Set(Array.isArray(searchParams) ? (searchParams as SearchParamsType[]).map(p => p.departureDate) : [])
     );
     const returnDates = Array.from(
-      new Set((searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean))
+      new Set(Array.isArray(searchParams) ? (searchParams as SearchParamsType[]).map(p => p.returnDate).filter(Boolean) : [])
     );
     return `Flights from ${originLabel} to ${destinationLabel}${departureDates.length === 1 ? ' on ' + departureDates[0] : ''}${returnDates.length === 1 ? ' (Return: ' + returnDates[0] + ')' : ''}`;
   }
 
   useEffect(() => {
-    if (!searchParams || searchParams.length === 0) return;
+    if (!Array.isArray(searchParams) || searchParams.length === 0) return;
     setLoading(true);
     setError(null);
     setAllOffers([]);
@@ -335,7 +333,7 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     (async () => {
       try {
         await Promise.all(
-          searchParams.map(async params => {
+          (Array.isArray(searchParams) ? searchParams : []).map(async params => {
             try {
               if (isCancelled) return;
 
@@ -419,7 +417,9 @@ const FlightResults: React.FC<FlightResultsProps> = ({
     return () => {
       isCancelled = true;
       clearTimeout(safetyTimeout);
-      unsubscribers.forEach(unsub => unsub());
+      if (Array.isArray(unsubscribers)) {
+        unsubscribers.forEach(unsub => unsub());
+      }
     };
   }, [searchParams]);
 

@@ -287,9 +287,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
   const handleFocus = () => {
     isInteracting.current = true;
 
-    // Only clear if there's no selected airport and no query
-    if (!selectedAirport && !query) {
+    // If user clicks on field with existing selection, clear it to allow new input
+    if (selectedAirport && query) {
       setQuery('');
+      setSelectedAirport(null);
       onAirportSelect(null, null, null, null, null, null); // Clear parent state fully
       setSuggestions([]);
       setIsDropdownOpen(false);
@@ -384,7 +385,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
   // Convert grouped object to array, filtering out invalid groups
   const groupedSuggestions: { city: Airport; airports: Airport[] }[] = Object.entries(grouped)
-    .map(([city, { cityInfo, airports }]) => ({
+    .map(([, { cityInfo, airports }]) => ({
       city: cityInfo,
       airports,
     }))
@@ -393,13 +394,12 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
       return group.city.city && group.airports.length > 1;
     });
 
-  // Modified hover handling for list items
-  const handleItemHover = (index: number) => {
-    // Only update activeIndex if it's different to prevent unnecessary re-renders
-    if (activeIndex !== index) {
-      setActiveIndex(index);
-    }
-  };
+  // Removed handleItemHover to prevent auto-scrolling issues
+  // const handleItemHover = (index: number) => {
+  //   if (activeIndex !== index) {
+  //     setActiveIndex(index);
+  //   }
+  // };
 
   // --- Render ---
   return (
@@ -428,7 +428,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         autoComplete="off"
       />
       {isLoading && (
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
+        <div className="absolute right-2 top-[calc(50%+0.5rem)] transform -translate-y-1/2 h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
       )}
       {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
         <ul
@@ -436,7 +436,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
           className="absolute z-20 mt-1 max-h-72 w-full min-w-0 max-w-full sm:w-[400px] md:w-[450px] overflow-y-auto bg-white border border-gray-300 rounded-lg shadow-lg"
         >
           {/* Render grouped city suggestions (multiple airports) */}
-          {groupedSuggestions.map((group, groupIdx) => (
+          {groupedSuggestions.map((group) => (
             <li key={group.city.city + '-group'} className="">
               {group.city.city && group.airports.length > 1 && (
                 <div
@@ -491,9 +491,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
                     handleSuggestionClick(airport);
                   }}
-                  onMouseEnter={() =>
-                    handleItemHover(suggestions.findIndex(a => a.code === airport.code))
-                  }
+                  onMouseEnter={() => {
+                    // Remove auto-hover to prevent unwanted scrolling
+                    // handleItemHover(suggestions.findIndex(a => a.code === airport.code))
+                  }}
                   className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
                 >
                   <FaPlane className="mt-1 mr-2 text-blue-400" />
@@ -544,9 +545,10 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
                   });
                   handleSuggestionClick(airport);
                 }}
-                onMouseEnter={() =>
-                  handleItemHover(suggestions.findIndex(a => a.code === airport.code))
-                }
+                onMouseEnter={() => {
+                  // Remove auto-hover to prevent unwanted scrolling
+                  // handleItemHover(suggestions.findIndex(a => a.code === airport.code))
+                }}
                 className={`flex items-start px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 break-words max-w-full ${suggestions[activeIndex]?.code === airport.code ? 'bg-blue-100' : ''}`}
               >
                 <FaPlane className="mt-1 mr-2 text-blue-400" />
