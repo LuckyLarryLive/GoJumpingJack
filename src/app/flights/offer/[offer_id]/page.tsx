@@ -19,16 +19,6 @@ export default function OfferDetailsPage() {
   const [selectedSeats, setSelectedSeats] = useState<SelectedSeat[]>([]);
   const [seatMapLoading, setSeatMapLoading] = useState(false);
 
-  useEffect(() => {
-    if (!offerId) {
-      setError('Invalid offer ID');
-      setLoading(false);
-      return;
-    }
-
-    fetchOfferDetails();
-  }, [offerId, fetchOfferDetails]);
-
   const fetchOfferDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -54,6 +44,16 @@ export default function OfferDetailsPage() {
       setLoading(false);
     }
   }, [offerId]);
+
+  useEffect(() => {
+    if (!offerId) {
+      setError('Invalid offer ID');
+      setLoading(false);
+      return;
+    }
+
+    fetchOfferDetails();
+  }, [offerId, fetchOfferDetails]);
 
   const handleSeatSelection = async () => {
     if (!offer) return;

@@ -115,7 +115,7 @@ export async function searchFlights(params: FlightSearchParams) {
       duffel.offers.list({
         offer_request_id: offerRequest.data.id,
         limit: params.limit || 15, // Default to 15 results per page
-        sort: (params.sort || 'total_amount') as string, // Type assertion to allow negative sort values
+        sort: (params.sort || 'total_amount') as 'total_amount' | 'total_duration',
         after: params.after, // Use cursor for pagination
       }),
       timeoutPromise,
@@ -127,27 +127,29 @@ export async function searchFlights(params: FlightSearchParams) {
       meta: offers.meta, // Contains pagination cursors and total count
     };
   } catch (error: unknown) {
-    console.error('Duffel searchFlights: Error details:', {
-      message: error.message,
-      code: error.code,
-      status: error.status,
-      errors: error.errors,
-      meta: error.meta,
-      stack: error.stack,
-    });
+    if (error instanceof Error) {
+      console.error('Duffel searchFlights: Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
 
-    // Check for specific error types
-    if (error.message?.includes('timed out')) {
-      throw new Error(
-        'The flight search request timed out. Please try again with a simpler search or different dates.'
-      );
-    } else if (error.status === 504) {
+      // Check for specific error types
+      if (error.message?.includes('timed out')) {
+        throw new Error(
+          'The flight search request timed out. Please try again with a simpler search or different dates.'
+        );
+      }
+    }
+
+    // Handle other error types
+    const errorObj = error as { status?: number; message?: string };
+    if (errorObj.status === 504) {
       throw new Error(
         'The flight search request timed out. Please try again with different dates or airports.'
       );
-    } else if (error.status === 401) {
+    } else if (errorObj.status === 401) {
       throw new Error('Authentication error with flight search provider. Please contact support.');
-    } else if (error.status === 429) {
+    } else if (errorObj.status === 429) {
       throw new Error('Too many requests. Please try again in a few minutes.');
     }
 
@@ -168,7 +170,21 @@ export async function getOfferDetails(offerId: string) {
 }
 
 // Function to create an order (booking)
-export async function createOrder(offerId: string, passengers: unknown[]) {
+export async function createOrder(
+  offerId: string,
+  passengers: {
+    id?: string;
+    type: string;
+    given_name: string;
+    family_name: string;
+    born_on: string;
+    email?: string;
+    phone_number?: string;
+    title?: string;
+    gender?: string;
+    identity_documents?: unknown[];
+  }[]
+) {
   const duffel = getDuffelClient();
   try {
     const order = await duffel.orders.create({
@@ -278,7 +294,7 @@ export async function listOffers({
     throw new Error('Invalid limit parameter');
   }
   // Only include defined properties
-  const params: Record<string, unknown> = {
+  const params: { offer_request_id: string; [key: string]: unknown } = {
     offer_request_id: offerRequestId,
     limit,
   };

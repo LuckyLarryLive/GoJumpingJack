@@ -25,10 +25,6 @@ const SeatMapModal: React.FC<SeatMapModalProps> = ({
   const [available, setAvailable] = useState(false);
   const [tempSelectedSeats, setTempSelectedSeats] = useState<SelectedSeat[]>(selectedSeats);
 
-  useEffect(() => {
-    fetchSeatMaps();
-  }, [offerId, fetchSeatMaps]);
-
   const fetchSeatMaps = useCallback(async () => {
     try {
       setLoading(true);
@@ -59,6 +55,10 @@ const SeatMapModal: React.FC<SeatMapModalProps> = ({
       setLoading(false);
     }
   }, [offerId]);
+
+  useEffect(() => {
+    fetchSeatMaps();
+  }, [fetchSeatMaps]);
 
   const handleSeatClick = (
     seatMap: DuffelSeatMap,
@@ -93,7 +93,7 @@ const SeatMapModal: React.FC<SeatMapModalProps> = ({
         segmentId: seatMap.segment_id,
         sliceId: seatMap.slice_id,
         designator,
-        serviceId: seatElement.services?.[0]?.id,
+        serviceId: seatElement.services?.[0]?.id || undefined,
         price: seatElement.services?.[0]
           ? {
               amount: seatElement.services[0].total_amount,
