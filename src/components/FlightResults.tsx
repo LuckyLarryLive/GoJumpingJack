@@ -13,7 +13,7 @@ interface FlightResultsProps {
   showPagination?: boolean;
   onPageChange?: (page: number) => void;
   currentPage?: number;
-  filterFlights?: (flights: unknown[]) => unknown[];
+  filterFlights?: (flights: any[]) => any[];
   sortBy?: string; // Add sortBy prop
 }
 

@@ -22,7 +22,7 @@ function FlightsContent() {
 
   // Extract search parameters
   const allSearchParamsRaw = searchParams.get('allSearchParams');
-  let parsedSearchParams: unknown[] = [];
+  let parsedSearchParams: any[] = [];
   if (allSearchParamsRaw) {
     try {
       parsedSearchParams = JSON.parse(decodeURIComponent(allSearchParamsRaw));
@@ -81,10 +81,10 @@ function FlightsContent() {
       destinationLabel = first.destinationAirport;
     }
     const departureDates = Array.from(
-      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: unknown) => (p as { departureDate: string }).departureDate) : [])
+      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: any) => p.departureDate) : [])
     );
     const returnDates = Array.from(
-      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: unknown) => (p as { returnDate?: string }).returnDate).filter(Boolean) : [])
+      new Set(Array.isArray(effectiveSearchParams) ? effectiveSearchParams.map((p: any) => p.returnDate).filter(Boolean) : [])
     );
     return [
       String(`Flights from ${originLabel} to ${destinationLabel}`),
@@ -95,7 +95,7 @@ function FlightsContent() {
   }, [effectiveSearchParams]);
 
   // Filtering logic for flights
-  const filterFlightsByStops = (flights: unknown[]) => {
+  const filterFlightsByStops = (flights: any[]) => {
     if (!Array.isArray(flights) || !filters.maxStops) return flights || [];
     const maxStops = filters.maxStops;
     return flights.filter(flight => {

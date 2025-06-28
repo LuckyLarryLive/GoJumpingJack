@@ -50,7 +50,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const [cabinClass, setCabinClass] = useState<string>('economy');
   const [currency, setCurrency] = useState<string>('USD');
   const [maxConnections, setMaxConnections] = useState<number>(0);
-  // const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [destinationSelectionType, setDestinationSelectionType] = useState<
     'airport' | 'city' | null
