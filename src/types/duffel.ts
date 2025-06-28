@@ -204,7 +204,7 @@ export interface ProcessedOfferDetails {
 export interface SelectedSeat {
   passengerId: string;
   seatId: string;
-  serviceId?: string;
+  serviceId?: string | undefined;
   segmentId: string;
   sliceId: string;
   designator: string;

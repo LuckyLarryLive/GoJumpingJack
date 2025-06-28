@@ -93,7 +93,7 @@ const SeatMapModal: React.FC<SeatMapModalProps> = ({
         segmentId: seatMap.segment_id,
         sliceId: seatMap.slice_id,
         designator,
-        serviceId: seatElement.services?.[0]?.id || undefined,
+        serviceId: seatElement.services?.[0]?.id,
         price: seatElement.services?.[0]
           ? {
               amount: seatElement.services[0].total_amount,

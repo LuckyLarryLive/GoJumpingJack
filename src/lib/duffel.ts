@@ -170,21 +170,8 @@ export async function getOfferDetails(offerId: string) {
 }
 
 // Function to create an order (booking)
-export async function createOrder(
-  offerId: string,
-  passengers: {
-    id?: string;
-    type: string;
-    given_name: string;
-    family_name: string;
-    born_on: string;
-    email?: string;
-    phone_number?: string;
-    title?: string;
-    gender?: string;
-    identity_documents?: unknown[];
-  }[]
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function createOrder(offerId: string, passengers: any[]) {
   const duffel = getDuffelClient();
   try {
     const order = await duffel.orders.create({
