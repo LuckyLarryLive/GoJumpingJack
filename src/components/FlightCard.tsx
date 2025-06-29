@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import type { Flight } from '@/types';
 import { airports } from '@/lib/airports';
 import type { Airport } from '@/types/airport';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { formatPrice } from '@/lib/currency';
 
 // --- Date Formatting Utility ---
 const formatDate = (dateString: string | undefined): string => {
@@ -35,6 +37,7 @@ interface FlightCardProps {
 const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
   const [showTimeline, setShowTimeline] = useState(false);
   const router = useRouter();
+  const { currency } = useCurrency();
 
   // Defensive: Ensure outbound_segments is an array with at least one element and required properties
   if (
@@ -127,11 +130,7 @@ const FlightCard: React.FC<FlightCardProps> = ({ flight }) => {
               <div className="text-right w-full sm:w-auto mt-2 sm:mt-0">
                 <div className="text-xl font-bold text-blue-600">
                   <span style={{ whiteSpace: 'nowrap' }}>
-                    {flight.currency === 'USD' ? '$' : flight.currency}
-                    {flight.price.toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    {formatPrice(flight.price, currency)}
                   </span>
                 </div>
                 <div className="text-sm text-gray-600">

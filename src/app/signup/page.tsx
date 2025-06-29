@@ -1,14 +1,12 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { SignupStep1, SignupStep2 } from '@/types/user';
-import AirlineSearchInput from '@/components/AirlineSearchInput';
-import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import AirportSearchInput from '@/components/AirportSearchInput';
 import PhoneInput from '@/components/PhoneInput';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 
 export default function SignupPage() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -35,12 +33,10 @@ export default function SignupPage() {
     defaultChildPassengers: 0,
     defaultInfantPassengers: 0,
     loyaltyPrograms: null,
+    preferredCurrency: 'USD',
   });
-  const [avoidedAirlines, setAvoidedAirlines] = useState<Array<{ iataCode: string; name: string }>>(
-    []
-  );
+
   const { signup } = useAuthContext();
-  const router = useRouter();
   const [passwordError, setPasswordError] = useState('');
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -158,33 +154,11 @@ export default function SignupPage() {
       }
       setStep(2);
       setIsSubmittingStep1(false);
-    } catch (err) {
+    } catch {
       setError('Failed to create account');
       setIsSubmittingStep1(false);
     }
   };
-
-  // Phone number formatting helper
-  function formatUSPhoneNumber(value: string) {
-    // Remove all non-digit characters
-    let digits = value.replace(/\D/g, '');
-    // If starts with 1 and length > 10, remove the leading 1
-    if (digits.length > 10 && digits[0] === '1') {
-      digits = digits.slice(1);
-    }
-    // Only keep the last 10 digits
-    digits = digits.slice(-10);
-    if (digits.length === 0) return '';
-    let formatted = '+1 ';
-    if (digits.length <= 3) {
-      formatted += `(${digits}`;
-    } else if (digits.length <= 6) {
-      formatted += `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    } else {
-      formatted += `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-    }
-    return formatted.trim();
-  }
 
   const handleStep2Submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,52 +230,21 @@ export default function SignupPage() {
       let msg = 'Failed to complete profile';
       if (err && typeof err === 'object' && 'message' in err) {
         try {
-          const parsed = JSON.parse((err as any).message);
+          const parsed = JSON.parse((err as Error).message);
           if (Array.isArray(parsed)) {
-            msg = parsed.map((e: any) => e.message || JSON.stringify(e)).join(' ');
+            msg = parsed.map((e: { message?: string }) => e.message || JSON.stringify(e)).join(' ');
           } else if (typeof parsed === 'object' && parsed.message) {
             msg = parsed.message;
           } else {
-            msg = (err as any).message;
+            msg = (err as Error).message;
           }
         } catch {
-          msg = (err as any).message;
+          msg = (err as Error).message;
         }
       }
       setError(msg);
       setIsSubmittingStep2(false);
     }
-  };
-
-  const handleAirlineSelect = (iataCode: string | null, displayValue: string | null) => {
-    if (!iataCode || !displayValue) return;
-
-    // Check if airline is already in the list
-    if (avoidedAirlines.some(airline => airline.iataCode === iataCode)) {
-      return;
-    }
-
-    // Add new airline to the list
-    const newAirline = {
-      iataCode,
-      name: displayValue,
-    };
-    setAvoidedAirlines([...avoidedAirlines, newAirline]);
-
-    // Update form data
-    const newIataCodes = [...(step2Data.avoidedAirlineIataCodes || []), iataCode];
-    setStep2Data(prev => ({ ...prev, avoidedAirlineIataCodes: newIataCodes }));
-  };
-
-  const handleRemoveAirline = (iataCode: string) => {
-    // Remove airline from the list
-    setAvoidedAirlines(avoidedAirlines.filter(airline => airline.iataCode !== iataCode));
-
-    // Update form data
-    const newIataCodes = (step2Data.avoidedAirlineIataCodes || []).filter(
-      code => code !== iataCode
-    );
-    setStep2Data(prev => ({ ...prev, avoidedAirlineIataCodes: newIataCodes }));
   };
 
   return (
@@ -483,13 +426,22 @@ export default function SignupPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex">
                     <div className="flex-shrink-0">
-                      <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      <svg
+                        className="h-5 w-5 text-blue-400"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-blue-700">
-                        <strong>Important:</strong> Please enter your name exactly as it appears on your passport or other travel identification documents.
+                        <strong>Important:</strong> Please enter your name exactly as it appears on
+                        your passport or other travel identification documents.
                       </p>
                     </div>
                   </div>
@@ -511,7 +463,9 @@ export default function SignupPage() {
                         autoComplete="given-name"
                         required
                         value={step2Data.firstName}
-                        onChange={e => setStep2Data(prev => ({ ...prev, firstName: e.target.value }))}
+                        onChange={e =>
+                          setStep2Data(prev => ({ ...prev, firstName: e.target.value }))
+                        }
                         className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                       />
                     </div>
@@ -531,7 +485,9 @@ export default function SignupPage() {
                         type="text"
                         autoComplete="additional-name"
                         value={step2Data.middleName || ''}
-                        onChange={e => setStep2Data(prev => ({ ...prev, middleName: e.target.value }))}
+                        onChange={e =>
+                          setStep2Data(prev => ({ ...prev, middleName: e.target.value }))
+                        }
                         className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                         placeholder="Optional"
                       />
@@ -553,7 +509,9 @@ export default function SignupPage() {
                         autoComplete="family-name"
                         required
                         value={step2Data.lastName}
-                        onChange={e => setStep2Data(prev => ({ ...prev, lastName: e.target.value }))}
+                        onChange={e =>
+                          setStep2Data(prev => ({ ...prev, lastName: e.target.value }))
+                        }
                         className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                       />
                     </div>
@@ -626,7 +584,9 @@ export default function SignupPage() {
                     name="preferredName"
                     type="text"
                     value={step2Data.preferredName || ''}
-                    onChange={e => setStep2Data(prev => ({ ...prev, preferredName: e.target.value }))}
+                    onChange={e =>
+                      setStep2Data(prev => ({ ...prev, preferredName: e.target.value }))
+                    }
                     className="appearance-none block w-full max-w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     placeholder="e.g. Mike, Liz, etc."
                   />
@@ -765,6 +725,43 @@ export default function SignupPage() {
                   <option value="premium_economy">Premium Economy</option>
                   <option value="business">Business</option>
                   <option value="first">First</option>
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="preferredCurrency"
+                  className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                >
+                  Preferred Currency
+                </label>
+                <select
+                  id="preferredCurrency"
+                  name="preferredCurrency"
+                  value={step2Data.preferredCurrency || 'USD'}
+                  onChange={e =>
+                    setStep2Data(prev => ({
+                      ...prev,
+                      preferredCurrency: e.target.value as
+                        | 'USD'
+                        | 'EUR'
+                        | 'GBP'
+                        | 'CAD'
+                        | 'AUD'
+                        | 'JPY'
+                        | 'CNY'
+                        | 'INR'
+                        | 'BRL'
+                        | 'MXN',
+                    }))
+                  }
+                  className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                >
+                  {SUPPORTED_CURRENCIES.map(currency => (
+                    <option key={currency.code} value={currency.code}>
+                      {currency.code} ({currency.symbol}) - {currency.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 

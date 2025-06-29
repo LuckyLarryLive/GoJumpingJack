@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { SearchParamsType } from '@/types'; // Import shared type
 import AirportSearchInput from './AirportSearchInput'; // Import sibling component
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 // Add these constants at the top of the file, after imports
 const DUFFEL_CONSTRAINTS = {
@@ -25,12 +26,18 @@ const DUFFEL_CONSTRAINTS = {
 
 // --- Component Props Interface ---
 interface SearchSectionProps {
-  onSearchSubmit: (searchParams: SearchParamsType[], destinationCityName?: string, destinationCountryCode?: string) => void;
+  onSearchSubmit: (
+    searchParams: SearchParamsType[],
+    destinationCityName?: string,
+    destinationCountryCode?: string
+  ) => void;
   initialSearchParams?: SearchParamsType;
 }
 
 // --- Search Section Component ---
 const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSearchParams }) => {
+  const { currency: userCurrency } = useCurrency();
+
   // State for form fields
   const [originAirportCode, setOriginAirportCode] = useState<string>('');
   const [destinationAirportCode, setDestinationAirportCode] = useState<string>('');
@@ -48,9 +55,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     infants: 0,
   });
   const [cabinClass, setCabinClass] = useState<string>('economy');
-  const [currency, setCurrency] = useState<string>('USD');
+  const [currency, setCurrency] = useState<string>(userCurrency || 'USD');
   const [maxConnections, setMaxConnections] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
 
   const [destinationSelectionType, setDestinationSelectionType] = useState<
     'airport' | 'city' | null
@@ -98,7 +104,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     }
   }, [initialSearchParams]);
 
-
+  // Update currency when user's preferred currency changes
+  useEffect(() => {
+    if (userCurrency && !initialSearchParams?.currency) {
+      setCurrency(userCurrency);
+    }
+  }, [userCurrency, initialSearchParams?.currency]);
 
   // --- Handler for From Airport Selection ---
   const handleFromAirportSelect = useCallback(
@@ -182,7 +193,11 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
     const searchParamsList: SearchParamsType[] = [];
 
     // If either origin or destination is a city (has multiple airports)
-    if (Array.isArray(originAirports) && Array.isArray(destinationAirports) && (originAirports.length > 1 || destinationAirports.length > 1)) {
+    if (
+      Array.isArray(originAirports) &&
+      Array.isArray(destinationAirports) &&
+      (originAirports.length > 1 || destinationAirports.length > 1)
+    ) {
       // Create a search for each airport combination
       originAirports.forEach(origin => {
         destinationAirports.forEach(destination => {
@@ -284,10 +299,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   // Minimized View
   if (isMinimized) {
     return (
-      <section
-        id="search"
-        className="py-6 bg-blue-200"
-      >
+      <section id="search" className="py-6 bg-blue-200">
         <div className="container mx-auto px-2 sm:px-4">
           <div
             className="bg-white p-4 rounded-lg shadow-sm mx-auto w-full"
@@ -348,10 +360,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
 
   // Expanded View (Form)
   return (
-    <section
-      id="search"
-      className="py-6 bg-blue-200 scroll-mt-24"
-    >
+    <section id="search" className="py-6 bg-blue-200 scroll-mt-24">
       <div className="container mx-auto px-2 sm:px-4">
         <div className="bg-white/75 backdrop-blur-sm p-4 rounded-lg shadow-lg mx-auto w-full">
           <form
@@ -445,8 +454,6 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
                 min={departureDate || today}
               />
             </div>
-
-
 
             {/* Advanced Options Toggle */}
             <div className="md:col-span-2 lg:col-span-4">
@@ -657,7 +664,6 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
           </form>
         </div>
       </div>
-
     </section>
   );
 };

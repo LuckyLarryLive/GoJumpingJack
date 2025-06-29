@@ -1,5 +1,11 @@
 import { NextResponse } from 'next/server';
-import { hashPassword, generateToken, setAuthToken, generateEmailVerificationToken, getEmailVerificationTokenExpiry } from '@/lib/auth';
+import {
+  hashPassword,
+  generateToken,
+  setAuthToken,
+  generateEmailVerificationToken,
+  getEmailVerificationTokenExpiry,
+} from '@/lib/auth';
 import { signupStep1Schema, signupStep2Schema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
 import { sendVerificationEmail } from '@/lib/email';
@@ -122,6 +128,7 @@ export async function POST(request: Request) {
           default_child_passengers: validatedData.defaultChildPassengers,
           default_infant_passengers: validatedData.defaultInfantPassengers,
           loyalty_programs: validatedData.loyaltyPrograms,
+          preferred_currency: validatedData.preferredCurrency,
         })
         .eq('id', body.userId);
 

@@ -8,6 +8,7 @@ import { User } from '@/types/user';
 import LoyaltyProgramsInput from '@/components/LoyaltyProgramsInput';
 import PhoneInput from '@/components/PhoneInput';
 import AirportSearchInput from '@/components/AirportSearchInput';
+import { SUPPORTED_CURRENCIES } from '@/lib/currency';
 
 export default function AccountPage() {
   const { user, updateProfile, resendVerificationEmail } = useAuthContext();
@@ -16,9 +17,8 @@ export default function AccountPage() {
   const [success, setSuccess] = useState('');
   const [resendingVerification, setResendingVerification] = useState(false);
   const [lastResendTime, setLastResendTime] = useState<number | null>(null);
-  const [homeAirportDisplay, setHomeAirportDisplay] = useState<string | null>(null);
+  const [, setHomeAirportDisplay] = useState<string | null>(null);
   const [homeAirportInitialValue, setHomeAirportInitialValue] = useState<string | null>(null);
-
 
   useEffect(() => {
     if (user) {
@@ -36,6 +36,7 @@ export default function AccountPage() {
         defaultChildPassengers: user.defaultChildPassengers,
         defaultInfantPassengers: user.defaultInfantPassengers,
         loyaltyPrograms: user.loyaltyPrograms,
+        preferredCurrency: user.preferredCurrency,
       });
 
       // Set initial timer for unverified emails (assuming verification email was sent at account creation)
@@ -49,7 +50,7 @@ export default function AccountPage() {
         setHomeAirportDisplay(user.homeAirportIataCode);
       }
     }
-  }, [user, lastResendTime]);
+  }, [user, lastResendTime, homeAirportInitialValue]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +70,11 @@ export default function AccountPage() {
 
     // Check if 10 minutes have passed since last resend
     const now = Date.now();
-    if (lastResendTime && (now - lastResendTime) < 10 * 60 * 1000) {
+    if (lastResendTime && now - lastResendTime < 10 * 60 * 1000) {
       const remainingMinutes = Math.ceil((10 * 60 * 1000 - (now - lastResendTime)) / (60 * 1000));
-      setError(`Please wait ${remainingMinutes} more minute(s) before requesting another verification email.`);
+      setError(
+        `Please wait ${remainingMinutes} more minute(s) before requesting another verification email.`
+      );
       return;
     }
 
@@ -93,7 +96,7 @@ export default function AccountPage() {
   const canResendVerification = () => {
     if (!lastResendTime) return true;
     const now = Date.now();
-    return (now - lastResendTime) >= 10 * 60 * 1000; // 10 minutes
+    return now - lastResendTime >= 10 * 60 * 1000; // 10 minutes
   };
 
   const getResendCooldownText = () => {
@@ -104,8 +107,6 @@ export default function AccountPage() {
     const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
     return `(${remainingMinutes} min remaining)`;
   };
-
-
 
   if (!user) {
     return null;
@@ -226,10 +227,13 @@ export default function AccountPage() {
                           disabled={resendingVerification || !canResendVerification()}
                           className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {resendingVerification ? 'Sending...' : `Resend Verification ${getResendCooldownText()}`}
+                          {resendingVerification
+                            ? 'Sending...'
+                            : `Resend Verification ${getResendCooldownText()}`}
                         </button>
                         <p className="text-xs text-gray-500 mt-1">
-                          Please verify your email to ensure account security and receive important notifications.
+                          Please verify your email to ensure account security and receive important
+                          notifications.
                         </p>
                       </div>
                     )}
@@ -291,7 +295,7 @@ export default function AccountPage() {
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          dateOfBirth: e.target.value ? new Date(e.target.value) : undefined
+                          dateOfBirth: e.target.value ? new Date(e.target.value) : undefined,
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
@@ -341,7 +345,15 @@ export default function AccountPage() {
                       name="defaultCabinClass"
                       value={formData.defaultCabinClass || ''}
                       onChange={e =>
-                        setFormData({ ...formData, defaultCabinClass: e.target.value as any })
+                        setFormData({
+                          ...formData,
+                          defaultCabinClass: e.target.value as
+                            | 'economy'
+                            | 'premium_economy'
+                            | 'business'
+                            | 'first'
+                            | null,
+                        })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     >
@@ -350,6 +362,43 @@ export default function AccountPage() {
                       <option value="premium_economy">Premium Economy</option>
                       <option value="business">Business</option>
                       <option value="first">First</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="preferredCurrency"
+                      className="block text-base sm:text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Preferred Currency
+                    </label>
+                    <select
+                      id="preferredCurrency"
+                      name="preferredCurrency"
+                      value={formData.preferredCurrency || 'USD'}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          preferredCurrency: e.target.value as
+                            | 'USD'
+                            | 'EUR'
+                            | 'GBP'
+                            | 'CAD'
+                            | 'AUD'
+                            | 'JPY'
+                            | 'CNY'
+                            | 'INR'
+                            | 'BRL'
+                            | 'MXN',
+                        })
+                      }
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
+                    >
+                      {SUPPORTED_CURRENCIES.map(currency => (
+                        <option key={currency.code} value={currency.code}>
+                          {currency.code} ({currency.symbol}) - {currency.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -394,7 +443,8 @@ export default function AccountPage() {
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          defaultChildPassengers: e.target.value === '' ? 0 : parseInt(e.target.value),
+                          defaultChildPassengers:
+                            e.target.value === '' ? 0 : parseInt(e.target.value),
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
@@ -418,15 +468,14 @@ export default function AccountPage() {
                       onChange={e =>
                         setFormData({
                           ...formData,
-                          defaultInfantPassengers: e.target.value === '' ? 0 : parseInt(e.target.value),
+                          defaultInfantPassengers:
+                            e.target.value === '' ? 0 : parseInt(e.target.value),
                         })
                       }
                       className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-3 px-4 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base sm:text-sm"
                     />
                   </div>
                 </div>
-
-
 
                 <div className="mt-6 relative">
                   <label className="block text-base sm:text-sm font-medium text-gray-400 mb-2">
@@ -443,7 +492,9 @@ export default function AccountPage() {
                     <div className="opacity-30 pointer-events-none">
                       <LoyaltyProgramsInput
                         value={formData.loyaltyPrograms || []}
-                        onChange={programs => setFormData({ ...formData, loyaltyPrograms: programs })}
+                        onChange={programs =>
+                          setFormData({ ...formData, loyaltyPrograms: programs })
+                        }
                       />
                     </div>
                   </div>

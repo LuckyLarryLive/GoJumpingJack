@@ -26,6 +26,9 @@ export const userSchema = z.object({
   defaultChildPassengers: z.number().int().min(0).max(9).nullable(),
   defaultInfantPassengers: z.number().int().min(0).max(9).nullable(),
   loyaltyPrograms: z.array(loyaltyProgramSchema).nullable(),
+  preferredCurrency: z
+    .enum(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CNY', 'INR', 'BRL', 'MXN'])
+    .default('USD'),
   createdAt: z.date(),
   updatedAt: z.date(),
   emailVerified: z.boolean().default(false),
@@ -65,6 +68,9 @@ export const signupStep2Schema = z.object({
   defaultChildPassengers: z.number().int().min(0).max(9).nullable(),
   defaultInfantPassengers: z.number().int().min(0).max(9).nullable(),
   loyaltyPrograms: z.array(loyaltyProgramSchema).nullable(),
+  preferredCurrency: z
+    .enum(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CNY', 'INR', 'BRL', 'MXN'])
+    .default('USD'),
 });
 
 // Login Schema
@@ -99,7 +105,10 @@ export const profileUpdateSchema = z.object({
   middleName: z.string().optional(),
   lastName: z.string().min(1),
   preferredName: z.string().optional(),
-  dateOfBirth: z.string().optional().transform((val) => val ? new Date(val) : undefined),
+  dateOfBirth: z
+    .string()
+    .optional()
+    .transform(val => (val ? new Date(val) : undefined)),
   phoneNumber: z.string().min(1),
   homeAirportIataCode: z.string().min(1).nullable(),
   avoidedAirlineIataCodes: z.array(z.string().length(2)).nullable(),
@@ -108,6 +117,9 @@ export const profileUpdateSchema = z.object({
   defaultChildPassengers: z.number().int().min(0).max(9).nullable(),
   defaultInfantPassengers: z.number().int().min(0).max(9).nullable(),
   loyaltyPrograms: z.array(loyaltyProgramSchema).nullable(),
+  preferredCurrency: z
+    .enum(['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'CNY', 'INR', 'BRL', 'MXN'])
+    .default('USD'),
 });
 
 // Types

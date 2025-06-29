@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyToken } from '@/lib/auth';
-import { signupStep2Schema, profileUpdateSchema } from '@/types/user';
+import { profileUpdateSchema } from '@/types/user';
 import { createClient } from '@supabase/supabase-js';
 
 // Force Node.js runtime for JWT and crypto operations
@@ -14,7 +13,7 @@ function getSupabaseServiceClient() {
 }
 
 // Middleware to verify authentication using cookies
-async function verifyAuth(request: Request) {
+async function verifyAuth() {
   try {
     const { getAuthToken, verifyToken } = await import('@/lib/auth');
     const token = await getAuthToken();
@@ -24,14 +23,14 @@ async function verifyAuth(request: Request) {
     }
 
     return verifyToken(token);
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const user = await verifyAuth(request);
+    const user = await verifyAuth();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -45,11 +44,6 @@ export async function GET(request: Request) {
 
     // Remove sensitive fields and transform to camelCase
     const {
-      password_hash,
-      reset_password_token,
-      reset_password_expires,
-      email_verification_token,
-      email_verification_token_expires_at,
       first_name,
       middle_name,
       last_name,
@@ -64,6 +58,7 @@ export async function GET(request: Request) {
       default_child_passengers,
       default_infant_passengers,
       loyalty_programs,
+      preferred_currency,
       created_at,
       updated_at,
       email_verified,
@@ -87,6 +82,7 @@ export async function GET(request: Request) {
       defaultChildPassengers: default_child_passengers,
       defaultInfantPassengers: default_infant_passengers,
       loyaltyPrograms: loyalty_programs,
+      preferredCurrency: preferred_currency || 'USD',
       createdAt: created_at ? new Date(created_at) : null,
       updatedAt: updated_at ? new Date(updated_at) : null,
       emailVerified: email_verified,
@@ -103,7 +99,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const user = await verifyAuth(request);
+    const user = await verifyAuth();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -130,6 +126,7 @@ export async function PUT(request: Request) {
         default_child_passengers: validatedData.defaultChildPassengers,
         default_infant_passengers: validatedData.defaultInfantPassengers,
         loyalty_programs: validatedData.loyaltyPrograms,
+        preferred_currency: validatedData.preferredCurrency,
       })
       .eq('id', user.id);
 

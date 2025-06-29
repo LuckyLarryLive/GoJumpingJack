@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import { DuffelOffer, SelectedSeat } from '@/types/duffel';
-import { FaPlane, FaClock, FaSuitcase, FaInfoCircle } from 'react-icons/fa';
+import { FaPlane, FaClock, FaSuitcase, FaInfoCircle, FaCode } from 'react-icons/fa';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { formatPrice } from '@/lib/currency';
+import RawDetailsModal from './RawDetailsModal';
 
 interface OfferDetailsProps {
   offer: DuffelOffer;
@@ -18,6 +21,8 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
   // onSeatSelection,
   // seatMapLoading,
 }) => {
+  const { currency } = useCurrency();
+  const [showRawDetails, setShowRawDetails] = useState(false);
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -66,20 +71,20 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
       offer.passengers.forEach(passenger => {
         if (Array.isArray(passenger.baggages)) {
           passenger.baggages.forEach(baggage => {
-        let description =
-          baggage.quantity > 0
-            ? `${baggage.quantity} ${baggage.type.replace('_', ' ')} bag${baggage.quantity > 1 ? 's' : ''}`
-            : `No ${baggage.type.replace('_', ' ')} bags`;
+            let description =
+              baggage.quantity > 0
+                ? `${baggage.quantity} ${baggage.type.replace('_', ' ')} bag${baggage.quantity > 1 ? 's' : ''}`
+                : `No ${baggage.type.replace('_', ' ')} bags`;
 
-        if (baggage.weight_value) {
-          description += ` (${baggage.weight_value}${baggage.weight_unit || 'kg'} each)`;
-        }
+            if (baggage.weight_value) {
+              description += ` (${baggage.weight_value}${baggage.weight_unit || 'kg'} each)`;
+            }
 
-        if (baggage.type === 'carry_on') {
-          carryOn.push(description);
-        } else if (baggage.type === 'checked') {
-          checked.push(description);
-        }
+            if (baggage.type === 'carry_on') {
+              carryOn.push(description);
+            } else if (baggage.type === 'checked') {
+              checked.push(description);
+            }
           });
         }
       });
@@ -105,10 +110,10 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
     <div className="space-y-6">
       {/* Price Summary */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {offer.total_currency} {offer.total_amount}
+              {formatPrice(offer.total_amount, currency)}
             </h2>
             <p className="text-gray-600">Total Price</p>
           </div>
@@ -128,109 +133,129 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Raw Details Button */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowRawDetails(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+          >
+            <FaCode className="w-4 h-4" />
+            Show Raw Details
+          </button>
+        </div>
       </div>
 
       {/* Itinerary */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-xl font-semibold mb-4">Flight Itinerary</h3>
 
-        {Array.isArray(offer.slices) && offer.slices.map((slice, sliceIndex) => (
-          <div key={slice.id} className="mb-6 last:mb-0">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-medium text-gray-900">
-                {sliceIndex === 0 ? 'Outbound' : 'Return'} Flight
-              </h4>
-              <div className="text-sm text-gray-600">
-                {formatDate(slice.departing_at)} • {formatDuration(slice.duration)}
-              </div>
-            </div>
-
-            {Array.isArray(slice.segments) && slice.segments.map((segment, segmentIndex) => (
-              <div key={segment.id}>
-                {/* Segment Details */}
-                <div className="border border-gray-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      {segment.marketing_carrier?.logo_symbol_url && (
-                        <Image
-                          src={segment.marketing_carrier.logo_symbol_url}
-                          alt={segment.marketing_carrier?.name || 'Airline'}
-                          width={24}
-                          height={24}
-                          className="w-6 h-6 mr-2"
-                        />
-                      )}
-                      <span className="font-medium">
-                        {segment.marketing_carrier?.name || 'Unknown Airline'} {segment.marketing_carrier_flight_number || ''}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-600">{segment.aircraft?.name || 'Unknown Aircraft'}</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Departure */}
-                    <div>
-                      <div className="text-lg font-semibold">
-                        {formatTime(segment.departing_at)}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {segment.origin?.name || 'Unknown Airport'} ({segment.origin?.iata_code || 'N/A'})
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {segment.origin?.city?.name || 'Unknown City'}
-                        {segment.origin_terminal && ` • Terminal ${segment.origin_terminal}`}
-                      </div>
-                    </div>
-
-                    {/* Flight Duration */}
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-1">
-                        <div className="h-px bg-gray-300 flex-1"></div>
-                        <FaPlane className="mx-2 text-gray-400" />
-                        <div className="h-px bg-gray-300 flex-1"></div>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {formatDuration(segment.duration)}
-                      </div>
-                    </div>
-
-                    {/* Arrival */}
-                    <div className="text-right">
-                      <div className="text-lg font-semibold">{formatTime(segment.arriving_at)}</div>
-                      <div className="text-sm text-gray-600">
-                        {segment.destination?.name || 'Unknown Airport'} ({segment.destination?.iata_code || 'N/A'})
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {segment.destination?.city?.name || 'Unknown City'}
-                        {segment.destination_terminal &&
-                          ` • Terminal ${segment.destination_terminal}`}
-                      </div>
-                    </div>
-                  </div>
+        {Array.isArray(offer.slices) &&
+          offer.slices.map((slice, sliceIndex) => (
+            <div key={slice.id} className="mb-6 last:mb-0">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-medium text-gray-900">
+                  {sliceIndex === 0 ? 'Outbound' : 'Return'} Flight
+                </h4>
+                <div className="text-sm text-gray-600">
+                  {formatDate(slice.departing_at)} • {formatDuration(slice.duration)}
                 </div>
+              </div>
 
-                {/* Layover Information */}
-                {segmentIndex < slice.segments.length - 1 && (
-                  <div className="flex items-center justify-center py-2 mb-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
-                      <div className="flex items-center text-yellow-800">
-                        <FaClock className="mr-2" />
-                        <span className="text-sm">
-                          Layover:{' '}
-                          {calculateLayover(
-                            segment.arriving_at,
-                            slice.segments[segmentIndex + 1].departing_at
-                          )}{' '}
-                          in {segment.destination?.city?.name || 'Unknown City'}
+              {Array.isArray(slice.segments) &&
+                slice.segments.map((segment, segmentIndex) => (
+                  <div key={segment.id}>
+                    {/* Segment Details */}
+                    <div className="border border-gray-200 rounded-lg p-4 mb-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center">
+                          {segment.marketing_carrier?.logo_symbol_url && (
+                            <Image
+                              src={segment.marketing_carrier.logo_symbol_url}
+                              alt={segment.marketing_carrier?.name || 'Airline'}
+                              width={24}
+                              height={24}
+                              className="w-6 h-6 mr-2"
+                            />
+                          )}
+                          <span className="font-medium">
+                            {segment.marketing_carrier?.name || 'Unknown Airline'}{' '}
+                            {segment.marketing_carrier_flight_number || ''}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          {segment.aircraft?.name || 'Unknown Aircraft'}
                         </span>
                       </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Departure */}
+                        <div>
+                          <div className="text-lg font-semibold">
+                            {formatTime(segment.departing_at)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {segment.origin?.name || 'Unknown Airport'} (
+                            {segment.origin?.iata_code || 'N/A'})
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {segment.origin?.city?.name || 'Unknown City'}
+                            {segment.origin_terminal && ` • Terminal ${segment.origin_terminal}`}
+                          </div>
+                        </div>
+
+                        {/* Flight Duration */}
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-1">
+                            <div className="h-px bg-gray-300 flex-1"></div>
+                            <FaPlane className="mx-2 text-gray-400" />
+                            <div className="h-px bg-gray-300 flex-1"></div>
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {formatDuration(segment.duration)}
+                          </div>
+                        </div>
+
+                        {/* Arrival */}
+                        <div className="text-right">
+                          <div className="text-lg font-semibold">
+                            {formatTime(segment.arriving_at)}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            {segment.destination?.name || 'Unknown Airport'} (
+                            {segment.destination?.iata_code || 'N/A'})
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {segment.destination?.city?.name || 'Unknown City'}
+                            {segment.destination_terminal &&
+                              ` • Terminal ${segment.destination_terminal}`}
+                          </div>
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Layover Information */}
+                    {segmentIndex < slice.segments.length - 1 && (
+                      <div className="flex items-center justify-center py-2 mb-4">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
+                          <div className="flex items-center text-yellow-800">
+                            <FaClock className="mr-2" />
+                            <span className="text-sm">
+                              Layover:{' '}
+                              {calculateLayover(
+                                segment.arriving_at,
+                                slice.segments[segmentIndex + 1].departing_at
+                              )}{' '}
+                              in {segment.destination?.city?.name || 'Unknown City'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
+                ))}
+            </div>
+          ))}
       </div>
 
       {/* Baggage Allowance */}
@@ -291,8 +316,8 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                 </p>
                 {offer.conditions.change_before_departure.penalty_amount && (
                   <p className="text-gray-600">
-                    Fee: {offer.conditions.change_before_departure.penalty_currency}{' '}
-                    {offer.conditions.change_before_departure.penalty_amount}
+                    Fee:{' '}
+                    {formatPrice(offer.conditions.change_before_departure.penalty_amount, currency)}
                   </p>
                 )}
               </div>
@@ -317,8 +342,8 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                 </p>
                 {offer.conditions.refund_before_departure.penalty_amount && (
                   <p className="text-gray-600">
-                    Fee: {offer.conditions.refund_before_departure.penalty_currency}{' '}
-                    {offer.conditions.refund_before_departure.penalty_amount}
+                    Fee:{' '}
+                    {formatPrice(offer.conditions.refund_before_departure.penalty_amount, currency)}
                   </p>
                 )}
               </div>
@@ -328,6 +353,14 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Raw Details Modal */}
+      <RawDetailsModal
+        isOpen={showRawDetails}
+        onClose={() => setShowRawDetails(false)}
+        data={offer}
+        title="Flight Offer Raw Details"
+      />
     </div>
   );
 };
