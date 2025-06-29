@@ -29,9 +29,7 @@ jest.mock('@/components/AirportSearchInput', () => {
             // Simulate airport selection
             onAirportSelect({
               airport_code: 'LAX',
-              airport_name: 'Los Angeles International Airport',
-              city_name: 'Los Angeles',
-              city_code: 'LAX',
+              display_name: 'Los Angeles International Airport',
             });
           }}
         />
