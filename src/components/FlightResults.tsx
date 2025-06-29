@@ -1,7 +1,7 @@
 'use client'; // Required for useState, useEffect
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { SearchParamsType } from '@/types'; // Import shared types
+import type { SearchParamsType, Flight } from '@/types'; // Import shared types
 import type { FlightSearchParams } from '@/hooks/useDuffelFlightSearch';
 import FlightCard from './FlightCard'; // <--- ADD BACK FlightCard Import
 import { useRouter } from 'next/navigation';
