@@ -93,6 +93,14 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
 
   const baggage = getBaggageAllowance();
 
+  if (!offer) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No offer details available.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Price Summary */}
@@ -107,16 +115,16 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
           <div className="text-right">
             <p className="text-sm text-gray-500">Operated by</p>
             <div className="flex items-center">
-              {offer.owner.logo_symbol_url && (
+              {offer.owner?.logo_symbol_url && (
                 <Image
                   src={offer.owner.logo_symbol_url}
-                  alt={offer.owner.name}
+                  alt={offer.owner?.name || 'Airline'}
                   width={32}
                   height={32}
                   className="w-8 h-8 mr-2"
                 />
               )}
-              <span className="font-medium">{offer.owner.name}</span>
+              <span className="font-medium">{offer.owner?.name || 'Unknown Airline'}</span>
             </div>
           </div>
         </div>
@@ -126,7 +134,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-xl font-semibold mb-4">Flight Itinerary</h3>
 
-        {offer.slices.map((slice, sliceIndex) => (
+        {Array.isArray(offer.slices) && offer.slices.map((slice, sliceIndex) => (
           <div key={slice.id} className="mb-6 last:mb-0">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-medium text-gray-900">
@@ -137,26 +145,26 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
               </div>
             </div>
 
-            {slice.segments.map((segment, segmentIndex) => (
+            {Array.isArray(slice.segments) && slice.segments.map((segment, segmentIndex) => (
               <div key={segment.id}>
                 {/* Segment Details */}
                 <div className="border border-gray-200 rounded-lg p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center">
-                      {segment.marketing_carrier.logo_symbol_url && (
+                      {segment.marketing_carrier?.logo_symbol_url && (
                         <Image
                           src={segment.marketing_carrier.logo_symbol_url}
-                          alt={segment.marketing_carrier.name}
+                          alt={segment.marketing_carrier?.name || 'Airline'}
                           width={24}
                           height={24}
                           className="w-6 h-6 mr-2"
                         />
                       )}
                       <span className="font-medium">
-                        {segment.marketing_carrier.name} {segment.marketing_carrier_flight_number}
+                        {segment.marketing_carrier?.name || 'Unknown Airline'} {segment.marketing_carrier_flight_number || ''}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-600">{segment.aircraft.name}</span>
+                    <span className="text-sm text-gray-600">{segment.aircraft?.name || 'Unknown Aircraft'}</span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -166,10 +174,10 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                         {formatTime(segment.departing_at)}
                       </div>
                       <div className="text-sm text-gray-600">
-                        {segment.origin.name} ({segment.origin.iata_code})
+                        {segment.origin?.name || 'Unknown Airport'} ({segment.origin?.iata_code || 'N/A'})
                       </div>
                       <div className="text-sm text-gray-500">
-                        {segment.origin.city.name}
+                        {segment.origin?.city?.name || 'Unknown City'}
                         {segment.origin_terminal && ` • Terminal ${segment.origin_terminal}`}
                       </div>
                     </div>
@@ -190,10 +198,10 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                     <div className="text-right">
                       <div className="text-lg font-semibold">{formatTime(segment.arriving_at)}</div>
                       <div className="text-sm text-gray-600">
-                        {segment.destination.name} ({segment.destination.iata_code})
+                        {segment.destination?.name || 'Unknown Airport'} ({segment.destination?.iata_code || 'N/A'})
                       </div>
                       <div className="text-sm text-gray-500">
-                        {segment.destination.city.name}
+                        {segment.destination?.city?.name || 'Unknown City'}
                         {segment.destination_terminal &&
                           ` • Terminal ${segment.destination_terminal}`}
                       </div>
@@ -213,7 +221,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                             segment.arriving_at,
                             slice.segments[segmentIndex + 1].departing_at
                           )}{' '}
-                          in {segment.destination.city.name}
+                          in {segment.destination?.city?.name || 'Unknown City'}
                         </span>
                       </div>
                     </div>
