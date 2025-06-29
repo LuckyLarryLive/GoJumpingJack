@@ -87,19 +87,17 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     return displayValue;
   }, []);
 
-  // Sync with currentValue prop
+  // Sync with currentValue prop - but only when not actively typing
   useEffect(() => {
-    if (!isInteracting.current && currentValue) {
+    if (!isInteracting.current && currentValue && !query) {
       const condensedValue = getCondensedDisplay(currentValue);
-      if (condensedValue !== query) {
-        setQuery(condensedValue);
-        // Only set selectedAirport if currentValue is an Airport object
-        if (typeof currentValue === 'object' && currentValue !== null) {
-          setSelectedAirport(currentValue as Airport);
-        }
+      setQuery(condensedValue);
+      // Only set selectedAirport if currentValue is an Airport object
+      if (typeof currentValue === 'object' && currentValue !== null) {
+        setSelectedAirport(currentValue as Airport);
       }
     }
-  }, [currentValue, id, suggestions]);
+  }, [currentValue, id]);
 
   // Sync with initialDisplayValue prop
   useEffect(() => {
@@ -172,7 +170,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
 
         // --- GROUPING LOGIC START ---
         const grouped: { [city: string]: { cityInfo: Airport; airports: Airport[] } } = {};
-        mapped.forEach((airport: Airport) => {
+        if (Array.isArray(mapped)) {
+          mapped.forEach((airport: Airport) => {
           const cityKey = airport.city || `airport_${airport.code}`; // Use airport code if city is NULL
           if (!grouped[cityKey]) {
             if (airport.city) {
@@ -184,7 +183,8 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
           if (airport.city) {
             grouped[cityKey].airports.push(airport);
           }
-        });
+          });
+        }
         // --- GROUPING LOGIC END ---
 
         if (query === debouncedQuery) {
@@ -227,9 +227,18 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
     const newValue = e.target.value;
     setQuery(newValue);
     isInteracting.current = true;
-    setSelectedAirport(null);
-    setSuggestions([]);
-    setIsDropdownOpen(false);
+
+    // Clear selection when user starts typing
+    if (selectedAirport) {
+      setSelectedAirport(null);
+      onAirportSelect(null, null, null, null, null, null);
+    }
+
+    // Don't immediately close dropdown - let the search happen
+    if (newValue.length < 2) {
+      setSuggestions([]);
+      setIsDropdownOpen(false);
+    }
   };
 
   // Update handleSuggestionClick to handle city selections
@@ -428,7 +437,7 @@ const AirportSearchInput: React.FC<AirportSearchInputProps> = ({
         autoComplete="off"
       />
       {isLoading && (
-        <div className="absolute right-2 top-[calc(50%+0.5rem)] transform -translate-y-1/2 h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
+        <div className="absolute right-2 top-[calc(50%+1rem)] transform -translate-y-1/2 h-5 w-5 animate-spin rounded-full border-2 border-t-blue-600 border-gray-200"></div>
       )}
       {isDropdownOpen && (groupedSuggestions.length > 0 || suggestions.length > 0) && (
         <ul

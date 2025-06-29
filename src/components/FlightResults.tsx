@@ -195,8 +195,8 @@ const FlightResults: React.FC<FlightResultsProps> = ({
         stops: outboundSegments.length > 0 ? outboundSegments.length - 1 : 0,
         cabin_class: flightCabinClass,
         currency: offer.total_currency || 'USD',
-        outbound_segments: outboundSegments.map((seg: any) => createSegment(seg, offer.slices[0])),
-        return_segments: returnSegments.map((seg: any) => createSegment(seg, offer.slices[1])),
+        outbound_segments: Array.isArray(outboundSegments) ? outboundSegments.map((seg: any) => createSegment(seg, offer.slices?.[0])) : [],
+        return_segments: Array.isArray(returnSegments) ? returnSegments.map((seg: any) => createSegment(seg, offer.slices?.[1])) : [],
       };
     } catch (err) {
       console.error('Error transforming Duffel offer:', err);
@@ -373,10 +373,12 @@ const FlightResults: React.FC<FlightResultsProps> = ({
               // Subscribe to this job's results
               const unsubscribe = subscribeToJob(jobId, offers => {
                 if (isCancelled) return;
-                for (const offer of offers) {
-                  const transformedFlight = duffelOfferToFlight(offer);
-                  if (transformedFlight) {
-                    allOffersMap.set(offer.id, transformedFlight);
+                if (Array.isArray(offers)) {
+                  for (const offer of offers) {
+                    const transformedFlight = duffelOfferToFlight(offer);
+                    if (transformedFlight) {
+                      allOffersMap.set(offer.id, transformedFlight);
+                    }
                   }
                 }
                 setAllOffers(Array.from(allOffersMap.values()));

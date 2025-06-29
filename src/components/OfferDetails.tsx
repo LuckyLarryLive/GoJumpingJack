@@ -62,8 +62,10 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
     const carryOn: string[] = [];
     const checked: string[] = [];
 
-    offer.passengers.forEach(passenger => {
-      passenger.baggages.forEach(baggage => {
+    if (Array.isArray(offer.passengers)) {
+      offer.passengers.forEach(passenger => {
+        if (Array.isArray(passenger.baggages)) {
+          passenger.baggages.forEach(baggage => {
         let description =
           baggage.quantity > 0
             ? `${baggage.quantity} ${baggage.type.replace('_', ' ')} bag${baggage.quantity > 1 ? 's' : ''}`
@@ -78,8 +80,10 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
         } else if (baggage.type === 'checked') {
           checked.push(description);
         }
+          });
+        }
       });
-    });
+    }
 
     return {
       carryOn: [...new Set(carryOn)],
