@@ -54,13 +54,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
     });
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+
 
   const formatDuration = (duration: string) => {
     // Duration is in ISO 8601 format (PT2H30M)
@@ -87,7 +81,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
   };
 
   // Process baggage information for all slices
-  // const sliceBaggageInfo = processBaggageForAllSlices(offer.slices || []);
+  const sliceBaggageInfo = processBaggageForAllSlices(offer.slices || []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -96,6 +90,42 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
       day: 'numeric',
     });
   };
+
+  // Legacy baggage processing for backward compatibility
+  const getBaggageAllowance = () => {
+    const carryOn: string[] = [];
+    const checked: string[] = [];
+
+    if (Array.isArray(offer.passengers)) {
+      offer.passengers.forEach(passenger => {
+        if (Array.isArray(passenger.baggages)) {
+          passenger.baggages.forEach(baggage => {
+            let description =
+              baggage.quantity > 0
+                ? `${baggage.quantity} ${baggage.type.replace('_', ' ')} bag${baggage.quantity > 1 ? 's' : ''}`
+                : `No ${baggage.type.replace('_', ' ')} bags`;
+
+            if (baggage.weight_value) {
+              description += ` (${baggage.weight_value}${baggage.weight_unit || 'kg'} each)`;
+            }
+
+            if (baggage.type === 'carry_on') {
+              carryOn.push(description);
+            } else if (baggage.type === 'checked') {
+              checked.push(description);
+            }
+          });
+        }
+      });
+    }
+
+    return {
+      carryOn: [...new Set(carryOn)],
+      checked: [...new Set(checked)],
+    };
+  };
+
+  const baggage = getBaggageAllowance();
 
   if (!offer) {
     return (
