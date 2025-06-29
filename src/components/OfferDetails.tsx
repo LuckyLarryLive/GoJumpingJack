@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { DuffelOffer, SelectedSeat } from '@/types/duffel';
-import { FaPlane, FaClock, FaSuitcase, FaInfoCircle, FaCode } from 'react-icons/fa';
+import { FaPlane, FaClock, FaSuitcase, FaInfoCircle, FaCode, FaExclamationTriangle } from 'react-icons/fa';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatPrice } from '@/lib/currency';
+import { formatFlightDate, formatExpirationTime, getTimeUntilExpiration } from '@/lib/dateUtils';
+import { processBaggageForAllSlices } from '@/lib/baggageUtils';
 import RawDetailsModal from './RawDetailsModal';
 
 interface OfferDetailsProps {
@@ -23,6 +25,27 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
 }) => {
   const { currency } = useCurrency();
   const [showRawDetails, setShowRawDetails] = useState(false);
+  const [expirationInfo, setExpirationInfo] = useState<{
+    expired: boolean;
+    formatted?: string;
+  }>({ expired: false });
+
+  // Update expiration info every minute
+  useEffect(() => {
+    const updateExpiration = () => {
+      if (offer.payment_requirements?.price_guarantee_expires_at) {
+        const timeInfo = getTimeUntilExpiration(offer.payment_requirements.price_guarantee_expires_at);
+        setExpirationInfo({
+          expired: timeInfo.expired,
+          formatted: timeInfo.expired ? 'Offer expired' : formatExpirationTime(offer.payment_requirements.price_guarantee_expires_at),
+        });
+      }
+    };
+
+    updateExpiration();
+    const interval = setInterval(updateExpiration, 60000);
+    return () => clearInterval(interval);
+  }, [offer.payment_requirements?.price_guarantee_expires_at]);
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
@@ -63,40 +86,16 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
     return `${diffHours}h ${diffMinutes}m`;
   };
 
-  const getBaggageAllowance = () => {
-    const carryOn: string[] = [];
-    const checked: string[] = [];
+  // Process baggage information for all slices
+  // const sliceBaggageInfo = processBaggageForAllSlices(offer.slices || []);
 
-    if (Array.isArray(offer.passengers)) {
-      offer.passengers.forEach(passenger => {
-        if (Array.isArray(passenger.baggages)) {
-          passenger.baggages.forEach(baggage => {
-            let description =
-              baggage.quantity > 0
-                ? `${baggage.quantity} ${baggage.type.replace('_', ' ')} bag${baggage.quantity > 1 ? 's' : ''}`
-                : `No ${baggage.type.replace('_', ' ')} bags`;
-
-            if (baggage.weight_value) {
-              description += ` (${baggage.weight_value}${baggage.weight_unit || 'kg'} each)`;
-            }
-
-            if (baggage.type === 'carry_on') {
-              carryOn.push(description);
-            } else if (baggage.type === 'checked') {
-              checked.push(description);
-            }
-          });
-        }
-      });
-    }
-
-    return {
-      carryOn: [...new Set(carryOn)],
-      checked: [...new Set(checked)],
-    };
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
   };
-
-  const baggage = getBaggageAllowance();
 
   if (!offer) {
     return (
@@ -116,6 +115,23 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
               {formatPrice(offer.total_amount, currency)}
             </h2>
             <p className="text-gray-600">Total Price</p>
+
+            {/* Price Guarantee Expiration */}
+            {offer.payment_requirements?.price_guarantee_expires_at && (
+              <div className={`text-sm mt-2 ${expirationInfo.expired ? 'text-red-600' : 'text-orange-600'}`}>
+                {expirationInfo.expired ? (
+                  <div className="flex items-center">
+                    <FaExclamationTriangle className="mr-1" />
+                    Offer expired
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <FaClock className="mr-1" />
+                    {expirationInfo.formatted}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Operated by</p>
@@ -148,17 +164,50 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
 
       {/* Itinerary */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-xl font-semibold mb-4">Flight Itinerary</h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold flex items-center">
+            <FaPlane className="mr-2" />
+            Flight Itinerary
+          </h3>
+          {/* Fare Brand Display */}
+          {offer.slices && offer.slices.length > 0 && offer.slices[0].fare_brand_name && (
+            <div className="text-right">
+              <p className="text-sm text-gray-500">Fare Type</p>
+              <span className="inline-block bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                {offer.slices[0].fare_brand_name}
+              </span>
+              {offer.slices[0].fare_brand_name === 'Basic Economy' && (
+                <p className="text-xs text-gray-500 mt-1 max-w-xs">
+                  Restrictive fare with limited flexibility
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         {Array.isArray(offer.slices) &&
           offer.slices.map((slice, sliceIndex) => (
             <div key={slice.id} className="mb-6 last:mb-0">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-lg font-medium text-gray-900">
-                  {sliceIndex === 0 ? 'Outbound' : 'Return'} Flight
-                </h4>
-                <div className="text-sm text-gray-600">
-                  {formatDate(slice.departing_at)} • {formatDuration(slice.duration)}
+                <div>
+                  <h4 className="text-lg font-medium text-gray-900">
+                    {sliceIndex === 0 ? 'Outbound' : 'Return'} Flight
+                  </h4>
+                  {slice.segments && slice.segments.length > 0 && (
+                    <p className="text-sm text-gray-600">
+                      {formatFlightDate(slice.segments[0].departing_at)}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">
+                    Duration: {formatDuration(slice.duration)}
+                  </div>
+                  {slice.fare_brand_name && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {slice.fare_brand_name}
+                    </div>
+                  )}
                 </div>
               </div>
 
