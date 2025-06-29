@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SearchSection from '@/components/SearchSection';
+import { CurrencyProvider } from '@/contexts/CurrencyContext';
 
 // Mock the AirportSearchInput component
 jest.mock('@/components/AirportSearchInput', () => {
@@ -11,14 +12,20 @@ jest.mock('@/components/AirportSearchInput', () => {
     placeholder,
     onAirportSelect,
     initialDisplayValue,
-  }: any) {
+  }: {
+    id: string;
+    label: string;
+    placeholder: string;
+    onAirportSelect: (airport: { airport_code: string; display_name: string }) => void;
+    initialDisplayValue?: string;
+  }) {
     return (
       <div data-testid={`airport-input-${id}`}>
         <label>{label}</label>
         <input
           placeholder={placeholder}
           defaultValue={initialDisplayValue}
-          onChange={e => {
+          onChange={() => {
             // Simulate airport selection
             onAirportSelect({
               airport_code: 'LAX',
@@ -50,13 +57,17 @@ global.fetch = jest.fn(() =>
 describe('SearchSection', () => {
   const mockOnSearchSubmit = jest.fn();
 
+  const renderWithProvider = (component: React.ReactElement) => {
+    return render(<CurrencyProvider>{component}</CurrencyProvider>);
+  };
+
   beforeEach(() => {
     mockOnSearchSubmit.mockClear();
     (global.fetch as jest.Mock).mockClear();
   });
 
   test('renders search form elements', () => {
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Check for trip type radio buttons by value
     expect(screen.getByDisplayValue('round-trip')).toBeInTheDocument();
@@ -79,7 +90,7 @@ describe('SearchSection', () => {
 
   test('handles trip type selection', async () => {
     const user = userEvent.setup();
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     const oneWayRadio = screen.getByDisplayValue('one-way');
     await user.click(oneWayRadio);
@@ -93,7 +104,7 @@ describe('SearchSection', () => {
 
   test('handles passenger count changes', async () => {
     const user = userEvent.setup();
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Find adult passenger increment button (the + button)
     const buttons = screen.getAllByRole('button');
@@ -109,7 +120,7 @@ describe('SearchSection', () => {
 
   test('validates required fields before submission', async () => {
     const user = userEvent.setup();
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     const searchButton = screen.getByRole('button', { name: /search flights/i });
     await user.click(searchButton);
@@ -120,7 +131,7 @@ describe('SearchSection', () => {
 
   test('submits form with valid data', async () => {
     const user = userEvent.setup();
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Fill in required fields
     const fromInput = screen.getByTestId('airport-input-from').querySelector('input');
@@ -150,7 +161,7 @@ describe('SearchSection', () => {
   });
 
   test('displays background image when loaded', async () => {
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Wait for background image to load
     await waitFor(() => {
@@ -164,7 +175,7 @@ describe('SearchSection', () => {
   });
 
   test('handles minimized state', () => {
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Initially should be in expanded state
     expect(screen.getByRole('button', { name: /search flights/i })).toBeInTheDocument();
@@ -175,7 +186,7 @@ describe('SearchSection', () => {
   });
 
   test('displays basic form structure', () => {
-    render(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
+    renderWithProvider(<SearchSection onSearchSubmit={mockOnSearchSubmit} />);
 
     // Check that the form renders without errors
     expect(screen.getByRole('button', { name: /search flights/i })).toBeInTheDocument();
