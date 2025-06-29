@@ -181,7 +181,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({ onSearchSubmit, initialSe
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!originAirportCode || !destinationAirportCode || !departureDate || !adults) {
-      setError('Please fill in all required fields');
+      console.warn('Please fill in all required fields');
       return;
     }
 
