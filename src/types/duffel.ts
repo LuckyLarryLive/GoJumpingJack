@@ -26,6 +26,43 @@ export interface DuffelAircraft {
   name: string;
 }
 
+export interface DuffelBaggage {
+  type: 'carry_on' | 'checked';
+  quantity: number;
+  weight_value?: number;
+  weight_unit?: string;
+}
+
+export interface DuffelAmenities {
+  wifi?: {
+    available: boolean;
+    cost?: 'free' | 'paid';
+  };
+  power?: {
+    available: boolean;
+  };
+  seat?: {
+    pitch?: string;
+    legroom?: string;
+    type?: string;
+  };
+}
+
+export interface DuffelCabin {
+  name: string;
+  marketing_name: string;
+  amenities?: DuffelAmenities;
+}
+
+export interface DuffelPassenger {
+  id: string;
+  type: 'adult' | 'child' | 'infant';
+  cabin_class: string;
+  cabin_class_marketing_name: string;
+  cabin?: DuffelCabin;
+  baggages?: DuffelBaggage[];
+}
+
 export interface DuffelSegment {
   id: string;
   origin: DuffelAirport;
@@ -36,11 +73,21 @@ export interface DuffelSegment {
   distance: string;
   marketing_carrier: DuffelAirline;
   operating_carrier: DuffelAirline;
-  aircraft: DuffelAircraft;
+  aircraft?: DuffelAircraft | null;
   marketing_carrier_flight_number: string;
   operating_carrier_flight_number: string;
   origin_terminal?: string;
   destination_terminal?: string;
+  passengers?: DuffelPassenger[];
+}
+
+export interface DuffelSliceConditions {
+  advance_seat_selection?: boolean | null;
+  change_before_departure?: {
+    allowed: boolean;
+    penalty_amount?: string;
+    penalty_currency?: string;
+  };
 }
 
 export interface DuffelSlice {
@@ -51,6 +98,8 @@ export interface DuffelSlice {
   arriving_at: string;
   duration: string;
   segments: DuffelSegment[];
+  fare_brand_name?: string;
+  conditions?: DuffelSliceConditions;
 }
 
 export interface DuffelBaggage {
@@ -77,6 +126,12 @@ export interface DuffelService {
   segment_ids?: string[];
 }
 
+export interface DuffelPaymentRequirements {
+  requires_instant_payment: boolean;
+  price_guarantee_expires_at?: string;
+  payment_required_by?: string;
+}
+
 export interface DuffelOffer {
   id: string;
   live_mode: boolean;
@@ -96,6 +151,7 @@ export interface DuffelOffer {
   partial: boolean;
   passenger_identity_documents_required: boolean;
   supported_passenger_identity_document_types: string[];
+  payment_requirements?: DuffelPaymentRequirements;
   conditions: {
     change_before_departure?: {
       allowed: boolean;
