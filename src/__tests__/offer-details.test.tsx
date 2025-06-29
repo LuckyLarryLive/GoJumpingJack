@@ -3,6 +3,7 @@ import '@testing-library/jest-dom';
 import OfferDetails from '@/components/OfferDetails';
 import { DuffelOffer } from '@/types/duffel';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -163,9 +164,11 @@ describe('OfferDetails Component', () => {
 
   it('renders offer details correctly', () => {
     render(
-      <CurrencyProvider>
-        <OfferDetails {...mockProps} />
-      </CurrencyProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <OfferDetails {...mockProps} />
+        </CurrencyProvider>
+      </AuthProvider>
     );
 
     // Check if price is displayed (now formatted with currency symbol)
@@ -186,9 +189,11 @@ describe('OfferDetails Component', () => {
 
   it('displays baggage allowance correctly', () => {
     render(
-      <CurrencyProvider>
-        <OfferDetails {...mockProps} />
-      </CurrencyProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <OfferDetails {...mockProps} />
+        </CurrencyProvider>
+      </AuthProvider>
     );
 
     expect(screen.getByText('Baggage Allowance')).toBeInTheDocument();
@@ -198,9 +203,11 @@ describe('OfferDetails Component', () => {
 
   it('displays fare conditions correctly', () => {
     render(
-      <CurrencyProvider>
-        <OfferDetails {...mockProps} />
-      </CurrencyProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <OfferDetails {...mockProps} />
+        </CurrencyProvider>
+      </AuthProvider>
     );
 
     expect(screen.getByText('Fare Conditions')).toBeInTheDocument();
@@ -212,9 +219,11 @@ describe('OfferDetails Component', () => {
 
   it('formats duration correctly', () => {
     render(
-      <CurrencyProvider>
-        <OfferDetails {...mockProps} />
-      </CurrencyProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <OfferDetails {...mockProps} />
+        </CurrencyProvider>
+      </AuthProvider>
     );
 
     // The PT8H duration should be formatted as "8h"
@@ -223,9 +232,11 @@ describe('OfferDetails Component', () => {
 
   it('displays terminal information when available', () => {
     render(
-      <CurrencyProvider>
-        <OfferDetails {...mockProps} />
-      </CurrencyProvider>
+      <AuthProvider>
+        <CurrencyProvider>
+          <OfferDetails {...mockProps} />
+        </CurrencyProvider>
+      </AuthProvider>
     );
 
     expect(screen.getByText(/Terminal 5/)).toBeInTheDocument();

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SearchSection from '@/components/SearchSection';
 import { CurrencyProvider } from '@/contexts/CurrencyContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Mock the AirportSearchInput component
 jest.mock('@/components/AirportSearchInput', () => {
@@ -56,7 +57,11 @@ describe('SearchSection', () => {
   const mockOnSearchSubmit = jest.fn();
 
   const renderWithProvider = (component: React.ReactElement) => {
-    return render(<CurrencyProvider>{component}</CurrencyProvider>);
+    return render(
+      <AuthProvider>
+        <CurrencyProvider>{component}</CurrencyProvider>
+      </AuthProvider>
+    );
   };
 
   beforeEach(() => {
