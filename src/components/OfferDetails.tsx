@@ -3,11 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { DuffelOffer, SelectedSeat } from '@/types/duffel';
-import { FaPlane, FaClock, FaSuitcase, FaInfoCircle, FaCode, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  FaPlane,
+  FaClock,
+  FaSuitcase,
+  FaInfoCircle,
+  FaCode,
+  FaExclamationTriangle,
+} from 'react-icons/fa';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatPrice } from '@/lib/currency';
 import { formatFlightDate, formatExpirationTime, getTimeUntilExpiration } from '@/lib/dateUtils';
+import {
+  convertCurrency,
+  formatConvertedCurrency,
+  getFallbackCurrencyDisplay,
+} from '@/lib/currencyConversion';
 import { processBaggageForAllSlices } from '@/lib/baggageUtils';
+import { processAmenities, getAmenitiesIcons } from '@/lib/amenitiesUtils';
 import RawDetailsModal from './RawDetailsModal';
 
 interface OfferDetailsProps {
@@ -15,6 +28,14 @@ interface OfferDetailsProps {
   selectedSeats: SelectedSeat[];
   onSeatSelection: () => void;
   seatMapLoading: boolean;
+}
+
+interface ConvertedPenalty {
+  originalAmount: string;
+  originalCurrency: string;
+  convertedAmount?: string;
+  convertedCurrency?: string;
+  displayText: string;
 }
 
 const OfferDetails: React.FC<OfferDetailsProps> = ({
@@ -29,21 +50,130 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
     expired: boolean;
     formatted?: string;
   }>({ expired: false });
+  const [convertedPenalties, setConvertedPenalties] = useState<{
+    refund?: ConvertedPenalty;
+    change?: ConvertedPenalty;
+  }>({});
+  const [convertedTotalPrice, setConvertedTotalPrice] = useState<string>('');
 
-  // Update expiration info every minute
+  // Convert total price if different currency
+  useEffect(() => {
+    const convertTotalPrice = async () => {
+      if (offer.total_currency !== currency) {
+        const conversion = await convertCurrency(
+          offer.total_amount,
+          offer.total_currency,
+          currency
+        );
+
+        if (conversion) {
+          setConvertedTotalPrice(formatConvertedCurrency(conversion, false));
+        } else {
+          setConvertedTotalPrice(
+            getFallbackCurrencyDisplay(offer.total_amount, offer.total_currency)
+          );
+        }
+      } else {
+        setConvertedTotalPrice('');
+      }
+    };
+
+    convertTotalPrice();
+  }, [offer.total_amount, offer.total_currency, currency]);
+
+  // Convert penalty currencies
+  useEffect(() => {
+    const convertPenalties = async () => {
+      const newConvertedPenalties: typeof convertedPenalties = {};
+
+      // Convert refund penalty if exists and different currency
+      if (
+        offer.conditions.refund_before_departure?.penalty_amount &&
+        offer.conditions.refund_before_departure?.penalty_currency &&
+        offer.conditions.refund_before_departure.penalty_currency !== currency
+      ) {
+        const conversion = await convertCurrency(
+          offer.conditions.refund_before_departure.penalty_amount,
+          offer.conditions.refund_before_departure.penalty_currency,
+          currency
+        );
+
+        if (conversion) {
+          newConvertedPenalties.refund = {
+            originalAmount: conversion.originalAmount,
+            originalCurrency: conversion.originalCurrency,
+            convertedAmount: conversion.convertedAmount,
+            convertedCurrency: conversion.convertedCurrency,
+            displayText: formatConvertedCurrency(conversion, true),
+          };
+        } else {
+          newConvertedPenalties.refund = {
+            originalAmount: offer.conditions.refund_before_departure.penalty_amount,
+            originalCurrency: offer.conditions.refund_before_departure.penalty_currency,
+            displayText: getFallbackCurrencyDisplay(
+              offer.conditions.refund_before_departure.penalty_amount,
+              offer.conditions.refund_before_departure.penalty_currency
+            ),
+          };
+        }
+      }
+
+      // Convert change penalty if exists and different currency
+      if (
+        offer.conditions.change_before_departure?.penalty_amount &&
+        offer.conditions.change_before_departure?.penalty_currency &&
+        offer.conditions.change_before_departure.penalty_currency !== currency
+      ) {
+        const conversion = await convertCurrency(
+          offer.conditions.change_before_departure.penalty_amount,
+          offer.conditions.change_before_departure.penalty_currency,
+          currency
+        );
+
+        if (conversion) {
+          newConvertedPenalties.change = {
+            originalAmount: conversion.originalAmount,
+            originalCurrency: conversion.originalCurrency,
+            convertedAmount: conversion.convertedAmount,
+            convertedCurrency: conversion.convertedCurrency,
+            displayText: formatConvertedCurrency(conversion, true),
+          };
+        } else {
+          newConvertedPenalties.change = {
+            originalAmount: offer.conditions.change_before_departure.penalty_amount,
+            originalCurrency: offer.conditions.change_before_departure.penalty_currency,
+            displayText: getFallbackCurrencyDisplay(
+              offer.conditions.change_before_departure.penalty_amount,
+              offer.conditions.change_before_departure.penalty_currency
+            ),
+          };
+        }
+      }
+
+      setConvertedPenalties(newConvertedPenalties);
+    };
+
+    convertPenalties();
+  }, [offer, currency]);
+
+  // Update expiration info every second for real-time countdown
   useEffect(() => {
     const updateExpiration = () => {
       if (offer.payment_requirements?.price_guarantee_expires_at) {
-        const timeInfo = getTimeUntilExpiration(offer.payment_requirements.price_guarantee_expires_at);
+        const timeInfo = getTimeUntilExpiration(
+          offer.payment_requirements.price_guarantee_expires_at
+        );
         setExpirationInfo({
           expired: timeInfo.expired,
-          formatted: timeInfo.expired ? 'Offer expired' : formatExpirationTime(offer.payment_requirements.price_guarantee_expires_at),
+          formatted: timeInfo.expired
+            ? 'Offer expired'
+            : formatExpirationTime(offer.payment_requirements.price_guarantee_expires_at),
         });
       }
     };
 
     updateExpiration();
-    const interval = setInterval(updateExpiration, 60000);
+    const interval = setInterval(updateExpiration, 1000); // Update every second
     return () => clearInterval(interval);
   }, [offer.payment_requirements?.price_guarantee_expires_at]);
   const formatTime = (dateString: string) => {
@@ -53,8 +183,6 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
       hour12: true,
     });
   };
-
-
 
   const formatDuration = (duration: string) => {
     // Duration is in ISO 8601 format (PT2H30M)
@@ -83,13 +211,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
   // Process baggage information for all slices
   const sliceBaggageInfo = processBaggageForAllSlices(offer.slices || []);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  // Removed unused formatDate function - using formatFlightDate from utils instead
 
   // Legacy baggage processing for backward compatibility
   const getBaggageAllowance = () => {
@@ -142,13 +264,20 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {formatPrice(offer.total_amount, currency)}
+              {convertedTotalPrice || formatPrice(offer.total_amount, currency)}
             </h2>
             <p className="text-gray-600">Total Price</p>
+            {convertedTotalPrice && offer.total_currency !== currency && (
+              <p className="text-sm text-gray-500">
+                Original: {formatPrice(offer.total_amount, offer.total_currency)}
+              </p>
+            )}
 
             {/* Price Guarantee Expiration */}
             {offer.payment_requirements?.price_guarantee_expires_at && (
-              <div className={`text-sm mt-2 ${expirationInfo.expired ? 'text-red-600' : 'text-orange-600'}`}>
+              <div
+                className={`text-sm mt-2 ${expirationInfo.expired ? 'text-red-600' : 'text-orange-600'}`}
+              >
                 {expirationInfo.expired ? (
                   <div className="flex items-center">
                     <FaExclamationTriangle className="mr-1" />
@@ -234,9 +363,7 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                     Duration: {formatDuration(slice.duration)}
                   </div>
                   {slice.fare_brand_name && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {slice.fare_brand_name}
-                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{slice.fare_brand_name}</div>
                   )}
                 </div>
               </div>
@@ -262,9 +389,27 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                             {segment.marketing_carrier_flight_number || ''}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-600">
-                          {segment.aircraft?.name || 'Unknown Aircraft'}
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          {/* Aircraft info - only show if available */}
+                          {segment.aircraft?.name && (
+                            <span className="text-sm text-gray-600">{segment.aircraft.name}</span>
+                          )}
+
+                          {/* Amenities icons */}
+                          {processAmenities(segment) && (
+                            <div className="flex items-center space-x-1">
+                              {getAmenitiesIcons(processAmenities(segment)).map((amenity, idx) => (
+                                <span
+                                  key={idx}
+                                  title={amenity.label}
+                                  className={`text-sm ${amenity.available ? 'opacity-100' : 'opacity-50'}`}
+                                >
+                                  {amenity.icon}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -343,32 +488,69 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
           <FaSuitcase className="mr-2" />
           Baggage Allowance
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Carry-on Bags</h4>
-            {baggage.carryOn.length > 0 ? (
-              <ul className="text-sm text-gray-600 space-y-1">
-                {baggage.carryOn.map((item, index) => (
-                  <li key={index}>• {item}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">No carry-on bags included</p>
-            )}
+
+        {/* Per-slice baggage information */}
+        {sliceBaggageInfo.map((sliceBaggage, index) => (
+          <div key={index} className="mb-6 last:mb-0">
+            <h4 className="font-medium text-gray-900 mb-3">{sliceBaggage.sliceTitle}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h5 className="font-medium text-gray-700 mb-2">Carry-on Bags</h5>
+                {sliceBaggage.baggage.carryOn.length > 0 ? (
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {sliceBaggage.baggage.carryOn.map((item, itemIndex) => (
+                      <li key={itemIndex}>• {item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No carry-on bags included</p>
+                )}
+              </div>
+              <div>
+                <h5 className="font-medium text-gray-700 mb-2">Checked Bags</h5>
+                {sliceBaggage.baggage.checked.length > 0 ? (
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    {sliceBaggage.baggage.checked.map((item, itemIndex) => (
+                      <li key={itemIndex}>• {item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500">No checked bags included</p>
+                )}
+              </div>
+            </div>
           </div>
-          <div>
-            <h4 className="font-medium text-gray-900 mb-2">Checked Bags</h4>
-            {baggage.checked.length > 0 ? (
-              <ul className="text-sm text-gray-600 space-y-1">
-                {baggage.checked.map((item, index) => (
-                  <li key={index}>• {item}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">No checked bags included</p>
-            )}
+        ))}
+
+        {/* Fallback to legacy baggage if no slice baggage available */}
+        {sliceBaggageInfo.length === 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Carry-on Bags</h4>
+              {baggage.carryOn.length > 0 ? (
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {baggage.carryOn.map((item, index) => (
+                    <li key={index}>• {item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No carry-on bags included</p>
+              )}
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Checked Bags</h4>
+              {baggage.checked.length > 0 ? (
+                <ul className="text-sm text-gray-600 space-y-1">
+                  {baggage.checked.map((item, index) => (
+                    <li key={index}>• {item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">No checked bags included</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Fare Conditions */}
@@ -396,7 +578,11 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                 {offer.conditions.change_before_departure.penalty_amount && (
                   <p className="text-gray-600">
                     Fee:{' '}
-                    {formatPrice(offer.conditions.change_before_departure.penalty_amount, currency)}
+                    {convertedPenalties.change?.displayText ||
+                      formatPrice(
+                        offer.conditions.change_before_departure.penalty_amount,
+                        offer.conditions.change_before_departure.penalty_currency || currency
+                      )}
                   </p>
                 )}
               </div>
@@ -422,7 +608,11 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
                 {offer.conditions.refund_before_departure.penalty_amount && (
                   <p className="text-gray-600">
                     Fee:{' '}
-                    {formatPrice(offer.conditions.refund_before_departure.penalty_amount, currency)}
+                    {convertedPenalties.refund?.displayText ||
+                      formatPrice(
+                        offer.conditions.refund_before_departure.penalty_amount,
+                        offer.conditions.refund_before_departure.penalty_currency || currency
+                      )}
                   </p>
                 )}
               </div>
@@ -432,6 +622,30 @@ const OfferDetails: React.FC<OfferDetailsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Expired Offer Notification */}
+      {expirationInfo.expired && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <FaExclamationTriangle className="text-red-500 text-2xl mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">Offer Expired</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              This flight offer has expired and is no longer available for booking. Please return to
+              the search page to find new flight options.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => (window.location.href = '/')}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Return to Home
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Raw Details Modal */}
       <RawDetailsModal
